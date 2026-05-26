@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mojtaba Keivanlou — Senior Hydraulic &amp; Water Resources Engineer</title>
+<meta name="description" content="Senior hydraulic and water resources engineer with 16 years of international experience across Iran, Oman, and the USA. Team Leader on Oman's largest ongoing flood protection programme.">
+<meta property="og:title" content="Mojtaba Keivanlou — Senior Hydraulic &amp; Water Resources Engineer">
+<meta property="og:description" content="16 years of international experience in flood modelling, dam design, climate adaptation, and engineering automation.">
+<meta property="og:type" content="profile">
+<meta property="og:url" content="https://mojtabakeivanlou.com">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%230B2D48'/%3E%3Ctext x='50' y='67' font-family='sans-serif' font-weight='700' font-size='44' text-anchor='middle' fill='%23C49A3C'%3EMK%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+
+/* ── TOKENS ───────────────────────────────────────────── */
+:root {
+  --navy:  #0B2D48;
+  --gold:  #C49A3C;
+  --text:  #1C2330;
+  --sub:   #3D4F61;
+  --muted: #6B7E8F;
+  --rule:  #D6E2EC;
+  --bg:    #F4F7FA;
+  --white: #FFFFFF;
+  --nav-h: 48px;
+  --max-w: 860px;
+  --pad:   clamp(18px, 4vw, 36px);
+}
+
+/* ── RESET ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 15px;
+  color: var(--text);
+  background: #e8edf2;
+  line-height: 1.6;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ── NAV ──────────────────────────────────────────────── */
+.site-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: var(--navy);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--pad);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.25);
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 0;
+}
+
+.nav-links a {
+  display: block;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+  text-decoration: none;
+  padding: 0 11px;
+  height: var(--nav-h);
+  line-height: var(--nav-h);
+  border-bottom: 2.5px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+.nav-download {
+  font-family: 'Poppins', sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--navy);
+  background: var(--gold);
+  text-decoration: none;
+  padding: 7px 15px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.nav-download:hover {
+  background: #d4a94a;
+  transform: translateY(-1px);
+}
+
+/* ── WRAPPER ──────────────────────────────────────────── */
+.cv-wrap {
+  max-width: var(--max-w);
+  margin: calc(var(--nav-h) + 28px) auto 48px;
+  background: var(--white);
+  border-radius: 5px;
+  box-shadow: 0 6px 40px rgba(11,45,72,0.13);
+  overflow: hidden;
+}
+
+/* ── ACCENT BAR ───────────────────────────────────────── */
+.accent-bar {
+  height: 5px;
+  background: linear-gradient(90deg, var(--navy) 0%, var(--gold) 55%, var(--navy) 100%);
+}
+
+/* ── HEADER ───────────────────────────────────────────── */
+.header {
+  padding: 28px var(--pad) 20px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  animation: fadeUp 0.55s ease both;
+}
+
+.header-left { flex: 1; min-width: 0; }
+
+.name {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: clamp(26px, 5.5vw, 38px);
+  color: var(--navy);
+  letter-spacing: -0.5px;
+  line-height: 1.05;
+}
+
+.name-accent { color: var(--gold); }
+
+.cv-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 300;
+  font-size: clamp(10px, 1.8vw, 12.5px);
+  color: var(--sub);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+
+/* ── PROFILE PHOTO ────────────────────────────────────── */
+.header-photo {
+  flex-shrink: 0;
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid var(--gold);
+  box-shadow: 0 3px 16px rgba(11,45,72,0.18);
+  margin-top: 2px;
+}
+
+.header-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+/* ── CONTACT ROW ──────────────────────────────────────── */
+.contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 22px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+a.contact-item {
+  font-family: 'Poppins', sans-serif;
+  font-size: 11.5px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a.contact-item:hover { color: var(--gold); }
+
+.contact-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+/* ── CV BODY ──────────────────────────────────────────── */
+.cv-body { padding: 4px var(--pad) 30px; }
+
+/* ── SECTIONS ─────────────────────────────────────────── */
+.section {
+  margin-top: 24px;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.section-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--navy);
+  padding-bottom: 5px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--rule) 100%);
+}
+
+/* ── PROFILE TEXT ─────────────────────────────────────── */
+.profile p {
+  font-size: 14.5px;
+  line-height: 1.72;
+  color: var(--text);
+  text-align: justify;
+}
+
+.profile p + p { margin-top: 8px; }
+.profile strong { color: var(--navy); font-weight: 700; }
+
+/* ── COMPETENCIES ─────────────────────────────────────── */
+.comp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.comp-item {
+  font-family: 'Poppins', sans-serif;
+  font-size: 11.5px;
+  color: var(--sub);
+  padding: 7px 11px;
+  background: var(--bg);
+  border-left: 2.5px solid var(--gold);
+  line-height: 1.4;
+}
+
+/* ── EMPLOYER ─────────────────────────────────────────── */
+.employer {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.employer:first-child { border-top: none; margin-top: 0; }
+
+.emp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.emp-name {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 15.5px;
+  color: var(--navy);
+}
+
+.emp-sub {
+  font-family: 'Poppins', sans-serif;
+  font-size: 12.5px;
+  color: var(--gold);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.emp-loc {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.emp-duration {
+  font-family: 'Poppins', sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--white);
+  background: var(--navy);
+  padding: 3px 10px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── PROJECT ──────────────────────────────────────────── */
+.project { margin-top: 12px; }
+
+.proj-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 3px;
+}
+
+.proj-name {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.35;
+  flex: 1;
+}
+
+.proj-meta {
+  font-family: 'Poppins', sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.proj-role {
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+ul.bullets {
+  padding-left: 16px;
+  margin-top: 3px;
+}
+
+ul.bullets li {
+  font-size: 13px;
+  color: var(--sub);
+  line-height: 1.55;
+  margin-bottom: 3px;
+  list-style: none;
+  position: relative;
+}
+
+ul.bullets li::before {
+  content: '–';
+  color: var(--gold);
+  font-weight: 700;
+  position: absolute;
+  left: -14px;
+}
+
+ul.bullets li strong { color: var(--text); }
+
+.addl-note {
+  margin-top: 9px;
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  padding: 7px 12px;
+  background: var(--bg);
+  border-left: 2.5px solid var(--rule);
+  line-height: 1.5;
+}
+
+/* ── EDUCATION ────────────────────────────────────────── */
+.edu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.edu-item:last-child { border-bottom: none; }
+
+.edu-deg {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--navy);
+  line-height: 1.3;
+}
+
+.edu-inst {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.edu-year {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--gold);
+  flex-shrink: 0;
+  padding-left: 16px;
+  margin-top: 2px;
+}
+
+/* ── SKILLS TABLE ─────────────────────────────────────── */
+.skills-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.skills-table th {
+  font-family: 'Poppins', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  background: var(--navy);
+  color: white;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.skills-table td {
+  font-size: 12.5px;
+  color: var(--sub);
+  padding: 8px 12px;
+  vertical-align: top;
+  line-height: 1.55;
+  border: 1px solid var(--rule);
+}
+
+.skills-table tr:nth-child(odd) td  { background: var(--bg); }
+.skills-table tr:nth-child(even) td { background: white; }
+
+.skills-table td:first-child {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--navy);
+  width: 19%;
+  border-left: 3px solid var(--gold);
+}
+
+/* ── LANGUAGES ────────────────────────────────────────── */
+.lang-grid {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.lang-item { display: flex; align-items: center; gap: 12px; }
+
+.lang-name {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--navy);
+  min-width: 64px;
+}
+
+.lang-level {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.dots { display: flex; gap: 4px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--rule); }
+.dot.on { background: var(--gold); }
+
+/* ── FOOTER ───────────────────────────────────────────── */
+.cv-footer {
+  margin-top: 22px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10.5px;
+  color: var(--muted);
+  letter-spacing: 1.2px;
+}
+
+/* ── ANIMATION ────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── RESPONSIVE ───────────────────────────────────────── */
+@media (max-width: 660px) {
+  .nav-links { display: none; }
+  .comp-grid { grid-template-columns: repeat(2, 1fr); }
+  .proj-header { flex-direction: column; gap: 1px; }
+  .skills-table td, .skills-table th { padding: 6px 8px; font-size: 11.5px; }
+  .skills-table td:first-child { font-size: 11px; }
+  .header { flex-direction: row-reverse; }
+}
+
+@media (max-width: 420px) {
+  .comp-grid { grid-template-columns: 1fr; }
+  .emp-header { flex-wrap: wrap; }
+}
+
+/* ── PRINT ────────────────────────────────────────────── */
+@media print {
+  @page { size: A4; margin: 0; }
+  body { background: white; font-size: 8.5pt; line-height: 1.52; }
+  .site-nav { display: none; }
+  .cv-wrap { max-width: none; margin: 0; box-shadow: none; border-radius: 0; }
+  .header { padding: 18pt 24pt 14pt; }
+  .cv-body { padding: 0 24pt 18pt; }
+  .section { opacity: 1 !important; transform: none !important; margin-top: 13pt; }
+  .name { font-size: 26pt; }
+  .cv-title { font-size: 10.5pt; }
+  .header-photo { width: 60pt; height: 60pt; }
+  .skills-table td, .skills-table th { padding: 5pt 8pt; font-size: 8pt; }
+  .emp-name { font-size: 9.5pt; }
+  .profile p { font-size: 8.7pt; }
+  ul.bullets li { font-size: 8.2pt; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav class="site-nav">
+  <ul class="nav-links">
+    <li><a href="#profile">Profile</a></li>
+    <li><a href="#competencies">Competencies</a></li>
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#education">Education</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#languages">Languages</a></li>
+  </ul>
+  <a class="nav-download" href="pdf/CV_Mojtaba_Keivanlou_2026.pdf" download>Download CV</a>
+</nav>
+
+<div class="cv-wrap">
+
+<!-- ACCENT -->
+<div class="accent-bar"></div>
+
+<!-- ═══ HEADER ═══ -->
+<header class="header">
+  <div class="header-left">
+    <div class="name">MOJTABA <span class="name-accent">KEIVANLOU</span></div>
+    <div class="cv-title">Senior Hydraulic &amp; Water Resources Engineer</div>
+
+    <div class="contact-row">
+      <a class="contact-item" href="#">
+        <svg class="contact-icon" viewBox="0 0 24 24"><path fill="#C49A3C" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+        Muscat, Oman
+      </a>
+      <a class="contact-item" href="mailto:keyvanlu.m@gmail.com">
+        <svg class="contact-icon" viewBox="0 0 24 24"><path fill="#C49A3C" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        keyvanlu.m@gmail.com
+      </a>
+      <a class="contact-item" href="tel:+96892970635">
+        <svg class="contact-icon" viewBox="0 0 24 24"><path fill="#C49A3C" d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.24 1.01l-2.21 2.2z"/></svg>
+        +968 92970635
+      </a>
+      <a class="contact-item" href="https://linkedin.com/in/MojtabaKeivanlou" target="_blank" rel="noopener">
+        <svg class="contact-icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="3" fill="#C49A3C"/><rect x="6" y="10" width="2.5" height="8" fill="white"/><circle cx="7.25" cy="7.25" r="1.5" fill="white"/><path d="M12 10h2.5v1.5c.4-.8 1.4-1.7 3-1.7 2.5 0 3 1.6 3 3.7V18h-2.5v-4c0-1.1-.4-1.8-1.3-1.8-1 0-1.7.7-1.7 2V18H12V10z" fill="white"/></svg>
+        linkedin.com/in/MojtabaKeivanlou
+      </a>
+      <a class="contact-item" href="https://mojtabakeivanlou.com" target="_blank" rel="noopener">
+        <svg class="contact-icon" viewBox="0 0 24 24"><path fill="#C49A3C" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41a7.984 7.984 0 015 7.41c0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        MojtabaKeivanlou.com
+      </a>
+    </div>
+  </div>
+
+  <div class="header-photo">
+    <img src="assets/img/profile.jpeg" alt="Mojtaba Keivanlou">
+  </div>
+</header>
+
+<!-- ═══ BODY ═══ -->
+<div class="cv-body">
+
+  <!-- PROFILE -->
+  <section class="section" id="profile">
+    <div class="section-title">Professional Profile</div>
+    <div class="profile">
+      <p>Senior hydraulic and water resources engineer with <strong>16 years of international experience</strong> across Iran, Oman, and remote international engagements — currently serving as <strong>Team Leader</strong> on one of Oman's largest ongoing flood protection programmes, covering the North and South Al Batinah Governorates for the Ministry of Agriculture, Fisheries &amp; Water Resources.</p>
+      <p>Specialist in flood modelling and protection, climate adaptation, dam and spillway design, stormwater masterplanning, irrigation, water supply, and transient analysis — with a project record spanning national-scale flood risk programmes, US-regulated dam safety assessment, multi-province flood hazard mapping, and urban water infrastructure across Iran. Distinguished by a combination rarely found at this seniority: <strong>deep hydraulic engineering paired with modern computational practice</strong> — automation of engineering workflows, spatial data pipelines, and AI-augmented project delivery.</p>
+    </div>
+  </section>
+
+  <!-- COMPETENCIES -->
+  <section class="section" id="competencies">
+    <div class="section-title">Core Competencies</div>
+    <div class="comp-grid">
+      <div class="comp-item">Flood Protection Design &amp; Masterplanning</div>
+      <div class="comp-item">HEC-RAS 1D/2D Modelling &amp; Automation</div>
+      <div class="comp-item">Engineering Workflow Automation &amp; GIS Pipelines</div>
+      <div class="comp-item">HEC-HMS Rainfall-Runoff Modelling</div>
+      <div class="comp-item">Dam Engineering, Spillway Design &amp; Breach Analysis</div>
+      <div class="comp-item">Flood Hazard &amp; Risk Mapping</div>
+      <div class="comp-item">Stormwater, Drainage &amp; Sewage Network Design</div>
+      <div class="comp-item">Water Supply, Transmission &amp; Transient Analysis</div>
+      <div class="comp-item">Climate Change Hydrological Analysis</div>
+      <div class="comp-item">Arid Zone &amp; Wadi Hydrology</div>
+      <div class="comp-item">Spatial Analysis — QGIS / ArcGIS / PostGIS</div>
+      <div class="comp-item">Technical Leadership &amp; Client Management</div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE -->
+  <section class="section" id="experience">
+    <div class="section-title">Professional Experience</div>
+
+    <!-- RENARDET -->
+    <div class="employer">
+      <div class="emp-header">
+        <div>
+          <div class="emp-name">Renardet S.A. &amp; Partners</div>
+          <div class="emp-sub">Senior Hydraulic Engineer — Drainage</div>
+          <div class="emp-loc">Muscat, Sultanate of Oman</div>
+        </div>
+        <div class="emp-duration">2022 – Present</div>
+      </div>
+
+      <div class="project">
+        <div class="proj-header">
+          <div class="proj-name">Flood Protection Masterplan — North &amp; South Al Batinah Governorates</div>
+          <div class="proj-meta">Feb 2023 – present</div>
+        </div>
+        <div class="proj-role">Team Leader &nbsp;·&nbsp; Client: MAFWR &nbsp;·&nbsp; Value: USD 15.6M</div>
+        <ul class="bullets">
+          <li>Leading the multidisciplinary technical team across hydrology, hydraulic modelling, flood risk mapping, dam site selection, and hydraulic structure design for a <strong>15,000 km² national study area</strong></li>
+          <li>Developed integrated 1D/2D rainfall-runoff and hydraulic models using HEC-HMS and HEC-RAS, incorporating post-Cyclone Shaheen data, wadi gauge records, and remote sensing inputs</li>
+          <li>Engineered channel designs using SewerGEMS and InfoDrainage; deployed Flow 3D for dam spillway hydraulic performance and safety verification</li>
+          <li>Produced flood hazard and risk maps under existing and proposed conditions to support insurance assessment, cost-benefit analysis, and investment prioritisation</li>
+          <li>Managed client relationships and maintained delivery timelines in a complex multi-stakeholder environment</li>
+        </ul>
+      </div>
+
+      <div class="project">
+        <div class="proj-header">
+          <div class="proj-name">Majlas Dam Design Review</div>
+          <div class="proj-meta">Mar 2026 – present</div>
+        </div>
+        <div class="proj-role">Hydrology &amp; Hydraulic Engineer &nbsp;·&nbsp; Client: MAFWR</div>
+        <ul class="bullets">
+          <li>Reviewing and updating hydrology report with revised rainfall analysis and design flood estimates; designing downstream flood protection channel in Quriyat</li>
+        </ul>
+      </div>
+
+      <div class="project">
+        <div class="proj-header">
+          <div class="proj-name">Flood Protection Schemes — Dhofar Governorate</div>
+          <div class="proj-meta">Aug 2022 – present</div>
+        </div>
+        <div class="proj-role">Hydraulic Engineer &nbsp;·&nbsp; Salalah, Taqah, Mirbat, Rakhyoot &amp; Dhalkoot &nbsp;·&nbsp; Client: MAFWR</div>
+        <ul class="bullets">
+          <li>Hydrological studies, hydraulic strategy development, dam site selection, and dam break analysis across five wilayats in Dhofar Governorate</li>
+        </ul>
+      </div>
+
+      <div class="project">
+        <div class="proj-header">
+          <div class="proj-name">Upgrading of Batinah Dual Carriageway — Road Drainage (230 km)</div>
+          <div class="proj-meta">Jan 2022 – Mar 2023</div>
+        </div>
+        <div class="proj-role">Hydraulic Engineer &nbsp;·&nbsp; Client: Ministry of Transport</div>
+        <ul class="bullets">
+          <li>Comprehensive hydrology analysis and design of road drainage structures along 230 km of dual carriageway in the Al Batinah region</li>
+        </ul>
+      </div>
+
+      <div class="addl-note">
+        <strong>Additional projects (2022):</strong> Al Ansab Street Dualisation (road drainage &amp; H&amp;H); Sohar Internal Roads; Al Bandar Mixed-Use Development (stormwater &amp; sewage); Yankit Mixed-Use Development; Hayour Cave Dhofar Resort; MAM Camp Road; Dima Lima Khasab Road.
+      </div>
+    </div>
+
+    <!-- DUBOIS -->
+    <div class="employer">
+      <div class="emp-header">
+        <div>
+          <div class="emp-name">DuBois &amp; King</div>
+          <div class="emp-sub">Senior Hydraulic Engineer — Independent Specialist</div>
+          <div class="emp-loc">Vermont, USA (Remote)</div>
+        </div>
+        <div class="emp-duration">2021</div>
+      </div>
+      <div class="project">
+        <div class="proj-header">
+          <div class="proj-name">Shadow Lake Dam Safety Assessment, Glover, Vermont, USA</div>
+          <div class="proj-meta">Jan – Nov 2021</div>
+        </div>
+        <ul class="bullets">
+          <li>Comprehensive dam safety hydrology analysis, hydraulic design, and dam breach modelling for a regulated structure under US federal and state oversight</li>
+          <li>Hazard classification per <strong>FEMA guidelines</strong> and Vermont Agency of Natural Resources (ANR) standards; full dam safety assessment report</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SAZEH PARDAZI -->
+    <div class="employer">
+      <div class="emp-header">
+        <div>
+          <div class="emp-name">Sazeh Pardazi Iran</div>
+          <div class="emp-sub">Water Resources Engineer — Drainage &amp; Water Supply</div>
+          <div class="emp-loc">Tehran, Iran</div>
+        </div>
+        <div class="emp-duration">2020 – 2021</div>
+      </div>
+      <ul class="bullets" style="margin-top:8px;">
+        <li><strong>Flood hazard &amp; risk mapping — Hormozgan Province (127 km):</strong> HEC-RAS hydraulic modelling for provincial flood risk assessment</li>
+        <li><strong>River training &amp; rehabilitation — Lorestan Province (190 km):</strong> hydraulic modelling and detailed design of bank protection and training works</li>
+        <li><strong>Flood protection — Kerman Province (92 km):</strong> hydraulic modelling and detailed structural design of flood defence facilities</li>
+        <li><strong>Water transmission pipeline — Karaj WWTP to Eshtehard Industrial Zone:</strong> hydraulic design and water hammer / surge analysis</li>
+        <li>Rural water supply networks around Tehran; stormwater channel and pipeline design for three regions in Qazvin Province</li>
+      </ul>
+    </div>
+
+    <!-- HYDROTECH -->
+    <div class="employer">
+      <div class="emp-header">
+        <div>
+          <div class="emp-name">Hydrotech Toos (HTT)</div>
+          <div class="emp-sub">Senior Hydraulic Engineer — Water Supply &amp; Sewage</div>
+          <div class="emp-loc">Mashhad, Iran</div>
+        </div>
+        <div class="emp-duration">2019 – 2020</div>
+      </div>
+      <ul class="bullets" style="margin-top:8px;">
+        <li>Hydraulic design of water supply, sewage, and irrigation landscape pipeline networks for developing zones of Mashhad city</li>
+        <li>Hydraulic modelling, network optimisation, and leakage detection across multiple cities in Khorasan Razavi Province</li>
+      </ul>
+    </div>
+
+    <!-- MAJD AB SHARGH -->
+    <div class="employer">
+      <div class="emp-header">
+        <div>
+          <div class="emp-name">Majd Ab Shargh</div>
+          <div class="emp-sub">Project Manager — Drainage</div>
+          <div class="emp-loc">Iran</div>
+        </div>
+        <div class="emp-duration">2017 – 2019</div>
+      </div>
+      <ul class="bullets" style="margin-top:8px;">
+        <li>Managed flood hazard and risk mapping projects across multiple Iranian provinces from field survey through final design delivery; led teams using Leica survey instruments</li>
+      </ul>
+    </div>
+
+    <!-- EARLIER -->
+    <div class="employer">
+      <div class="emp-header">
+        <div>
+          <div class="emp-name">Earlier Positions — Iran</div>
+        </div>
+        <div class="emp-duration">2010 – 2017</div>
+      </div>
+      <ul class="bullets" style="margin-top:8px;">
+        <li><strong>Behin Ab Pazh — Hydraulic Engineer (2015–2017):</strong> hydrological analysis and HEC-RAS modelling of river systems for multi-province flood hazard mapping</li>
+        <li><strong>Zharfab Pay — Hydraulic Engineer (2013–2015):</strong> design of pressurised irrigation systems for agricultural infrastructure</li>
+        <li><strong>Abgostaran Sabz Dasht — GIS &amp; CAD Technician (2010–2013):</strong> comprehensive drainage study, eastern Mazandaran Province — foundational geospatial engineering experience</li>
+      </ul>
+    </div>
+
+  </section>
+
+  <!-- EDUCATION -->
+  <section class="section" id="education">
+    <div class="section-title">Education</div>
+    <div class="edu-item">
+      <div>
+        <div class="edu-deg">MSc — Hydraulic Structures Engineering</div>
+        <div class="edu-inst">Sari University of Agricultural Sciences and Natural Resources (SANRU), Iran</div>
+      </div>
+      <div class="edu-year">2013</div>
+    </div>
+    <div class="edu-item">
+      <div>
+        <div class="edu-deg">BSc — Water Sciences and Engineering</div>
+        <div class="edu-inst">University of Birjand, Iran</div>
+      </div>
+      <div class="edu-year">2009</div>
+    </div>
+  </section>
+
+  <!-- TECHNICAL SKILLS -->
+  <section class="section" id="skills">
+    <div class="section-title">Technical Skills</div>
+    <table class="skills-table">
+      <thead>
+        <tr>
+          <th style="width:19%;">Category</th>
+          <th style="width:30%;">Proficient</th>
+          <th style="width:29%;">Intermediate</th>
+          <th style="width:22%;">Familiar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hydraulic &amp; Hydrological</td>
+          <td>HEC-RAS 1D/2D, HEC-HMS, SewerGEMS, InfoDrainage, HY-8, HEC-SSP</td>
+          <td>InfoWorks ICM, WaterGEMS, Hammer, Flow 3D, InfoWater, OpenFOAM / ParaView</td>
+          <td>Delft3D</td>
+        </tr>
+        <tr>
+          <td>GIS &amp; Spatial</td>
+          <td>QGIS (advanced), ArcGIS / ArcGIS Pro, Global Mapper, Google Earth Engine</td>
+          <td>PostGIS, QGIS Python plugins</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Programming &amp; Automation</td>
+          <td>Python (geospatial pipelines, HEC-RAS automation, HDF5)</td>
+          <td>VBA, R, PostgreSQL / PostGIS, Jython</td>
+          <td>C#, MATLAB, SPSS</td>
+        </tr>
+        <tr>
+          <td>CAD &amp; Design</td>
+          <td>AutoCAD, Civil 3D, Storm &amp; Sanitary Analysis (SSA), Subassembly Composer</td>
+          <td>Infraworks</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Data &amp; Dev Tools</td>
+          <td>MS Office 365</td>
+          <td>Docker, GitHub, Power BI, AI-augmented engineering workflows</td>
+          <td>MS Project, SAP2000, ETABS</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- LANGUAGES -->
+  <section class="section" id="languages">
+    <div class="section-title">Languages</div>
+    <div class="lang-grid">
+      <div class="lang-item">
+        <span class="lang-name">Persian</span>
+        <div class="dots">
+          <span class="dot on"></span><span class="dot on"></span>
+          <span class="dot on"></span><span class="dot on"></span><span class="dot on"></span>
+        </div>
+        <span class="lang-level">Native Speaker</span>
+      </div>
+      <div class="lang-item">
+        <span class="lang-name">English</span>
+        <div class="dots">
+          <span class="dot on"></span><span class="dot on"></span>
+          <span class="dot on"></span><span class="dot on"></span><span class="dot on"></span>
+        </div>
+        <span class="lang-level">Fluent</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="cv-footer">MOJTABA KEIVANLOU &nbsp;·&nbsp; keyvanlu.m@gmail.com &nbsp;·&nbsp; MojtabaKeivanlou.com</div>
+
+</div><!-- /cv-body -->
+</div><!-- /cv-wrap -->
+
+<script>
+(function () {
+  // Fade-in sections on scroll
+  const fadeObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        fadeObserver.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.07 });
+
+  document.querySelectorAll('.section').forEach(function (s) {
+    fadeObserver.observe(s);
+  });
+
+  // Nav active section highlight
+  var navLinks = document.querySelectorAll('.nav-links a');
+  var sections = document.querySelectorAll('.section[id]');
+
+  var navObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        navLinks.forEach(function (a) { a.classList.remove('active'); });
+        var active = document.querySelector('.nav-links a[href="#' + e.target.id + '"]');
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-25% 0px -65% 0px' });
+
+  sections.forEach(function (s) { navObserver.observe(s); });
+
+  // Fallback: reveal any sections still hidden after 1s (e.g. anchor-jump navigation)
+  setTimeout(function () {
+    document.querySelectorAll('.section:not(.visible)').forEach(function (s) {
+      s.classList.add('visible');
+    });
+  }, 1000);
+})();
+</script>
+
+</body>
+</html>
