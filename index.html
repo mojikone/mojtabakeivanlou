@@ -834,6 +834,12 @@ ul.bullets li strong { color: var(--text); }
           <td>—</td>
         </tr>
         <tr>
+          <td>Survey &amp; Mapping</td>
+          <td>Total Station (Leica), GNSS / GPS</td>
+          <td>UAV / Drone Mapping</td>
+          <td>—</td>
+        </tr>
+        <tr>
           <td>Programming &amp; Automation</td>
           <td>Python (geospatial pipelines, HEC-RAS automation, HDF5)</td>
           <td>VBA, R, PostgreSQL / PostGIS, Jython</td>
@@ -885,7 +891,6 @@ ul.bullets li strong { color: var(--text); }
 
 <script>
 (function () {
-  // Fade-in sections on scroll
   const fadeObserver = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) {
       if (e.isIntersecting) {
@@ -899,7 +904,6 @@ ul.bullets li strong { color: var(--text); }
     fadeObserver.observe(s);
   });
 
-  // Nav active section highlight
   var navLinks = document.querySelectorAll('.nav-links a');
   var sections = document.querySelectorAll('.section[id]');
 
@@ -915,7 +919,6 @@ ul.bullets li strong { color: var(--text); }
 
   sections.forEach(function (s) { navObserver.observe(s); });
 
-  // Fallback: reveal any sections still hidden after 1s (e.g. anchor-jump navigation)
   setTimeout(function () {
     document.querySelectorAll('.section:not(.visible)').forEach(function (s) {
       s.classList.add('visible');
