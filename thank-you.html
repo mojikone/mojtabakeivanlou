@@ -20,34 +20,46 @@
 :root {
   --navy: #0B2D48;
   --gold: #C49A3C;
-  --text: #1C2330;
-  --sub: #3D4F61;
-  --muted: #6B7E8F;
-  --rule: #D6E2EC;
-  --bg: #F4F7FA;
-  --white: #FFFFFF;
   --nav-h: 48px;
   --pad: clamp(18px, 4vw, 36px);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body {
+  height: 100%;
+}
+
 body {
   font-family: 'Lora', Georgia, serif;
-  background: #e8edf2;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-image: url('assets/img/hero-project.jpg');
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 45, 72, 0.72);
+  z-index: 0;
 }
 
 .site-nav {
+  position: relative;
+  z-index: 10;
   height: var(--nav-h);
-  background: var(--navy);
+  background: rgba(11, 45, 72, 0.85);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--pad);
-  box-shadow: 0 2px 16px rgba(0,0,0,0.25);
   flex-shrink: 0;
 }
 
@@ -83,12 +95,16 @@ body {
 .nav-download:hover { background: #d4a94a; }
 
 .accent-bar {
-  height: 4px;
+  position: relative;
+  z-index: 10;
+  height: 3px;
   background: linear-gradient(90deg, var(--navy) 0%, var(--gold) 55%, var(--navy) 100%);
   flex-shrink: 0;
 }
 
 .main {
+  position: relative;
+  z-index: 10;
   flex: 1;
   display: flex;
   align-items: center;
@@ -96,39 +112,31 @@ body {
   padding: 48px var(--pad);
 }
 
-.card {
-  background: var(--white);
-  border-radius: 5px;
-  box-shadow: 0 6px 40px rgba(11,45,72,0.13);
-  overflow: hidden;
-  max-width: 520px;
+.content {
+  max-width: 480px;
   width: 100%;
   text-align: center;
 }
 
-.card-top {
-  background: var(--navy);
-  padding: 36px var(--pad) 32px;
-}
-
 .check-circle {
-  width: 64px;
-  height: 64px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   background: rgba(196,154,60,0.15);
   border: 2px solid var(--gold);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 20px;
+  margin: 0 auto 28px;
 }
 
 .card-title {
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
-  font-size: 24px;
-  color: var(--white);
-  letter-spacing: -0.3px;
+  font-size: clamp(26px, 6vw, 40px);
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
 }
 
 .card-title span { color: var(--gold); }
@@ -137,29 +145,35 @@ body {
   font-family: 'Poppins', sans-serif;
   font-weight: 300;
   font-size: 11px;
-  letter-spacing: 2px;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
-  margin-top: 6px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 10px;
 }
 
-.card-body {
-  padding: 30px var(--pad) 36px;
+.divider {
+  width: 48px;
+  height: 2px;
+  background: var(--gold);
+  margin: 24px auto;
+  opacity: 0.7;
 }
 
 .card-body p {
-  font-size: 14px;
-  color: var(--sub);
-  line-height: 1.7;
+  font-size: 14.5px;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.75;
 }
 
 .card-body p + p { margin-top: 10px; }
 
+.card-body strong { color: #ffffff; font-weight: 600; }
+
 .card-actions {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   justify-content: center;
-  margin-top: 28px;
+  margin-top: 36px;
   flex-wrap: wrap;
 }
 
@@ -172,7 +186,7 @@ body {
   color: var(--navy);
   background: var(--gold);
   text-decoration: none;
-  padding: 11px 26px;
+  padding: 12px 28px;
   border-radius: 3px;
   transition: background 0.2s, transform 0.15s;
 }
@@ -187,21 +201,28 @@ body {
   color: var(--gold);
   background: transparent;
   text-decoration: none;
-  padding: 10px 24px;
+  padding: 11px 26px;
   border-radius: 3px;
-  border: 1.5px solid var(--gold);
-  transition: background 0.2s, color 0.2s, transform 0.15s;
+  border: 1.5px solid rgba(196,154,60,0.6);
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
 }
-.btn-outline:hover { background: var(--gold); color: var(--navy); transform: translateY(-1px); }
+.btn-outline:hover {
+  background: var(--gold);
+  color: var(--navy);
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
 
-.cv-footer {
-  padding: 14px var(--pad);
-  border-top: 1px solid var(--rule);
+.page-footer {
+  position: relative;
+  z-index: 10;
+  padding: 16px var(--pad);
   text-align: center;
   font-family: 'Poppins', sans-serif;
-  font-size: 10.5px;
-  color: var(--muted);
-  letter-spacing: 1.2px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
 }
 </style>
 </head>
@@ -220,30 +241,31 @@ body {
 <div class="accent-bar"></div>
 
 <main class="main">
-  <div class="card">
-    <div class="card-top">
-      <div class="check-circle">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-          <path d="M5 13l4 4L19 7" stroke="#C49A3C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="card-title">Enquiry <span>Received</span></div>
-      <div class="card-sub">Mojtaba Keivanlou &nbsp;·&nbsp; Hydraulic Engineering</div>
+  <div class="content">
+    <div class="check-circle">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+        <path d="M5 13l4 4L19 7" stroke="#C49A3C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     </div>
+
+    <div class="card-title">Enquiry <span>Received</span></div>
+    <div class="card-sub">Mojtaba Keivanlou &nbsp;·&nbsp; Hydraulic Engineering</div>
+
+    <div class="divider"></div>
 
     <div class="card-body">
       <p>Thank you for reaching out. I have received your project enquiry and will review the details carefully.</p>
-      <p>I aim to respond within <strong style="color:#0B2D48;">one working day</strong>. In the meantime, feel free to connect on LinkedIn or send a direct message via WhatsApp.</p>
-
-      <div class="card-actions">
-        <a class="btn-primary" href="index.html">Back to CV</a>
-        <a class="btn-outline" href="contact.html">Send Another</a>
-      </div>
+      <p>I aim to respond within <strong>one working day</strong>. Feel free to connect on LinkedIn or send a direct message via WhatsApp.</p>
     </div>
 
-    <div class="cv-footer">keyvanlu.m@gmail.com &nbsp;·&nbsp; MojtabaKeivanlou.com</div>
+    <div class="card-actions">
+      <a class="btn-primary" href="index.html">Back to CV</a>
+      <a class="btn-outline" href="contact.html">Send Another</a>
+    </div>
   </div>
 </main>
+
+<footer class="page-footer">keyvanlu.m@gmail.com &nbsp;·&nbsp; MojtabaKeivanlou.com</footer>
 
 </body>
 </html>
