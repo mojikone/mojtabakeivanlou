@@ -95,6 +95,13 @@ body {
   border-bottom-color: var(--gold);
 }
 
+.nav-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .nav-download {
   font-family: 'Poppins', sans-serif;
   font-size: 10.5px;
@@ -107,12 +114,33 @@ body {
   padding: 7px 15px;
   border-radius: 3px;
   white-space: nowrap;
-  flex-shrink: 0;
   transition: background 0.2s, transform 0.15s;
 }
 
 .nav-download:hover {
   background: #d4a94a;
+  transform: translateY(-1px);
+}
+
+.nav-project {
+  font-family: 'Poppins', sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: transparent;
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 3px;
+  border: 1.5px solid var(--gold);
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+
+.nav-project:hover {
+  background: var(--gold);
+  color: var(--navy);
   transform: translateY(-1px);
 }
 
@@ -533,6 +561,7 @@ ul.bullets li strong { color: var(--text); }
 
 @media (max-width: 420px) {
   .emp-header { flex-wrap: wrap; }
+  .nav-project { display: none; }
 }
 
 /* ── PRINT ────────────────────────────────────────────── */
@@ -567,7 +596,10 @@ ul.bullets li strong { color: var(--text); }
     <li><a href="#skills">Skills</a></li>
     <li><a href="#languages">Languages</a></li>
   </ul>
-  <a class="nav-download" href="pdf/CV_Mojtaba_Keivanlou_2026.pdf" download>Download CV</a>
+  <div class="nav-actions">
+    <a class="nav-download" href="pdf/CV_Mojtaba_Keivanlou_2026.pdf" download>Download CV</a>
+    <a class="nav-project" href="contact.html">Start a Project</a>
+  </div>
 </nav>
 
 <div class="cv-wrap">
