@@ -49,7 +49,7 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: rgba(11, 45, 72, 0.70);
+  background: rgba(11, 45, 72, 0.45);
   z-index: 0;
 }
 
@@ -121,6 +121,7 @@ body::before {
   color: var(--white);
   letter-spacing: -0.5px;
   line-height: 1.1;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
 .page-title h1 span { color: var(--gold); }
@@ -129,10 +130,11 @@ body::before {
   font-family: 'Poppins', sans-serif;
   font-weight: 300;
   font-size: clamp(10px, 1.8vw, 12px);
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.7);
   letter-spacing: 2px;
   text-transform: uppercase;
   margin-top: 8px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
 }
 
 /* ── FORM WRAP ──────────────────────────────────────── */
@@ -141,11 +143,11 @@ body::before {
   z-index: 10;
   max-width: var(--max-w);
   margin: 16px auto 40px;
-  background: rgba(11, 45, 72, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(11, 45, 72, 0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   border-radius: 5px;
-  border: 1px solid rgba(196,154,60,0.2);
+  border: 1px solid rgba(196,154,60,0.35);
   overflow: hidden;
 }
 
