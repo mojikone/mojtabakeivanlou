@@ -363,6 +363,7 @@ textarea {
       <input type="hidden" name="_next" value="https://mojtabakeivanlou.com/thank-you.html">
       <input type="hidden" name="_subject" value="New Project Enquiry — mojtabakeivanlou.com">
       <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="Received (Oman Time)" id="local-time">
 
       <div class="form-grid">
 
@@ -438,5 +439,14 @@ textarea {
 
 <footer class="page-footer">MOJTABA KEIVANLOU &nbsp;&middot;&nbsp; keyvanlu.m@gmail.com &nbsp;&middot;&nbsp; MojtabaKeivanlou.com</footer>
 
+<script>
+  document.querySelector('form').addEventListener('submit', function() {
+    document.getElementById('local-time').value = new Date().toLocaleString('en-GB', {
+      timeZone: 'Asia/Muscat',
+      weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: true
+    }) + ' (UTC+4 Muscat)';
+  });
+</script>
 </body>
 </html>
