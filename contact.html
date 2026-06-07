@@ -611,6 +611,22 @@ textarea {
       hour: '2-digit', minute: '2-digit', hour12: true
     }) + ' (UTC+4 Muscat)';
   });
+
+  /* Scale business cards to fit narrow viewports */
+  function scaleBizCards() {
+    const pairs = document.querySelectorAll('.bc-pair');
+    const cardW = 90 * 3.7795; /* 90mm in CSS px at 96dpi */
+    const cardH = 55 * 3.7795; /* 55mm in CSS px */
+    const available = window.innerWidth - 36; /* subtract min side padding */
+    const scale = Math.min(1, available / cardW);
+    pairs.forEach(function(p) {
+      p.style.transform = scale < 1 ? 'scale(' + scale + ')' : '';
+      p.style.transformOrigin = 'top center';
+      p.style.marginBottom = scale < 1 ? '-' + ((1 - scale) * cardH) + 'px' : '';
+    });
+  }
+  scaleBizCards();
+  window.addEventListener('resize', scaleBizCards);
 </script>
 </body>
 </html>
