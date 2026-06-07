@@ -287,13 +287,14 @@ textarea {
 
 /* ── CONTACT ICONS ──────────────────────────────────── */
 .contact-icons {
+  position: relative;
+  z-index: 10;
   display: flex;
   gap: 22px;
   flex-wrap: wrap;
   justify-content: center;
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid rgba(255,255,255,0.1);
+  padding: 4px var(--pad) 32px;
+  flex-shrink: 0;
 }
 
 .contact-icon-link {
@@ -308,6 +309,94 @@ textarea {
   white-space: nowrap;
 }
 .contact-icon-link:hover { color: var(--gold); }
+
+/* ── BUSINESS CARD ──────────────────────────────────── */
+.bc-section {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 8px var(--pad) 24px;
+  flex-shrink: 0;
+}
+
+.bc-heading {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 680px;
+}
+.bc-heading::before, .bc-heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(196,154,60,0.05), rgba(196,154,60,0.5), rgba(196,154,60,0.05));
+}
+
+.bc-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.bc-pair {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.bc-side-label {
+  font-family: 'Poppins', sans-serif;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+}
+
+.bc-card {
+  width: 90mm;
+  height: 55mm;
+  background: #ffffff;
+  border-radius: 2mm;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4mm 18mm rgba(0,0,0,0.4);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.bc-card.front .accent-bar { position:absolute; left:0; top:0; bottom:0; width:1.2mm; background:#0d1f2d; }
+.bc-card.front .circle1 { position:absolute; right:-4mm; top:-4mm; width:32mm; height:32mm; border-radius:50%; border:0.3px solid rgba(13,31,45,0.08); }
+.bc-card.front .circle2 { position:absolute; right:4mm; top:2mm; width:20mm; height:20mm; border-radius:50%; border:0.3px solid rgba(13,31,45,0.08); }
+.bc-card.front .bc-content { position:absolute; inset:0; padding:5.5mm 5mm 5mm 8mm; display:flex; flex-direction:row; align-items:stretch; }
+.bc-card.front .bc-left { display:flex; flex-direction:column; justify-content:space-between; flex:1; padding-right:4mm; }
+.bc-card.front .bc-name { font-size:10pt; font-weight:300; letter-spacing:0.08em; color:#0d1f2d; text-transform:uppercase; line-height:1.25; }
+.bc-card.front .bc-name span { font-weight:700; }
+.bc-card.front .bc-rule { width:8mm; height:0.3px; background:#0d1f2d; opacity:0.35; margin:2mm 0; }
+.bc-card.front .bc-title { font-size:4.2pt; letter-spacing:0.12em; color:rgba(13,31,45,0.5); text-transform:uppercase; line-height:1.9; }
+.bc-card.front .bc-contacts { display:flex; flex-direction:column; gap:1.6mm; }
+.bc-card.front .bc-contact-row { display:flex; align-items:center; gap:2mm; font-size:4.8pt; color:rgba(13,31,45,0.55); letter-spacing:0.04em; }
+.bc-card.front .bc-contact-row svg { opacity:0.45; flex-shrink:0; }
+.bc-card.front .bc-right { display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+.bc-card.front .bc-qr { width:22mm; height:22mm; line-height:0; }
+.bc-card.front .bc-qr img { width:100%; height:100%; display:block; }
+.bc-card.back .bc-content { position:absolute; inset:0; padding:4mm; display:flex; flex-direction:column; }
+.bc-card.back .bc-sec-header { display:flex; align-items:center; gap:1.5mm; margin-bottom:2mm; flex-shrink:0; }
+.bc-card.back .bc-sec-label { font-size:3.8pt; letter-spacing:0.22em; text-transform:uppercase; color:rgba(13,31,45,0.45); white-space:nowrap; flex-shrink:0; }
+.bc-card.back .bc-hrule { flex:1; height:0.3px; background:rgba(13,31,45,0.15); }
+.bc-card.back .bc-grid { flex:1; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:1.5mm 2mm; }
+.bc-card.back .bc-cell { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.5mm; }
+.bc-card.back .bc-cell svg { opacity:0.7; flex-shrink:0; }
+.bc-card.back .bc-cell-label { font-size:4.2pt; color:rgba(13,31,45,0.55); text-transform:uppercase; letter-spacing:0.05em; line-height:1.2; text-align:center; }
 
 /* ── FOOTER ─────────────────────────────────────────── */
 .page-footer {
@@ -417,25 +506,99 @@ textarea {
       </div>
     </form>
 
-    <div class="contact-icons">
-      <a class="contact-icon-link" href="tel:+96892970635">
-        <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#C49A3C" d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.24 1.01l-2.21 2.2z"/></svg>
-        Call
-      </a>
-      <a class="contact-icon-link" href="https://wa.me/96892970635" target="_blank" rel="noopener">
-        <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#C49A3C" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path fill="#C49A3C" d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.985-1.312A9.954 9.954 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 01-4.071-1.124l-.292-.174-3.017.793.806-2.944-.19-.302A7.944 7.944 0 014 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/></svg>
-        WhatsApp
-      </a>
-      <a class="contact-icon-link" href="https://linkedin.com/in/MojtabaKeivanlou" target="_blank" rel="noopener">
-        <svg width="14" height="14" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="3" fill="#C49A3C"/><rect x="6" y="10" width="2.5" height="8" fill="white"/><circle cx="7.25" cy="7.25" r="1.5" fill="white"/><path d="M12 10h2.5v1.5c.4-.8 1.4-1.7 3-1.7 2.5 0 3 1.6 3 3.7V18h-2.5v-4c0-1.1-.4-1.8-1.3-1.8-1 0-1.7.7-1.7 2V18H12V10z" fill="white"/></svg>
-        LinkedIn
-      </a>
-      <a class="contact-icon-link" href="mailto:keyvanlu.m@gmail.com">
-        <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#C49A3C" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-        Email
-      </a>
-    </div>
   </div>
+</div>
+
+<!-- ── BUSINESS CARD ─────────────────────────────────── -->
+<div class="bc-section">
+  <div class="bc-heading">Business Card</div>
+  <div class="bc-row">
+
+    <div class="bc-pair">
+      <div class="bc-side-label">Front</div>
+      <div class="bc-card front">
+        <div class="accent-bar"></div>
+        <div class="circle1"></div>
+        <div class="circle2"></div>
+        <div class="bc-content">
+          <div class="bc-left">
+            <div>
+              <div class="bc-name">Mojtaba<br><span>Keivanlou</span></div>
+              <div class="bc-rule"></div>
+              <div class="bc-title">Hydraulic &amp; Hydrology<br>Water Resources<br>Wet Utilities</div>
+            </div>
+            <div class="bc-contacts">
+              <div class="bc-contact-row">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.8a16 16 0 0 0 6.29 6.29l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                +968 9297 0635
+              </div>
+              <div class="bc-contact-row">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                keyvanlu.m@gmail.com
+              </div>
+              <div class="bc-contact-row">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Muscat, Oman
+              </div>
+              <div class="bc-contact-row">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                mojtabakeivanlou.com
+              </div>
+            </div>
+          </div>
+          <div class="bc-right">
+            <div class="bc-qr">
+              <img src="data:image/png;base64,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" alt="QR Code"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bc-pair">
+      <div class="bc-side-label">Back</div>
+      <div class="bc-card back">
+        <div class="bc-content">
+          <div class="bc-sec-header">
+            <span class="bc-sec-label">Services</span>
+            <div class="bc-hrule"></div>
+          </div>
+          <div class="bc-grid">
+            <div class="bc-cell"><svg width="13.2" height="13.2" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5s2.5 2 5 2 2.5-2 5-2 2.5 2 2.5 2"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 2.5 2"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 2.5 2"/></svg><span class="bc-cell-label">Flood Modeling</span></div>
+            <div class="bc-cell"><svg width="13.2" height="13.2" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l4-14h10l4 14"/><path d="M3 17h18"/><path d="M10 8h4"/><path d="M10.5 12h3"/></svg><span class="bc-cell-label">Road Drainage</span></div>
+            <div class="bc-cell"><svg width="13.2" height="13.2" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.6A5 5 0 0 0 18 8h-1.3A8 8 0 1 0 4 16"/><line x1="8" y1="19" x2="8" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="16" y1="19" x2="16" y2="21"/></svg><span class="bc-cell-label">Hydrology &amp; Climate</span></div>
+            <div class="bc-cell"><svg width="13.2" height="13.2" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="8" x2="9" y2="8"/><polygon points="9,6 11,6 15,20 7,20"/><line x1="4" y1="20" x2="20" y2="20"/></svg><span class="bc-cell-label">Dam Engineering</span></div>
+            <div class="bc-cell"><svg width="13.2" height="13.2" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span class="bc-cell-label">Stormwater &amp; Sewage</span></div>
+            <div class="bc-cell"><svg width="13.2" height="13.2" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg><span class="bc-cell-label">Water Supply &amp; Irrigation</span></div>
+            <div class="bc-cell"><svg width="13.2" height="13.2" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span class="bc-cell-label">GIS</span></div>
+            <div class="bc-cell"><svg width="13.2" height="13.2" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="#0d1f2d" stroke="none"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg><span class="bc-cell-label">Surveying</span></div>
+            <div class="bc-cell"><svg width="13.2" height="13.2" viewBox="0 0 24 24" fill="none" stroke="#0d1f2d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span class="bc-cell-label">Consultation</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── CONTACT ICONS ─────────────────────────────────── -->
+<div class="contact-icons">
+  <a class="contact-icon-link" href="tel:+96892970635">
+    <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#C49A3C" d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.24 1.01l-2.21 2.2z"/></svg>
+    Call
+  </a>
+  <a class="contact-icon-link" href="https://wa.me/96892970635" target="_blank" rel="noopener">
+    <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#C49A3C" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path fill="#C49A3C" d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.985-1.312A9.954 9.954 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 01-4.071-1.124l-.292-.174-3.017.793.806-2.944-.19-.302A7.944 7.944 0 014 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/></svg>
+    WhatsApp
+  </a>
+  <a class="contact-icon-link" href="https://linkedin.com/in/MojtabaKeivanlou" target="_blank" rel="noopener">
+    <svg width="14" height="14" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="3" fill="#C49A3C"/><rect x="6" y="10" width="2.5" height="8" fill="white"/><circle cx="7.25" cy="7.25" r="1.5" fill="white"/><path d="M12 10h2.5v1.5c.4-.8 1.4-1.7 3-1.7 2.5 0 3 1.6 3 3.7V18h-2.5v-4c0-1.1-.4-1.8-1.3-1.8-1 0-1.7.7-1.7 2V18H12V10z" fill="white"/></svg>
+    LinkedIn
+  </a>
+  <a class="contact-icon-link" href="mailto:keyvanlu.m@gmail.com">
+    <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#C49A3C" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+    Email
+  </a>
 </div>
 
 <footer class="page-footer">MOJTABA KEIVANLOU &nbsp;&middot;&nbsp; keyvanlu.m@gmail.com &nbsp;&middot;&nbsp; MojtabaKeivanlou.com</footer>
