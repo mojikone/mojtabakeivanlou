@@ -372,14 +372,14 @@ textarea {
   --bc-text-dim: rgba(240,239,240,0.45);
   --bc-text-contact: rgba(240,239,240,0.5);
   --bc-divider: rgba(255,255,255,0.1);
-  --bc-shadow: rgba(0,0,0,0.7);
+  --bc-shadow: none;
   width: 90mm;
   height: 55mm;
   background: var(--bc-bg);
   border-radius: 2mm;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8mm 20mm var(--bc-shadow);
+  box-shadow: var(--bc-shadow);
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   cursor: pointer;
   transition: background 0.4s ease, box-shadow 0.4s ease;
@@ -392,7 +392,7 @@ textarea {
   --bc-text-dim: rgba(13,31,45,0.5);
   --bc-text-contact: rgba(13,31,45,0.55);
   --bc-divider: rgba(13,31,45,0.15);
-  --bc-shadow: rgba(0,0,0,0.18);
+  --bc-shadow: none;
 }
 .bc-card.front .bc-accent { position:absolute; left:0; top:0; bottom:0; width:1.2mm; background:var(--bc-accent-clr); transition:background 0.4s ease; }
 .bc-card.front .circle1 { position:absolute; right:-4mm; top:-4mm; width:32mm; height:32mm; border-radius:50%; border:0.3px solid var(--bc-circle-brdr); transition:border-color 0.4s ease; }
