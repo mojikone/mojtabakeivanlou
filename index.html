@@ -271,15 +271,10 @@ body {
   transform: none;
   transition-delay: calc(var(--i) * 45ms);
 }
-/* hover-capable devices only — prevents iOS tap-hover keeping menu open */
-@media (hover: hover) {
-  .stf:hover .stf-btn,
-  .stf:focus-within .stf-btn { background: var(--dk2); }
-  .stf:hover .stf-menu,
-  .stf:focus-within .stf-menu { pointer-events: auto; }
-  .stf:hover .stf-item,
-  .stf:focus-within .stf-item { opacity: 1; transform: none; transition-delay: calc(var(--i) * 45ms); }
-}
+/* desktop: .stf--hov is added/removed by JS mouseenter/mouseleave */
+.stf.stf--hov .stf-btn { background: var(--dk2); }
+.stf.stf--hov .stf-menu { pointer-events: auto; }
+.stf.stf--hov .stf-item { opacity: 1; transform: none; transition-delay: calc(var(--i) * 45ms); }
 .stf-item:hover { background: var(--gold); color: #fff; border-color: transparent; }
 @media (max-width: 600px) { .stf-btn { width: 46px; height: 46px; } }
 .nav-inner {
@@ -1987,6 +1982,13 @@ body {
     requestAnimationFrame(step);
   }
 
+  /* Desktop hover: drive .stf--hov with mouseenter/mouseleave so we can
+     remove it programmatically (CSS :hover can't be forced off by JS) */
+  if (window.matchMedia('(hover: hover)').matches) {
+    stf.addEventListener('mouseenter', function() { stf.classList.add('stf--hov'); });
+    stf.addEventListener('mouseleave', function() { stf.classList.remove('stf--hov'); });
+  }
+
   /* FAB button: touch = toggle menu; desktop = scroll to top */
   btn.addEventListener('click', function(e) {
     if (window.matchMedia('(hover: none)').matches) {
@@ -1997,22 +1999,20 @@ body {
     }
   });
 
-  /* Smooth scroll + close menu; suppress hover with pointer-events reset */
+  /* Smooth scroll + close menu */
   stf.querySelectorAll('.stf-item[href^="#"]').forEach(function(a) {
     a.addEventListener('click', function(e) {
       var target = document.querySelector(a.getAttribute('href'));
       if (target) {
         e.preventDefault();
         stf.classList.remove('open');
-        /* Briefly kill pointer-events so :hover can't keep the menu open */
-        stf.style.pointerEvents = 'none';
-        setTimeout(function() { stf.style.pointerEvents = ''; }, 600);
+        stf.classList.remove('stf--hov'); /* immediately close on desktop */
         smoothTo(target.getBoundingClientRect().top + window.scrollY);
       }
     });
   });
 
-  /* Close on outside click */
+  /* Close on outside click (touch) */
   document.addEventListener('click', function(e) {
     if (!stf.contains(e.target)) stf.classList.remove('open');
   });

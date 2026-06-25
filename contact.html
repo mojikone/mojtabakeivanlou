@@ -130,14 +130,9 @@ body {
   transition: opacity 0.28s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.4,0,0.2,1), background 0.2s, color 0.2s, border-color 0.2s;
 }
 .stf.open .stf-item { opacity: 1; transform: none; transition-delay: calc(var(--i) * 45ms); }
-@media (hover: hover) {
-  .stf:hover .stf-btn,
-  .stf:focus-within .stf-btn { background: var(--dk2); }
-  .stf:hover .stf-menu,
-  .stf:focus-within .stf-menu { pointer-events: auto; }
-  .stf:hover .stf-item,
-  .stf:focus-within .stf-item { opacity: 1; transform: none; transition-delay: calc(var(--i) * 45ms); }
-}
+.stf.stf--hov .stf-btn { background: var(--dk2); }
+.stf.stf--hov .stf-menu { pointer-events: auto; }
+.stf.stf--hov .stf-item { opacity: 1; transform: none; transition-delay: calc(var(--i) * 45ms); }
 .stf-item:hover { background: var(--gold); color: #fff; border-color: transparent; }
 @media (max-width: 600px) { .stf-btn { width: 46px; height: 46px; } }
 .nav-inner {
@@ -909,14 +904,24 @@ textarea {
 (function() {
   var stf = document.getElementById('stf');
   var btn = document.getElementById('stf-btn');
+  function smoothTo(y) {
+    var s = window.scrollY, d = y - s, dur = Math.min(Math.max(Math.abs(d)*0.4,400),900), t0 = null;
+    function ease(t) { return t<0.5?2*t*t:-1+(4-2*t)*t; }
+    function step(ts) { if(!t0)t0=ts; var p=Math.min((ts-t0)/dur,1); window.scrollTo(0,s+d*ease(p)); if(p<1)requestAnimationFrame(step); }
+    requestAnimationFrame(step);
+  }
   function toggleStf() { stf.classList.toggle('show', window.scrollY > 300); }
   window.addEventListener('scroll', toggleStf, { passive: true });
+  if (window.matchMedia('(hover: hover)').matches) {
+    stf.addEventListener('mouseenter', function() { stf.classList.add('stf--hov'); });
+    stf.addEventListener('mouseleave', function() { stf.classList.remove('stf--hov'); });
+  }
   btn.addEventListener('click', function(e) {
     if (window.matchMedia('(hover: none)').matches) {
       e.stopPropagation();
       stf.classList.toggle('open');
     } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      smoothTo(0);
     }
   });
   document.addEventListener('click', function(e) {
