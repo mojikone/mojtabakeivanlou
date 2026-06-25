@@ -383,7 +383,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   .topbar-hamburger { display: flex; }
   .pill-nav { display: none; }
 }
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   /* Mobile hero: name text top, photo left-bleeding, large */
   .hero-mob-title {
     display: flex; flex-direction: column;
