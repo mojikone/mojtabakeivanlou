@@ -69,7 +69,7 @@
       var target = document.querySelector(a.getAttribute('href'));
       if (target) {
         e.preventDefault();
-        smoothTo(target.getBoundingClientRect().top + window.scrollY);
+        smoothTo(target.offsetTop);
       }
     });
   });

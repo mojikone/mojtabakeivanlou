@@ -239,7 +239,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   z-index: 3;
 }
 .hero-name-over-text {
-  font-size: clamp(24px, 3vw, 42px);
+  font-size: clamp(20px, 2.5vw, 34px);
   font-weight: 300;
   line-height: 0.95;
   letter-spacing: -0.03em;
@@ -470,7 +470,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
     top: 28px;
   }
   .hero-name-over-text {
-    font-size: 14px;
+    font-size: 11px;
     text-align: right;
     white-space: nowrap;
   }
@@ -482,7 +482,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
     transform: none;
     text-align: right;
   }
-  .hero-role-headline { font-size: 11px; line-height: 1.5; }
+  .hero-role-headline { font-size: 17px; line-height: 1.4; }
   .hero-contact-row { display: flex; }
   .hero-contact-link { font-size: 9px; padding: 3px 8px; white-space: nowrap; }
   .hero-photo-main {
@@ -491,7 +491,9 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
     left: calc(80px - 45svh); transform: none;
   }
   .hero-bl { display: none; }
-  .hero-br { display: flex; flex-direction: column; align-items: flex-end; }
+  .hero-br { display: flex; flex-direction: column; align-items: flex-end; bottom: 64px; }
+  .hero-br-actions .btn-lime,
+  .hero-br-actions .btn-outline { font-size: 11px; padding: 8px 14px; }
   .pill-nav { display: flex; bottom: 16px; }
   .pill-nav a { font-size: 10px; padding: 3px 6px; }
   .hero-stats { flex-wrap: wrap; gap: 16px; }
