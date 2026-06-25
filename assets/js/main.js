@@ -78,18 +78,16 @@
   var sections = document.querySelectorAll('section[id]');
   var pillLinks = document.querySelectorAll('.pill-nav a');
 
-  var secObs = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) {
-      if (e.isIntersecting) {
-        pillLinks.forEach(function (a) { a.classList.remove('active'); });
-        var a = document.querySelector('.pill-nav a[href="#' + e.target.id + '"]');
-        if (a) a.classList.add('active');
-      }
-    });
-  }, { rootMargin: '-30% 0px -60% 0px' });
-  sections.forEach(function (s) { secObs.observe(s); });
-  var initPill = document.querySelector('.pill-nav a[href="#home"]');
-  if (initPill) initPill.classList.add('active');
+  function updateActivePill() {
+    var y = window.scrollY + window.innerHeight * 0.35;
+    var active = sections[0];
+    sections.forEach(function (s) { if (s.offsetTop <= y) active = s; });
+    pillLinks.forEach(function (a) { a.classList.remove('active'); });
+    var link = document.querySelector('.pill-nav a[href="#' + active.id + '"]');
+    if (link) link.classList.add('active');
+  }
+  window.addEventListener('scroll', updateActivePill, { passive: true });
+  updateActivePill();
 
   /* ── REVEAL ON SCROLL ─────────────────────────────────── */
   var revealObs = new IntersectionObserver(function (entries) {

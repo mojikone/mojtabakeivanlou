@@ -239,7 +239,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   z-index: 3;
 }
 .hero-name-over-text {
-  font-size: clamp(36px, 5.5vw, 72px);
+  font-size: clamp(24px, 3vw, 42px);
   font-weight: 300;
   line-height: 0.95;
   letter-spacing: -0.03em;
@@ -464,20 +464,29 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   .pill-nav { display: none; }
 }
 @media (max-width: 768px) {
-  /* Mobile hero: name top-right, photo left-bleeding, buttons bottom-right */
-  .hero-center-block { display: none; }
+  /* Mobile hero: right column has name, role, contact, buttons */
   .hero-name-over {
     left: 52%; right: var(--pad);
     top: 28px;
   }
   .hero-name-over-text {
-    font-size: clamp(20px, 5.5vw, 30px);
+    font-size: clamp(18px, 5vw, 26px);
     text-align: right;
   }
+  .hero-center-block {
+    display: block;
+    left: 52%; right: var(--pad);
+    top: auto;
+    bottom: 220px;
+    transform: none;
+    text-align: right;
+  }
+  .hero-role-headline { font-size: 11px; line-height: 1.45; }
   .hero-br {
     display: flex; flex-direction: column; align-items: flex-end;
   }
-  .hero-contact-row { display: none; }
+  .hero-contact-row { display: flex; }
+  .hero-contact-link { font-size: 9px; padding: 3px 8px; white-space: nowrap; }
   .hero-photo-main {
     height: 70svh; width: auto;
     top: auto; bottom: 0;
