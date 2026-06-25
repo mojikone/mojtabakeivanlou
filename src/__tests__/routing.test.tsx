@@ -8,8 +8,12 @@ describe("route shells", () => {
 
     render(<App />);
 
-    expect(screen.getByText("Home route shell")).toBeInTheDocument();
     expect(screen.getByRole("main")).toHaveAttribute("data-route", "home");
+    expect(screen.getByRole("heading", { name: "Mojtaba Keivanlou" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Engineering Services" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Experience" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Skills & Software" })).toBeInTheDocument();
+    expect(screen.queryByText("Selected Work")).not.toBeInTheDocument();
   });
 
   it("renders the contact route shell for the contact routes", () => {
