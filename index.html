@@ -200,18 +200,33 @@ body {
    NAV
 ═══════════════════════════════════════════════════════════ */
 .nav {
-  position: fixed;
+  position: absolute;
   top: 0; left: 0; right: 0;
   z-index: 900;
   height: var(--nav-h);
-  transition: background 0.35s, box-shadow 0.35s;
 }
-.nav.scrolled {
-  background: rgba(6,20,31,0.93);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.06);
+
+/* ── SCROLL-TO-TOP FAB ───────────────────────────────────── */
+.scroll-top-fab {
+  position: fixed;
+  right: clamp(16px, 3vw, 32px);
+  bottom: clamp(16px, 3vw, 32px);
+  z-index: 90;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+  opacity: 0; visibility: hidden; transform: translateY(12px);
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s, background 0.2s;
 }
+.scroll-top-fab.show { opacity: 1; visibility: visible; transform: translateY(0); }
+.scroll-top-fab:hover { background: var(--gold-lt); }
 .nav-inner {
   height: var(--nav-h);
   display: flex;
@@ -737,7 +752,7 @@ body {
   gap: 80px;
   align-items: start;
 }
-.exp-sidebar { position: sticky; top: calc(var(--nav-h) + 32px); }
+.exp-sidebar { position: sticky; top: 32px; }
 
 .exp-sidebar .btn { margin-top: 28px; }
 
@@ -1877,16 +1892,19 @@ body {
   </div>
 </footer>
 
+<button class="scroll-top-fab" id="scroll-top-fab" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="19" x2="12" y2="6"/><polyline points="5 13 12 6 19 13"/>
+  </svg>
+</button>
+
 <script>
 (function() {
-  var nav = document.getElementById('main-nav');
-
-  /* Nav scroll effect */
-  function onScroll() {
-    nav.classList.toggle('scrolled', window.scrollY > 50);
-  }
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+  /* Scroll-to-top FAB */
+  var fab = document.getElementById('scroll-top-fab');
+  function toggleFab() { fab.classList.toggle('show', window.scrollY > 300); }
+  window.addEventListener('scroll', toggleFab, { passive: true });
+  fab.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
 
   /* Active nav link */
   var sections = document.querySelectorAll('section[id]');
