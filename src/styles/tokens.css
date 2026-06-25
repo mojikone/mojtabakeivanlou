@@ -1,0 +1,15 @@
+:root {
+  --color-green: #1a5241;
+  --color-ink: #18231d;
+  --color-lime: #bfdb39;
+  --color-paper: #fafafa;
+  --color-mist: #e9e8e8;
+  --color-gray: #5c5c5c;
+  --color-soft: #c2c2c2;
+  --font-display: "Neue Montreal", "Inter", system-ui, sans-serif;
+  --font-ui: "Inter", system-ui, sans-serif;
+  --ease-framer: cubic-bezier(0.53, 0, 0.44, 1);
+  --ease-snap: cubic-bezier(0.67, 0, 0.39, 1);
+  --bp-mobile: 810px;
+  --bp-desktop: 1200px;
+}
