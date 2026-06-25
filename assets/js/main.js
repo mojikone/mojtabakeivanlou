@@ -79,9 +79,10 @@
   var pillLinks = document.querySelectorAll('.pill-nav a');
 
   function updateActivePill() {
-    var y = window.scrollY + window.innerHeight * 0.35;
     var active = sections[0];
-    sections.forEach(function (s) { if (s.offsetTop <= y) active = s; });
+    sections.forEach(function (s) {
+      if (s.getBoundingClientRect().top <= 10) active = s;
+    });
     pillLinks.forEach(function (a) { a.classList.remove('active'); });
     var link = document.querySelector('.pill-nav a[href="#' + active.id + '"]');
     if (link) link.classList.add('active');

@@ -464,24 +464,25 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   .pill-nav { display: none; }
 }
 @media (max-width: 768px) {
-  /* Mobile hero: right column has name, role, contact, buttons */
+  /* Mobile hero: right column — name, role, contact+buttons stacked */
   .hero-name-over {
     left: 52%; right: var(--pad);
     top: 28px;
   }
   .hero-name-over-text {
-    font-size: clamp(18px, 5vw, 26px);
+    font-size: 14px;
     text-align: right;
+    white-space: nowrap;
   }
   .hero-center-block {
     display: block;
     left: 52%; right: var(--pad);
-    top: auto;
-    bottom: 220px;
+    top: 54px;
+    bottom: auto;
     transform: none;
     text-align: right;
   }
-  .hero-role-headline { font-size: 11px; line-height: 1.45; }
+  .hero-role-headline { font-size: 11px; line-height: 1.5; }
   .hero-br {
     display: flex; flex-direction: column; align-items: flex-end;
   }
