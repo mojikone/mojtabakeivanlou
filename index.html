@@ -652,27 +652,31 @@ body {
 ═══════════════════════════════════════════════════════════ */
 .about {
   background: var(--white);
-  padding: var(--sec-py) 0;
+  overflow: hidden;
 }
 .about-layout {
   display: grid;
-  grid-template-columns: 1fr minmax(0, 50%);
-  gap: 48px;
+  grid-template-columns: 1fr 50%;
   align-items: center;
 }
 .about-content {
   min-width: 0;
+  padding: var(--sec-py) clamp(32px,4vw,64px) var(--sec-py) clamp(20px,5vw,72px);
 }
 .about-illustration {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  align-self: stretch;
+  overflow: hidden;
 }
 .about-illustration img {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
   display: block;
   opacity: 0.9;
+  padding: clamp(16px,3vw,40px) 0;
 }
 
 /* text side */
@@ -1186,7 +1190,7 @@ body {
 @media (max-width: 1024px) {
   .hero-layout   { grid-template-columns: 1fr 260px; gap: 40px; }
   .hero-photo-frame { width: 210px; height: 210px; }
-  .about-layout  { grid-template-columns: 1fr minmax(0, 44%); gap: 36px; }
+  .about-layout  { grid-template-columns: 1fr 46%; }
   .expertise-grid { grid-template-columns: repeat(2, 1fr); }
   .exp-layout    { grid-template-columns: 220px 1fr; gap: 50px; }
 }
@@ -1198,8 +1202,9 @@ body {
   .hero-scroll { bottom: 80px; }
   .hero-services { grid-template-columns: repeat(3, 1fr); }
   .about-layout { grid-template-columns: 1fr; }
-  .about-illustration { margin-top: 16px; }
-  .about-illustration img { width: 100%; max-width: 100%; }
+  .about-content { padding: var(--sec-py) clamp(20px,5vw,72px); }
+  .about-illustration { justify-content: center; padding: 0 clamp(20px,5vw,72px) var(--sec-py); }
+  .about-illustration img { height: auto; object-fit: contain; padding: 0; }
   .expertise-grid { grid-template-columns: repeat(2, 1fr); }
   .exp-layout  { grid-template-columns: 1fr; gap: 0; }
   .exp-sidebar { position: static; margin-bottom: 40px; }
@@ -1335,8 +1340,7 @@ body {
 
 <!-- ═══════════════ ABOUT ═══════════════ -->
 <section class="about" id="about">
-  <div class="wrap">
-    <div class="about-layout reveal">
+  <div class="about-layout reveal">
     <div class="about-content">
         <div class="label">About Me</div>
         <h2 class="heading-lg heading-lt">Team Leader —<br>Principal Hydraulic &amp;<br>Water Resources Engineer</h2>
@@ -1392,8 +1396,7 @@ body {
       </picture>
     </div>
 
-    </div><!-- /.about-layout -->
-  </div>
+  </div><!-- /.about-layout -->
 </section>
 
 <!-- ═══════════════ EXPERTISE ═══════════════ -->
