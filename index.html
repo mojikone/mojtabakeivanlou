@@ -376,31 +376,72 @@ body {
 }
 
 .hero-name {
-  font-size: clamp(46px, 7.5vw, 88px);
+  font-size: clamp(26px, 4vw, 48px);
   font-weight: 800;
   line-height: 0.95;
   color: var(--white);
-  letter-spacing: -2px;
-  margin-bottom: 16px;
+  letter-spacing: -1px;
+  margin-bottom: 14px;
 }
 .hero-name .gold { color: var(--gold); }
 
-.hero-title {
-  font-size: clamp(13px, 1.7vw, 16px);
-  font-weight: 300;
-  color: var(--sub-dk);
-  letter-spacing: 0.4px;
-  margin-bottom: 26px;
+.hero-role-line {
+  font-size: clamp(13px, 1.55vw, 16px);
+  font-weight: 500;
+  color: rgba(232,240,247,0.88);
+  letter-spacing: 0.2px;
+  margin-bottom: 4px;
+  animation: heroUp 0.7s 0.3s ease both;
+}
+.hero-role-sub {
+  font-size: clamp(10px, 1.1vw, 12px);
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+  animation: heroUp 0.7s 0.38s ease both;
 }
 
 .hero-tagline {
-  font-size: clamp(15px, 1.8vw, 17px);
+  font-size: clamp(14px, 1.5vw, 16px);
   font-weight: 300;
-  color: rgba(232,240,247,0.75);
-  line-height: 1.75;
-  max-width: 500px;
-  margin-bottom: 44px;
+  color: rgba(232,240,247,0.7);
+  line-height: 1.7;
+  max-width: 480px;
+  margin-bottom: 28px;
   font-style: italic;
+  animation: heroUp 0.7s 0.46s ease both;
+}
+
+/* hero services grid */
+.hero-services {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 12px;
+  margin-bottom: 32px;
+  animation: heroUp 0.7s 0.54s ease both;
+}
+.hero-svc {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(232,240,247,0.65);
+  letter-spacing: 0.2px;
+  line-height: 1.3;
+}
+.hero-svc-icon {
+  width: 26px; height: 26px;
+  background: rgba(196,154,60,0.1);
+  border: 1px solid rgba(196,154,60,0.18);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--gold);
 }
 
 .hero-actions {
@@ -529,48 +570,8 @@ body {
   background: var(--white);
   padding: var(--sec-py) 0;
 }
-.about-grid {
-  display: grid;
-  grid-template-columns: 350px 1fr;
-  gap: 80px;
-  align-items: start;
-}
-
-/* photo side */
-.about-photo { position: relative; }
-.about-photo-frame {
-  border-radius: var(--radius);
-  overflow: hidden;
-  max-height: 460px;
-}
-.about-photo-frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center top;
-  display: block;
-}
-.about-badge {
-  position: absolute;
-  bottom: 18px;
-  right: -18px;
-  background: var(--gold);
-  color: var(--dk1);
-  padding: 14px 20px;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.18);
-}
-.about-badge-val {
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1;
-}
-.about-badge-lbl {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  margin-top: 3px;
-  opacity: 0.75;
+.about-content {
+  max-width: 800px;
 }
 
 /* text side */
@@ -651,19 +652,6 @@ body {
 .expertise {
   background: var(--dk2);
   padding: var(--sec-py) 0;
-  position: relative;
-}
-.expertise-top-wave {
-  position: absolute;
-  top: -2px; left: 0; right: 0;
-  line-height: 0;
-  pointer-events: none;
-}
-.expertise-bottom-wave {
-  position: absolute;
-  bottom: -2px; left: 0; right: 0;
-  line-height: 0;
-  pointer-events: none;
 }
 .expertise-header {
   text-align: center;
@@ -902,46 +890,83 @@ body {
   border-color: rgba(255,255,255,0.11);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   PORTFOLIO
-═══════════════════════════════════════════════════════════ */
-.portfolio {
-  background: var(--white);
-  padding: var(--sec-py) 0;
+/* accordion */
+.tl-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: none;
+  border: 1px solid rgba(196,154,60,0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 5px 11px;
+  transition: background 0.2s, color 0.2s;
 }
-.portfolio-header { margin-bottom: 48px; }
+.tl-expand:hover { background: rgba(196,154,60,0.08); }
+.tl-expand svg { transition: transform 0.25s; flex-shrink: 0; }
+.tl-item.exp-open .tl-expand svg { transform: rotate(180deg); }
 
-.portfolio-placeholder {
-  background: var(--lt1);
-  border: 2px dashed var(--bdr-lt);
-  border-radius: var(--radius);
-  padding: clamp(60px, 10vw, 100px) 40px;
+.tl-projects {
+  margin-top: 16px;
+  border-left: 2px solid rgba(196,154,60,0.18);
+  padding-left: 14px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 18px;
+  gap: 12px;
 }
-.pf-icon {
-  width: 68px; height: 68px;
-  background: linear-gradient(135deg, var(--dk2), var(--dk3));
-  border-radius: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.proj-item {
+  background: var(--white);
+  border: 1px solid var(--bdr-lt);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.proj-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--dk2);
+  line-height: 1.35;
+  margin-bottom: 3px;
+}
+.proj-meta {
+  font-size: 10.5px;
   color: var(--gold);
-  box-shadow: 0 8px 24px rgba(11,45,72,0.18);
+  font-weight: 500;
+  margin-bottom: 5px;
 }
-.pf-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-lt);
-}
-.pf-sub {
-  font-size: 14px;
+.proj-scope {
+  font-size: 11.5px;
   color: var(--muted);
-  max-width: 420px;
-  line-height: 1.65;
+  margin-bottom: 6px;
+  font-style: italic;
+}
+.proj-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.proj-bullets li {
+  font-size: 12px;
+  color: var(--sub-lt);
+  line-height: 1.6;
+  padding-left: 13px;
+  position: relative;
+}
+.proj-bullets li::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+  font-weight: 700;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1065,9 +1090,8 @@ body {
    RESPONSIVE
 ═══════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
-  .hero-layout   { grid-template-columns: 1fr 280px; gap: 50px; }
-  .hero-photo-frame { width: 230px; height: 230px; }
-  .about-grid    { grid-template-columns: 290px 1fr; gap: 50px; }
+  .hero-layout   { grid-template-columns: 1fr 260px; gap: 40px; }
+  .hero-photo-frame { width: 210px; height: 210px; }
   .expertise-grid { grid-template-columns: repeat(2, 1fr); }
   .exp-layout    { grid-template-columns: 220px 1fr; gap: 50px; }
 }
@@ -1077,8 +1101,7 @@ body {
   .hero-layout { grid-template-columns: 1fr; }
   .hero-photo  { display: none; }
   .hero-scroll { bottom: 80px; }
-  .about-grid  { grid-template-columns: 1fr; }
-  .about-badge { right: 0; }
+  .hero-services { grid-template-columns: repeat(3, 1fr); }
   .expertise-grid { grid-template-columns: repeat(2, 1fr); }
   .exp-layout  { grid-template-columns: 1fr; gap: 0; }
   .exp-sidebar { position: static; margin-bottom: 40px; }
@@ -1090,6 +1113,7 @@ body {
 
 @media (max-width: 600px) {
   .hero-actions  { flex-direction: column; align-items: flex-start; }
+  .hero-services { grid-template-columns: repeat(2, 1fr); }
   .expertise-grid { grid-template-columns: 1fr; }
   .about-stats   { grid-template-columns: 1fr 1fr; }
   .cta-actions   { flex-direction: column; width: auto; }
@@ -1112,7 +1136,6 @@ body {
         <li><a href="#expertise">Expertise</a></li>
         <li><a href="#experience">Experience</a></li>
         <li><a href="#skills">Skills</a></li>
-        <li><a href="#portfolio">Portfolio</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
       <a class="nav-cta" href="contact.html">Start a Project</a>
@@ -1134,8 +1157,49 @@ body {
           MOJTABA<br>
           <span class="gold">KEIVANLOU</span>
         </h1>
-        <p class="hero-title">Senior Engineer &nbsp;·&nbsp; Team Leader &nbsp;·&nbsp; Muscat, Oman</p>
-        <p class="hero-tagline">Turning complex water systems into engineered certainty — flood protection, dam design, and hydrological modelling at a national scale.</p>
+        <div class="hero-role-line">Principal Hydraulic &amp; Water Resources Engineer</div>
+        <div class="hero-role-sub">Team Leader</div>
+        <p class="hero-tagline">Turning complex water systems into engineered certainty</p>
+
+        <div class="hero-services">
+          <div class="hero-svc">
+            <div class="hero-svc-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5s2.5 2 5 2 2.5-2 5-2 2.5 2 2.5 2"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 2.5 2"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 2.5 2"/></svg></div>
+            Flood Modelling &amp; Protection
+          </div>
+          <div class="hero-svc">
+            <div class="hero-svc-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l4-14h10l4 14"/><path d="M3 17h18"/><path d="M10 8h4"/></svg></div>
+            Road &amp; Drainage Design
+          </div>
+          <div class="hero-svc">
+            <div class="hero-svc-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.6A5 5 0 0 0 18 8h-1.3A8 8 0 1 0 4 16"/><line x1="8" y1="19" x2="8" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="16" y1="19" x2="16" y2="21"/></svg></div>
+            Hydrology &amp; Climate
+          </div>
+          <div class="hero-svc">
+            <div class="hero-svc-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="8" x2="9" y2="8"/><polygon points="9,6 11,6 15,20 7,20"/><line x1="4" y1="20" x2="20" y2="20"/></svg></div>
+            Dam Engineering
+          </div>
+          <div class="hero-svc">
+            <div class="hero-svc-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+            Stormwater &amp; Sewage
+          </div>
+          <div class="hero-svc">
+            <div class="hero-svc-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg></div>
+            Water Supply &amp; Irrigation
+          </div>
+          <div class="hero-svc">
+            <div class="hero-svc-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+            GIS &amp; Spatial Analysis
+          </div>
+          <div class="hero-svc">
+            <div class="hero-svc-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg></div>
+            Surveying &amp; Mapping
+          </div>
+          <div class="hero-svc">
+            <div class="hero-svc-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+            Engineering Automation
+          </div>
+        </div>
+
         <div class="hero-actions">
           <a class="btn btn-gold" href="pdf/CV_Mojtaba_Keivanlou_2026.pdf" download>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -1186,34 +1250,18 @@ body {
     <div class="scroll-bar"></div>
   </div>
 
-  <div class="hero-wave">
-    <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style="width:100%;height:80px;">
-      <path fill="#ffffff" d="M0,40 C320,80 720,0 1440,50 L1440,80 L0,80 Z"/>
-    </svg>
-  </div>
 </section>
 
 <!-- ═══════════════ ABOUT ═══════════════ -->
 <section class="about" id="about">
   <div class="wrap">
-    <div class="about-grid">
-
-      <div class="about-photo reveal">
-        <div class="about-photo-frame">
-          <img src="assets/img/profile.jpeg" alt="Mojtaba Keivanlou">
-        </div>
-        <div class="about-badge">
-          <div class="about-badge-val">16+</div>
-          <div class="about-badge-lbl">Years Experience</div>
-        </div>
-      </div>
-
-      <div class="reveal d1">
+    <div class="about-content reveal">
         <div class="label">About Me</div>
         <h2 class="heading-lg heading-lt">Senior Engineer.<br>International Expert.</h2>
         <div class="about-bio">
-          <p>I am a senior hydraulic and water resources engineer with over <strong>16 years of international experience</strong> in Iran, Oman, and the United States. Currently serving as <strong>Team Leader</strong> on one of Oman's largest ongoing flood protection programmes — covering the North and South Al Batinah Governorates for the Ministry of Agriculture, Fisheries &amp; Water Resources.</p>
-          <p>My expertise spans flood risk assessment and protection design, dam engineering, stormwater masterplanning, water supply systems, and transient analysis. What distinguishes me at this level is a combination rarely found at senior seniority: <strong>deep hydraulic engineering paired with modern computational practice</strong> — Python automation, GIS data pipelines, and AI-augmented project delivery.</p>
+          <p>I am a <strong>Senior Hydraulic and Water Resources Engineer</strong> with 16 years of international experience across Iran, Oman, and the United States. Currently serving as <strong>Team Leader</strong> on one of Oman's largest ongoing flood protection programmes — covering the North and South Al Batinah Governorates (15,000 km²) for the Ministry of Agriculture, Fisheries &amp; Water Resources.</p>
+          <p>I specialise in flood modelling and protection, climate adaptation, dam and spillway design, stormwater master planning, irrigation, water supply, and transient analysis — with a project record spanning national-scale flood risk programmes, US-regulated dam safety assessment, and multi-province flood hazard mapping across Iran, Oman, and the United States.</p>
+          <p>What distinguishes me is a combination rarely found at this seniority: <strong>deep hydraulic engineering paired with modern computational practice</strong> — automation of engineering workflows, spatial data pipelines, and AI-augmented project delivery.</p>
         </div>
         <div class="about-stats">
           <div class="about-stat">
@@ -1251,20 +1299,12 @@ body {
           <span class="lang-chip">Persian <em>Native</em></span>
           <span class="lang-chip">English <em>Fluent</em></span>
         </div>
-      </div>
-
     </div>
   </div>
 </section>
 
 <!-- ═══════════════ EXPERTISE ═══════════════ -->
 <section class="expertise" id="expertise">
-  <div class="expertise-top-wave">
-    <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style="width:100%;height:80px;">
-      <path fill="#ffffff" d="M0,40 C320,80 720,0 1440,50 L1440,0 L0,0 Z"/>
-    </svg>
-  </div>
-
   <div class="wrap">
     <div class="expertise-header reveal">
       <div class="label">What I Do</div>
@@ -1348,12 +1388,6 @@ body {
 
     </div>
   </div>
-
-  <div class="expertise-bottom-wave">
-    <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style="width:100%;height:80px;">
-      <path fill="#F4F8FC" d="M0,30 C400,80 1000,0 1440,40 L1440,80 L0,80 Z"/>
-    </svg>
-  </div>
 </section>
 
 <!-- ═══════════════ EXPERIENCE ═══════════════ -->
@@ -1374,49 +1408,286 @@ body {
       <div class="reveal d1">
         <div class="timeline">
 
+          <!-- RENARDET -->
           <div class="tl-item now">
             <div class="tl-dot"></div>
             <div class="tl-period">2022 – Present</div>
             <div class="tl-company">Renardet S.A. &amp; Partners</div>
             <div class="tl-role">Senior Hydraulic Engineer &nbsp;·&nbsp; Team Leader</div>
             <div class="tl-loc">Muscat, Sultanate of Oman</div>
-            <div class="tl-summary">Leading a USD 15.6M national flood protection masterplan for the North &amp; South Al Batinah Governorates (15,000 km²) with integrated HEC-HMS/HEC-RAS models and Flow 3D for dam spillway verification. Parallel projects across Dhofar Governorate and major infrastructure corridors.</div>
+            <div class="tl-summary">Leading the hydraulic team on one of Oman's largest ongoing flood protection programmes. Currently Team Leader on the Batinah Flood Protection Master Plan (15,000 km², OMR 6M / ~USD 15.6M) for the Ministry of Agriculture, Fisheries &amp; Water Resources, with parallel project delivery across Dhofar Governorate and major road infrastructure corridors.</div>
+            <button class="tl-expand" onclick="toggleExp(this)" aria-expanded="false">
+              <span>View all projects</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="tl-projects" hidden>
+              <div class="proj-item">
+                <div class="proj-name">Batinah Flood Protection Scheme — North &amp; South Al Batinah Governorates</div>
+                <div class="proj-meta">Feb 2023 – Present &nbsp;·&nbsp; Team Leader</div>
+                <div class="proj-scope">OMR 6M (~USD 15.6M) &nbsp;·&nbsp; 15,000 km² study area</div>
+                <ul class="proj-bullets">
+                  <li>Leading all technical aspects: hydrology studies, hydraulic modelling, flood risk mapping</li>
+                  <li>Dam site selection; design of dam hydraulic structures and spillway modelling (Flow 3D)</li>
+                  <li>Integrated HEC-HMS / HEC-RAS / Python model; SewerGEMS &amp; InfoDrainage for channel design</li>
+                  <li>Client and stakeholder management, report writing and reviewing</li>
+                  <li>Flood mapping under existing and proposed conditions for insurance and cost-benefit analysis</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Majlas Dam Design Review — Quriyat</div>
+                <div class="proj-meta">Mar 2026 – Present &nbsp;·&nbsp; Hydrology &amp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Review and update of hydrology report; revised rainfall and design flow values</li>
+                  <li>Flood protection channel design downstream of dam in Quriyat</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Detailed Design of Flood Protection Schemes — Dhofar Governorate</div>
+                <div class="proj-meta">Aug 2022 – Present &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <div class="proj-scope">Wilayat Salalah, Taqah, Mirbat, Rakhyoot &amp; Dhalkoot</div>
+                <ul class="proj-bullets">
+                  <li>Hydrology studies and hydraulic modelling</li>
+                  <li>Dam site selection and dam break analysis</li>
+                  <li>Hydraulic strategy and meeting coordination</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Upgrading of Existing Batinah Dual Carriageway</div>
+                <div class="proj-meta">Jan 2022 – Mar 2023 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <div class="proj-scope">230 km road corridor</div>
+                <ul class="proj-bullets">
+                  <li>Comprehensive hydrology analysis and design of road drainage structures</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Dualisation of Al Ansab Street — Consultancy Services</div>
+                <div class="proj-meta">Feb 2022 – Aug 2022 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Road drainage design, H&amp;H studies, supervising and delivering drawings</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Design of Internal Roads — Sohar Municipality</div>
+                <div class="proj-meta">Jul 2022 – Sep 2022 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Road drainage design and H&amp;H studies</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Yankit Mixed Use Development</div>
+                <div class="proj-meta">Sep 2022 – Present &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Design of road drainage, stormwater system and sewage network</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Development of Hayour Cave Dhofar Resort</div>
+                <div class="proj-meta">May 2022 – Aug 2022 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Hydrology studies, road drainage, stormwater and sewage system design</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Al Bandar Mixed Use Development</div>
+                <div class="proj-meta">Feb 2022 – Mar 2022 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Drainage system revision, stormwater design, sewage system review</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Road Connecting MAM Camp to Muscat Expressway</div>
+                <div class="proj-meta">Feb 2022 – Mar 2022 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Road drainage design</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Dima Lima Khasab Road</div>
+                <div class="proj-meta">Sep 2022 – Present &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Road drainage design</li>
+                </ul>
+              </div>
+            </div>
           </div>
 
+          <!-- DUBOIS & KING -->
           <div class="tl-item">
             <div class="tl-dot"></div>
             <div class="tl-period">2021</div>
             <div class="tl-company">DuBois &amp; King</div>
-            <div class="tl-role">Senior Hydraulic Engineer — Independent Specialist</div>
+            <div class="tl-role">Senior Hydraulic Engineer — Freelance Specialist</div>
             <div class="tl-loc">Vermont, USA (Remote)</div>
-            <div class="tl-summary">Dam safety assessment for Shadow Lake Dam under US federal and Vermont ANR standards. Comprehensive hydrology analysis, dam breach modelling, and hazard classification per FEMA guidelines.</div>
+            <div class="tl-summary">Dam safety assessment for Shadow Lake Dam under US federal and Vermont ANR standards. Comprehensive hydrology, dam breach modelling, and hazard classification per FEMA guidelines — delivered remotely as an independent specialist.</div>
+            <button class="tl-expand" onclick="toggleExp(this)" aria-expanded="false">
+              <span>View project</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="tl-projects" hidden>
+              <div class="proj-item">
+                <div class="proj-name">Shadow Lake Dam Safety Assessment — Glover, VT</div>
+                <div class="proj-meta">Jan 2021 – Nov 2021 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Comprehensive hydrology analysis and hydraulic design of dam</li>
+                  <li>Dam breach analysis and hazard classification per FEMA guidelines</li>
+                  <li>Delivered under US federal and Vermont ANR regulatory requirements</li>
+                </ul>
+              </div>
+            </div>
           </div>
 
+          <!-- SAZEH PARDAZI -->
           <div class="tl-item">
             <div class="tl-dot"></div>
             <div class="tl-period">2020 – 2021</div>
             <div class="tl-company">Sazeh Pardazi Iran</div>
             <div class="tl-role">Water Resources Engineer — Drainage &amp; Water Supply</div>
             <div class="tl-loc">Tehran, Iran</div>
-            <div class="tl-summary">Flood hazard &amp; risk mapping in Hormozgan, Lorestan, and Kerman Provinces. River training, flood protection structures, and water transmission pipeline with water hammer analysis (Karaj WWTP to Eshtehard Industrial Zone).</div>
+            <div class="tl-summary">Flood hazard and risk mapping across three major Iranian provinces (409 km of river systems), river training and flood protection design, and water infrastructure projects including transmission pipelines and stormwater masterplanning.</div>
+            <button class="tl-expand" onclick="toggleExp(this)" aria-expanded="false">
+              <span>View all projects</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="tl-projects" hidden>
+              <div class="proj-item">
+                <div class="proj-name">Flood Hazard &amp; Risk Mapping — Hormozgan Province Rivers</div>
+                <div class="proj-meta">Jan 2020 – Sep 2020 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <div class="proj-scope">127 km of river system</div>
+                <ul class="proj-bullets">
+                  <li>Hydraulic modelling of the river system for flood hazard and risk mapping</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">River Training &amp; Rehabilitation — Lorestan Province</div>
+                <div class="proj-meta">Aug 2020 – Jan 2021 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <div class="proj-scope">190 km of rivers</div>
+                <ul class="proj-bullets">
+                  <li>Hydraulic modelling and detailed design of river training works</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Flood Protection of Sensitive Areas — Kerman Province</div>
+                <div class="proj-meta">Jan 2021 – May 2021 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <div class="proj-scope">92 km</div>
+                <ul class="proj-bullets">
+                  <li>Hydraulic modelling and detailed design of flood protection structures</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Water Transmission Pipeline — Karaj WWTP to Eshtehard Industrial Zone</div>
+                <div class="proj-meta">Jun 2021 – Sep 2021 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Hydraulic design of the transmission pipeline</li>
+                  <li>Surge (water hammer) analysis</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Water Supply to Rural Areas — Greater Tehran Region</div>
+                <div class="proj-meta">Jun 2021 – Sep 2021 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Hydraulic design of water supply to important rural areas around Tehran</li>
+                  <li>Revision of existing distribution systems</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Stormwater Management — Three Regions, Qazvin Province</div>
+                <div class="proj-meta">Sep 2021 – Dec 2021 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Hydraulic design of gravity channels and pipelines for urban stormwater management</li>
+                </ul>
+              </div>
+            </div>
           </div>
 
+          <!-- HYDROTECH TOOS -->
           <div class="tl-item">
             <div class="tl-dot"></div>
             <div class="tl-period">2019 – 2020</div>
             <div class="tl-company">Hydrotech Toos (HTT)</div>
             <div class="tl-role">Senior Hydraulic Engineer — Water Supply &amp; Sewage</div>
             <div class="tl-loc">Mashhad, Iran</div>
-            <div class="tl-summary">Hydraulic design of water supply, sewage, and irrigation networks for developing zones of Mashhad. Network optimisation and leakage detection across Khorasan Razavi Province.</div>
+            <div class="tl-summary">Senior engineer on water supply, sewage, and irrigation networks for Mashhad metropolitan area's developing zones. Included network optimisation and leakage detection across Khorasan Razavi Province.</div>
+            <button class="tl-expand" onclick="toggleExp(this)" aria-expanded="false">
+              <span>View all projects</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="tl-projects" hidden>
+              <div class="proj-item">
+                <div class="proj-name">Revision of Mashhad City's Main Landscape Irrigation Pipelines</div>
+                <div class="proj-meta">Jun 2019 – Jan 2020 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Revising and modifying main pipelines supplying landscape irrigation across the city</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Water Supply — Developing Areas of Mashhad City</div>
+                <div class="proj-meta">Jun 2019 – Jan 2020 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Hydraulic design of new water supply network for developing urban zones</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Sewage System Design — Developing Areas of Mashhad City</div>
+                <div class="proj-meta">Jun 2019 – Jan 2020 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Hydraulic design of sewage collection network for developing urban zones</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Water Distribution Network Modelling — Khorasan Razavi Province</div>
+                <div class="proj-meta">Jun 2019 – Jan 2020 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Hydraulic modelling of existing distribution network across multiple cities</li>
+                  <li>Leakage detection and network optimisation</li>
+                </ul>
+              </div>
+            </div>
           </div>
 
+          <!-- EARLIER IRAN -->
           <div class="tl-item">
             <div class="tl-dot"></div>
             <div class="tl-period">2010 – 2019</div>
             <div class="tl-company">Earlier Positions — Iran</div>
-            <div class="tl-role">Project Manager · Hydraulic Engineer · GIS Technician</div>
+            <div class="tl-role">Project Manager &nbsp;·&nbsp; Hydraulic Engineer &nbsp;·&nbsp; GIS Technician</div>
             <div class="tl-loc">Multiple Provinces, Iran</div>
-            <div class="tl-summary">Progressive career through flood risk mapping and project management (Majd Ab Shargh, 2017–19), provincial flood hazard mapping (Behin Ab Pazh, 2015–17), pressurised irrigation design (Zharfab Pay, 2013–15), and foundational GIS/CAD work in eastern Mazandaran Province (Abgostaran Sabz Dasht, 2010–13).</div>
+            <div class="tl-summary">Progressive nine-year career from GIS/CAD technician to Project Manager — spanning irrigation system design, provincial flood hazard mapping, and leading field teams with Leica instruments across Iran.</div>
+            <button class="tl-expand" onclick="toggleExp(this)" aria-expanded="false">
+              <span>View all positions</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="tl-projects" hidden>
+              <div class="proj-item">
+                <div class="proj-name">Majd Ab Shargh — Project Manager (Drainage)</div>
+                <div class="proj-meta">Apr 2017 – Jun 2019 &nbsp;·&nbsp; Project Manager</div>
+                <ul class="proj-bullets">
+                  <li>Flood hazard and risk mapping — client interaction, team building, hydraulic modelling</li>
+                  <li>Field surveying with Leica total station instruments; detailed design of flood protection structures</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Behin Ab Pazh — Hydraulic Engineer (Drainage)</div>
+                <div class="proj-meta">Aug 2015 – Mar 2017 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Flood hazard and risk mapping — hydrologic analysis and hydraulic modelling of river systems</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Zharfab Pay — Hydraulic Engineer (Drainage)</div>
+                <div class="proj-meta">Oct 2013 – Jul 2015 &nbsp;·&nbsp; Hydraulic Engineer</div>
+                <ul class="proj-bullets">
+                  <li>Design of pressurised irrigation systems</li>
+                </ul>
+              </div>
+              <div class="proj-item">
+                <div class="proj-name">Abgostaran Sabz Dasht — GIS &amp; CAD Draftsman</div>
+                <div class="proj-meta">Oct 2010 – Dec 2013 &nbsp;·&nbsp; GIS &amp; CAD Technician</div>
+                <ul class="proj-bullets">
+                  <li>Comprehensive drainage project — east part of Mazandaran Province</li>
+                  <li>Preparing GIS and CAD layouts and engineering drawings</li>
+                </ul>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -1544,24 +1815,6 @@ body {
   </div>
 </section>
 
-<!-- ═══════════════ PORTFOLIO ═══════════════ -->
-<section class="portfolio" id="portfolio">
-  <div class="wrap">
-    <div class="portfolio-header reveal">
-      <div class="label">Portfolio</div>
-      <h2 class="heading-lg heading-lt">Work Samples</h2>
-      <p class="sub-copy sub-lt">Selected project deliverables, engineering outputs, and GIS products — coming soon.</p>
-    </div>
-    <div class="portfolio-placeholder reveal d1">
-      <div class="pf-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-      </div>
-      <div class="pf-title">Projects Coming Soon</div>
-      <div class="pf-sub">Work samples, project maps, hydraulic modelling outputs, GIS products, and engineering deliverables will be showcased here shortly.</div>
-    </div>
-  </div>
-</section>
-
 <!-- ═══════════════ CONTACT CTA ═══════════════ -->
 <section class="cta" id="contact">
   <div class="cta-glow"></div>
@@ -1677,6 +1930,19 @@ body {
     });
   }, 1400);
 })();
+
+/* Accordion toggle */
+function toggleExp(btn) {
+  var item = btn.closest('.tl-item');
+  var projects = item.querySelector('.tl-projects');
+  var expanded = btn.getAttribute('aria-expanded') === 'true';
+  var origLabel = btn.querySelector('span').dataset.orig || btn.querySelector('span').textContent;
+  btn.querySelector('span').dataset.orig = origLabel;
+  btn.setAttribute('aria-expanded', String(!expanded));
+  btn.querySelector('span').textContent = expanded ? origLabel : 'Hide';
+  projects.hidden = expanded;
+  item.classList.toggle('exp-open', !expanded);
+}
 </script>
 </body>
 </html>
