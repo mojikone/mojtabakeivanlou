@@ -1971,24 +1971,43 @@ body {
   function toggleStf() { stf.classList.toggle('show', window.scrollY > 300); }
   window.addEventListener('scroll', toggleStf, { passive: true });
 
-  /* Touch: tap = toggle menu; Desktop: click = scroll to top */
+  /* RAF-based smooth scroll — works in all browsers including old Safari */
+  function smoothTo(targetY) {
+    var startY = window.scrollY;
+    var dist   = targetY - startY;
+    var dur    = Math.min(Math.max(Math.abs(dist) * 0.4, 400), 900);
+    var start  = null;
+    function ease(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+    function step(ts) {
+      if (!start) start = ts;
+      var pct = Math.min((ts - start) / dur, 1);
+      window.scrollTo(0, startY + dist * ease(pct));
+      if (pct < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* FAB button: touch = toggle menu; desktop = scroll to top */
   btn.addEventListener('click', function(e) {
     if (window.matchMedia('(hover: none)').matches) {
       e.stopPropagation();
       stf.classList.toggle('open');
     } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      smoothTo(0);
     }
   });
 
-  /* Smooth scroll + close menu when a section link is clicked */
+  /* Smooth scroll + close menu; suppress hover with pointer-events reset */
   stf.querySelectorAll('.stf-item[href^="#"]').forEach(function(a) {
     a.addEventListener('click', function(e) {
       var target = document.querySelector(a.getAttribute('href'));
       if (target) {
         e.preventDefault();
         stf.classList.remove('open');
-        window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY, behavior: 'smooth' });
+        /* Briefly kill pointer-events so :hover can't keep the menu open */
+        stf.style.pointerEvents = 'none';
+        setTimeout(function() { stf.style.pointerEvents = ''; }, 600);
+        smoothTo(target.getBoundingClientRect().top + window.scrollY);
       }
     });
   });
