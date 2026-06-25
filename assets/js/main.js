@@ -69,7 +69,7 @@
       var target = document.querySelector(a.getAttribute('href'));
       if (target) {
         e.preventDefault();
-        smoothTo(target.getBoundingClientRect().top + window.scrollY - 68);
+        smoothTo(target.getBoundingClientRect().top + window.scrollY);
       }
     });
   });
@@ -104,7 +104,34 @@
     document.querySelectorAll('.reveal:not(.in)').forEach(function (el) { el.classList.add('in'); });
   }, 1500);
 
+  /* ── HERO SCROLL FADE ─────────────────────────────────── */
+  var heroEl = document.querySelector('.hero');
+  if (heroEl) {
+    window.addEventListener('scroll', function () {
+      var ratio = Math.min(window.scrollY / heroEl.offsetHeight, 1);
+      heroEl.style.opacity = 1 - ratio * 1.5;
+    }, { passive: true });
+  }
+
+  /* ── WHATSAPP DESKTOP ─────────────────────────────────── */
+  document.querySelectorAll('a[href*="wa.me"]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (!isMobile) {
+        e.preventDefault();
+        var match = a.href.match(/wa\.me\/(\d+)/);
+        if (match) window.open('https://web.whatsapp.com/send?phone=' + match[1], '_blank');
+      }
+    });
+  });
+
 })();
+
+/* ── BUSINESS CARD FLIP ───────────────────────────────────── */
+var bizCardMain = document.getElementById('biz-card-main');
+if (bizCardMain) {
+  bizCardMain.addEventListener('click', function () { this.classList.toggle('flipped'); });
+}
 
 /* ── TIMELINE ACCORDION ───────────────────────────────────── */
 function toggleExp(btn) {
