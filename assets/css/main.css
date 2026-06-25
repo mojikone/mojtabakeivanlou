@@ -231,6 +231,37 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   gap: 8px; margin-top: 14px;
 }
 .hero-mob-title { display: none; }
+/* Name overlaid on photo (top-left desktop, top-right mobile) */
+.hero-name-over {
+  position: absolute;
+  top: clamp(28px, 3.5vh, 56px);
+  left: var(--pad);
+  z-index: 3;
+}
+.hero-name-over-text {
+  font-size: clamp(36px, 5.5vw, 72px);
+  font-weight: 300;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+/* Center role headline */
+.hero-center-block {
+  position: absolute;
+  left: 26%;
+  right: var(--pad);
+  top: 44%;
+  transform: translateY(-50%);
+  text-align: right;
+  z-index: 2;
+}
+.hero-role-headline {
+  font-size: clamp(28px, 4vw, 58px);
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--text);
+}
 .hero-contact-row {
   display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
   margin-top: 10px;
@@ -433,34 +464,20 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   .pill-nav { display: none; }
 }
 @media (max-width: 768px) {
-  /* Mobile hero: text right side, photo bleeds from left */
-  .hero-mob-title {
-    display: flex; flex-direction: column;
-    position: absolute;
-    top: calc(var(--topbar-h) + 40px);
+  /* Mobile hero: name top-right, photo left-bleeding, buttons bottom-right */
+  .hero-center-block { display: none; }
+  .hero-name-over {
     left: 52%; right: var(--pad);
-    z-index: 3;
+    top: 28px;
   }
-  .hero-mob-name {
-    font-size: clamp(22px, 6vw, 32px); font-weight: 400;
-    line-height: 1.1; letter-spacing: -0.02em; color: var(--text);
-    margin-bottom: 10px;
+  .hero-name-over-text {
+    font-size: clamp(20px, 5.5vw, 30px);
+    text-align: right;
   }
-  .hero-mob-role {
-    font-size: 11px; font-weight: 400;
-    color: var(--text-2); line-height: 1.55;
-    align-self: flex-start; text-align: left;
+  .hero-br {
+    display: flex; flex-direction: column; align-items: flex-end;
   }
-  .hero-mob-loc { font-size: 10px; opacity: 0.6; display: block; margin-top: 3px; }
-  .hero-mob-contact {
-    margin-top: 14px; display: flex; flex-direction: column; gap: 5px;
-  }
-  .hero-mob-contact-link {
-    font-size: 10px; font-weight: 500; color: var(--text-2);
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 8px; border-radius: 100px;
-    background: rgba(20,20,20,0.06); width: fit-content;
-  }
+  .hero-contact-row { display: none; }
   .hero-photo-main {
     height: 70svh; width: auto;
     top: auto; bottom: 0;

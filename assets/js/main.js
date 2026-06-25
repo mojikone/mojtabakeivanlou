@@ -88,6 +88,8 @@
     });
   }, { rootMargin: '-30% 0px -60% 0px' });
   sections.forEach(function (s) { secObs.observe(s); });
+  var initPill = document.querySelector('.pill-nav a[href="#home"]');
+  if (initPill) initPill.classList.add('active');
 
   /* ── REVEAL ON SCROLL ─────────────────────────────────── */
   var revealObs = new IntersectionObserver(function (entries) {
