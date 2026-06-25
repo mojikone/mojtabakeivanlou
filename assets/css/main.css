@@ -178,12 +178,13 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
 }
 .hero-photo-main {
   position: absolute;
-  top: 53svh;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 0;
+  top: auto;
+  left: calc(80px - 54svh);
   height: 90svh;
   width: auto;
   max-width: none;
+  transform: none;
   z-index: 1;
 }
 .hero-bl {
