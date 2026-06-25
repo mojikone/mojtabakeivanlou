@@ -3,7 +3,7 @@
 
   /* ── TOPBAR: light/dark state based on section bg ─────── */
   var topbar = document.getElementById('topbar');
-  var lightSections = ['about', 'experience', 'contact'];
+  var lightSections = ['home', 'about', 'experience', 'contact'];
 
   function updateTopbar() {
     if (!topbar) return;
