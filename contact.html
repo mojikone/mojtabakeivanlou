@@ -117,12 +117,12 @@ body {
   gap: 9px;
   padding: 7px 14px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.07);
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border: 1px solid rgba(255,255,255,0.18);
-  box-shadow: 0 6px 22px rgba(0,0,0,0.22);
-  color: rgba(232,240,247,0.88);
+  background: rgba(6,20,31,0.72);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.13);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.28);
+  color: rgba(232,240,247,0.9);
   font-size: 11.5px;
   font-weight: 500;
   letter-spacing: 0.3px;
@@ -131,12 +131,12 @@ body {
   cursor: pointer;
   opacity: 0;
   transform: translateY(10px) scale(0.95);
-  transition: opacity 0.28s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.4,0,0.2,1), background 0.2s, color 0.2s;
+  transition: opacity 0.28s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.4,0,0.2,1), background 0.2s, color 0.2s, border-color 0.2s;
 }
 .stf.open .stf-item,
 .stf:hover .stf-item,
 .stf:focus-within .stf-item { opacity: 1; transform: none; transition-delay: calc(var(--i) * 45ms); }
-.stf-item:hover { background: var(--gold); color: var(--dk1); border-color: transparent; }
+.stf-item:hover { background: var(--gold); color: #fff; border-color: transparent; }
 @media (max-width: 600px) { .stf-btn { width: 46px; height: 46px; } }
 .nav-inner {
   height: var(--nav-h);
