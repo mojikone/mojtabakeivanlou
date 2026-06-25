@@ -656,8 +656,8 @@ body {
 }
 .about-layout {
   display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 60px;
+  grid-template-columns: 1fr minmax(0, 50%);
+  gap: 48px;
   align-items: center;
 }
 .about-content {
@@ -670,10 +670,9 @@ body {
 }
 .about-illustration img {
   width: 100%;
-  max-width: 440px;
   height: auto;
   display: block;
-  opacity: 0.88;
+  opacity: 0.9;
 }
 
 /* text side */
@@ -1187,7 +1186,7 @@ body {
 @media (max-width: 1024px) {
   .hero-layout   { grid-template-columns: 1fr 260px; gap: 40px; }
   .hero-photo-frame { width: 210px; height: 210px; }
-  .about-layout  { grid-template-columns: 1fr 320px; gap: 40px; }
+  .about-layout  { grid-template-columns: 1fr minmax(0, 44%); gap: 36px; }
   .expertise-grid { grid-template-columns: repeat(2, 1fr); }
   .exp-layout    { grid-template-columns: 220px 1fr; gap: 50px; }
 }
@@ -1199,7 +1198,8 @@ body {
   .hero-scroll { bottom: 80px; }
   .hero-services { grid-template-columns: repeat(3, 1fr); }
   .about-layout { grid-template-columns: 1fr; }
-  .about-illustration { margin-top: 8px; }
+  .about-illustration { margin-top: 16px; }
+  .about-illustration img { width: 100%; max-width: 100%; }
   .expertise-grid { grid-template-columns: repeat(2, 1fr); }
   .exp-layout  { grid-template-columns: 1fr; gap: 0; }
   .exp-sidebar { position: static; margin-bottom: 40px; }
@@ -1386,9 +1386,9 @@ body {
     <div class="about-illustration">
       <picture>
         <source srcset="assets/img/hydraulic-illustration.webp" type="image/webp">
-        <img src="assets/img/hydraulic-illustration.png"
+        <img src="assets/img/dam drone artwork2.png"
              alt="Hydraulic engineering landscape illustration — dam, water network, city grid"
-             width="880" height="720" loading="lazy">
+             width="1404" height="1146" loading="lazy">
       </picture>
     </div>
 
