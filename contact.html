@@ -98,9 +98,7 @@ body {
   flex-shrink: 0;
   transition: background 0.25s cubic-bezier(0.4,0,0.2,1);
 }
-.stf.open .stf-btn,
-.stf:hover .stf-btn,
-.stf:focus-within .stf-btn { background: var(--dk2); }
+.stf.open .stf-btn { background: var(--dk2); }
 .stf-menu {
   display: flex;
   flex-direction: column;
@@ -108,9 +106,7 @@ body {
   gap: 7px;
   pointer-events: none;
 }
-.stf.open .stf-menu,
-.stf:hover .stf-menu,
-.stf:focus-within .stf-menu { pointer-events: auto; }
+.stf.open .stf-menu { pointer-events: auto; }
 .stf-item {
   display: flex;
   align-items: center;
@@ -133,9 +129,15 @@ body {
   transform: translateY(10px) scale(0.95);
   transition: opacity 0.28s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.4,0,0.2,1), background 0.2s, color 0.2s, border-color 0.2s;
 }
-.stf.open .stf-item,
-.stf:hover .stf-item,
-.stf:focus-within .stf-item { opacity: 1; transform: none; transition-delay: calc(var(--i) * 45ms); }
+.stf.open .stf-item { opacity: 1; transform: none; transition-delay: calc(var(--i) * 45ms); }
+@media (hover: hover) {
+  .stf:hover .stf-btn,
+  .stf:focus-within .stf-btn { background: var(--dk2); }
+  .stf:hover .stf-menu,
+  .stf:focus-within .stf-menu { pointer-events: auto; }
+  .stf:hover .stf-item,
+  .stf:focus-within .stf-item { opacity: 1; transform: none; transition-delay: calc(var(--i) * 45ms); }
+}
 .stf-item:hover { background: var(--gold); color: #fff; border-color: transparent; }
 @media (max-width: 600px) { .stf-btn { width: 46px; height: 46px; } }
 .nav-inner {
