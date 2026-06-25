@@ -1,0 +1,119 @@
+(function () {
+  'use strict';
+
+  /* ── TOPBAR: light/dark state based on section bg ─────── */
+  var topbar = document.getElementById('topbar');
+  var lightSections = ['about', 'experience', 'contact'];
+
+  function updateTopbar() {
+    if (!topbar) return;
+    var y = window.scrollY + 80;
+    var onLight = false;
+    lightSections.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (y >= el.offsetTop && y < el.offsetTop + el.offsetHeight) onLight = true;
+    });
+    topbar.classList.toggle('on-light', onLight);
+  }
+  window.addEventListener('scroll', updateTopbar, { passive: true });
+  updateTopbar();
+
+  /* ── MOBILE HAMBURGER ─────────────────────────────────── */
+  var hamburger = document.getElementById('topbar-hamburger');
+  var drawer    = document.getElementById('nav-drawer');
+  var drawerClose = document.getElementById('nav-drawer-close');
+
+  function openDrawer() {
+    if (!drawer) return;
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    if (hamburger) hamburger.setAttribute('aria-expanded', 'true');
+  }
+  function closeDrawer() {
+    if (!drawer) return;
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+    if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
+  }
+
+  if (hamburger) hamburger.addEventListener('click', openDrawer);
+  if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
+  if (drawer) {
+    drawer.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', closeDrawer);
+    });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeDrawer();
+  });
+
+  /* ── SMOOTH SCROLL (RAF) ──────────────────────────────── */
+  function smoothTo(targetY) {
+    var startY = window.scrollY;
+    var dist   = targetY - startY;
+    var dur    = Math.min(Math.max(Math.abs(dist) * 0.38, 380), 900);
+    var start  = null;
+    function ease(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+    function step(ts) {
+      if (!start) start = ts;
+      var pct = Math.min((ts - start) / dur, 1);
+      window.scrollTo(0, startY + dist * ease(pct));
+      if (pct < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var target = document.querySelector(a.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        smoothTo(target.getBoundingClientRect().top + window.scrollY - 68);
+      }
+    });
+  });
+
+  /* ── PILL NAV: active link ────────────────────────────── */
+  var sections = document.querySelectorAll('section[id]');
+  var pillLinks = document.querySelectorAll('.pill-nav a');
+
+  var secObs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        pillLinks.forEach(function (a) { a.classList.remove('active'); });
+        var a = document.querySelector('.pill-nav a[href="#' + e.target.id + '"]');
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(function (s) { secObs.observe(s); });
+
+  /* ── REVEAL ON SCROLL ─────────────────────────────────── */
+  var revealObs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        revealObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.07 });
+  document.querySelectorAll('.reveal').forEach(function (el) { revealObs.observe(el); });
+
+  setTimeout(function () {
+    document.querySelectorAll('.reveal:not(.in)').forEach(function (el) { el.classList.add('in'); });
+  }, 1500);
+
+})();
+
+/* ── TIMELINE ACCORDION ───────────────────────────────────── */
+function toggleExp(btn) {
+  var item   = btn.closest('.tl-item');
+  var span   = btn.querySelector('span');
+  var isOpen = item.classList.contains('exp-open');
+  var orig   = span.dataset.orig || span.textContent;
+  span.dataset.orig = orig;
+  item.classList.toggle('exp-open');
+  btn.setAttribute('aria-expanded', String(!isOpen));
+  span.textContent = isOpen ? orig : 'Collapse';
+}

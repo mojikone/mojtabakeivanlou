@@ -1,0 +1,38 @@
+[build]
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/pdf/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+[[redirects]]
+  from = "http://mojtabakeivanlou.com/*"
+  to   = "https://mojtabakeivanlou.com/:splat"
+  status = 301
+  force  = true
+
+[[redirects]]
+  from = "http://www.mojtabakeivanlou.com/*"
+  to   = "https://mojtabakeivanlou.com/:splat"
+  status = 301
+  force  = true
+
+[[redirects]]
+  from = "https://www.mojtabakeivanlou.com/*"
+  to   = "https://mojtabakeivanlou.com/:splat"
+  status = 301
+  force  = true

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-FMKJ61FF7F"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-FMKJ61FF7F');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start a Project — Mojtaba Keivanlou</title>
+<meta name="description" content="Get in touch with Mojtaba Keivanlou — Senior Hydraulic & Water Resources Engineer. Available for consultancy, design review, and project collaboration.">
+<link rel="canonical" href="https://mojtabakeivanlou.com/contact.html">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%231A3D2C'/%3E%3Ctext x='50' y='67' font-family='sans-serif' font-weight='700' font-size='44' text-anchor='middle' fill='%23A8CE2E'%3EMK%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/main.css">
+<style>
+  /* ── Contact page additions ── */
+  .contact-page {
+    background: var(--bg);
+    min-height: 100svh;
+    padding: calc(var(--topbar-h) + 60px) var(--pad) clamp(80px,10vw,120px);
+  }
+  .contact-layout {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: clamp(40px,6vw,100px);
+    align-items: start;
+  }
+  .contact-heading {
+    font-size: clamp(48px,8vw,112px);
+    font-weight: 300;
+    line-height: 0.93;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    margin-bottom: 40px;
+  }
+  .contact-heading .lime { color: var(--lime-dk); }
+
+  /* form */
+  .contact-form { display: flex; flex-direction: column; gap: 16px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-2); }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--white);
+    border: 1.5px solid rgba(20,20,20,0.14);
+    border-radius: 10px;
+    padding: 12px 16px;
+    transition: border-color 0.2s;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { border-color: var(--lime-dk); }
+  .form-group textarea { resize: vertical; min-height: 140px; }
+  .form-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6B65' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px;
+    cursor: pointer;
+  }
+  .form-submit-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  .form-note { font-size: 12px; color: var(--text-2); }
+  .form-required { color: var(--lime-dk); }
+
+  /* sidebar */
+  .contact-sidebar { position: sticky; top: calc(var(--topbar-h) + 32px); }
+  .sidebar-block { margin-bottom: 36px; }
+  .sidebar-block-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-2); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .sidebar-block-title::before { content: ''; display: block; width: 20px; height: 1.5px; background: currentColor; }
+  .sidebar-contact-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 14px; color: var(--text); margin-bottom: 10px;
+    line-height: 1.4;
+  }
+  .sidebar-contact-item a { color: var(--text); transition: color 0.2s; }
+  .sidebar-contact-item a:hover { color: var(--lime-dk); }
+  .sidebar-contact-icon { flex-shrink: 0; color: var(--text-2); margin-top: 1px; }
+  .sidebar-divider { border: none; border-top: 1px solid rgba(20,20,20,0.1); margin: 24px 0; }
+
+  /* business card */
+  .biz-card {
+    width: 100%;
+    aspect-ratio: 1.75;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+  }
+  .biz-card-face {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 20px 22px;
+    transition: opacity 0.35s;
+  }
+  .biz-card-dark {
+    background: var(--dk);
+  }
+  .biz-card-light {
+    background: var(--white);
+    border: 1px solid rgba(20,20,20,0.1);
+    opacity: 0;
+  }
+  .biz-card:hover .biz-card-light,
+  .biz-card.flipped .biz-card-light  { opacity: 1; }
+  .biz-card:hover .biz-card-dark,
+  .biz-card.flipped .biz-card-dark   { opacity: 0; }
+
+  /* dark face */
+  .bc-name-dk { font-size: 16px; font-weight: 600; color: var(--text-lt); }
+  .bc-role-dk { font-size: 11px; color: var(--text-lt2); margin-top: 2px; }
+  .bc-footer-dk { display: flex; justify-content: space-between; align-items: flex-end; }
+  .bc-contact-dk { font-size: 10px; color: var(--text-lt2); line-height: 1.7; }
+  .bc-logo-dk { font-size: 22px; font-weight: 700; color: var(--lime); letter-spacing: -0.02em; }
+
+  /* light face */
+  .bc-name-lt { font-size: 16px; font-weight: 600; color: var(--text); }
+  .bc-role-lt { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+  .bc-footer-lt { display: flex; justify-content: space-between; align-items: flex-end; }
+  .bc-contact-lt { font-size: 10px; color: var(--text-2); line-height: 1.7; }
+  .bc-logo-lt { font-size: 22px; font-weight: 700; color: var(--dk); letter-spacing: -0.02em; }
+
+  .biz-card-hint { font-size: 11px; color: var(--text-2); text-align: center; margin-top: 6px; }
+
+  @media (max-width: 860px) {
+    .contact-layout { grid-template-columns: 1fr; }
+    .contact-sidebar { position: static; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar on-light" id="topbar">
+  <a class="topbar-logo" href="index.html">Mojtaba Keivanlou</a>
+  <div class="topbar-right">
+    <a class="topbar-cta" href="index.html">&larr; Back to CV</a>
+  </div>
+</header>
+
+<!-- CONTACT PAGE -->
+<div class="contact-page">
+  <div class="contact-layout">
+
+    <!-- FORM SIDE -->
+    <div>
+      <div class="eyebrow">New Enquiry</div>
+      <h1 class="contact-heading">Start a<br><span class="lime">Project</span></h1>
+
+      <form class="contact-form" action="https://api.web3forms.com/submit" method="POST" id="contact-form">
+        <input type="hidden" name="access_key" value="48578b9d-2262-418b-a5b9-4d9bd167ffb4">
+        <input type="hidden" name="subject" value="New Project Enquiry — mojtabakeivanlou.com">
+        <input type="hidden" name="redirect" value="https://mojtabakeivanlou.com/thank-you.html">
+        <input type="hidden" name="local-time" id="local-time">
+        <input type="checkbox" name="botcheck" style="display:none;">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name <span class="form-required">*</span></label>
+            <input type="text" name="name" placeholder="Your full name" required>
+          </div>
+          <div class="form-group">
+            <label>Email Address <span class="form-required">*</span></label>
+            <input type="email" name="email" placeholder="your@email.com" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Phone / WhatsApp</label>
+            <input type="tel" name="phone" placeholder="+1 234 567 8900">
+          </div>
+          <div class="form-group">
+            <label>Organisation</label>
+            <input type="text" name="organisation" placeholder="Company or institution">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Project Type <span class="form-required">*</span></label>
+          <select name="project_type" required>
+            <option value="" disabled selected>Select project type…</option>
+            <option>Flood Modelling &amp; Hazard Mapping</option>
+            <option>Flood Protection Scheme Design</option>
+            <option>Dam Engineering &amp; Safety Assessment</option>
+            <option>Hydrology &amp; Hydrological Analysis</option>
+            <option>Road &amp; Drainage Design</option>
+            <option>Stormwater &amp; Sewage Network Design</option>
+            <option>Water Supply &amp; Irrigation</option>
+            <option>GIS &amp; Spatial Analysis</option>
+            <option>Engineering Automation &amp; Python</option>
+            <option>Technical Review &amp; Peer Check</option>
+            <option>Other / General Enquiry</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Project Description <span class="form-required">*</span></label>
+          <textarea name="description" placeholder="Tell me about your project — scope, location, timeline, and any specific requirements…" required></textarea>
+        </div>
+
+        <div class="form-submit-row">
+          <button type="submit" class="btn-lime">
+            Send Enquiry
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+          <span class="form-note"><span class="form-required">*</span> Required fields</span>
+        </div>
+      </form>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="contact-sidebar">
+
+      <div class="sidebar-block">
+        <div class="sidebar-block-title">Direct Contact</div>
+        <div class="sidebar-contact-item">
+          <svg class="sidebar-contact-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <div><a href="mailto:keyvanlu.m@gmail.com">keyvanlu.m@gmail.com</a></div>
+        </div>
+        <div class="sidebar-contact-item">
+          <svg class="sidebar-contact-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.8a16 16 0 0 0 6.29 6.29l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <div><a href="tel:+96892970635">+968 9297 0635</a></div>
+        </div>
+        <div class="sidebar-contact-item">
+          <svg class="sidebar-contact-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.985-1.312A9.954 9.954 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 01-4.071-1.124l-.292-.174-3.017.793.806-2.944-.19-.302A7.944 7.944 0 014 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/></svg>
+          <div><a href="https://wa.me/96892970635" target="_blank" rel="noopener">WhatsApp</a></div>
+        </div>
+        <div class="sidebar-contact-item">
+          <svg class="sidebar-contact-icon" width="14" height="14" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="3" fill="currentColor"/><rect x="6" y="10" width="2.5" height="8" fill="white"/><circle cx="7.25" cy="7.25" r="1.5" fill="white"/><path d="M12 10h2.5v1.5c.4-.8 1.4-1.7 3-1.7 2.5 0 3 1.6 3 3.7V18h-2.5v-4c0-1.1-.4-1.8-1.3-1.8-1 0-1.7.7-1.7 2V18H12V10z" fill="white"/></svg>
+          <div><a href="https://linkedin.com/in/MojtabaKeivanlou" target="_blank" rel="noopener">LinkedIn</a></div>
+        </div>
+        <div class="sidebar-contact-item">
+          <svg class="sidebar-contact-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+          <div>Muscat, Sultanate of Oman</div>
+        </div>
+      </div>
+
+      <hr class="sidebar-divider">
+
+      <div class="sidebar-block">
+        <div class="sidebar-block-title">Download CV</div>
+        <a class="btn-lime" href="pdf/CV_Mojtaba_Keivanlou_2026.pdf" download style="width:100%;justify-content:center;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CV_Mojtaba_Keivanlou_2026.pdf
+        </a>
+      </div>
+
+      <hr class="sidebar-divider">
+
+      <div class="sidebar-block">
+        <div class="sidebar-block-title">Business Card</div>
+        <div class="biz-card" id="biz-card" title="Hover or click to flip">
+          <!-- Dark face -->
+          <div class="biz-card-face biz-card-dark">
+            <div>
+              <div class="bc-name-dk">Mojtaba Keivanlou</div>
+              <div class="bc-role-dk">Senior Hydraulic &amp; Water Resources Engineer</div>
+            </div>
+            <div class="bc-footer-dk">
+              <div class="bc-contact-dk">
+                keyvanlu.m@gmail.com<br>
+                +968 9297 0635<br>
+                Muscat, Oman
+              </div>
+              <div class="bc-logo-dk">MK</div>
+            </div>
+          </div>
+          <!-- Light face -->
+          <div class="biz-card-face biz-card-light">
+            <div>
+              <div class="bc-name-lt">Mojtaba Keivanlou</div>
+              <div class="bc-role-lt">Senior Hydraulic &amp; Water Resources Engineer</div>
+            </div>
+            <div class="bc-footer-lt">
+              <div class="bc-contact-lt">
+                keyvanlu.m@gmail.com<br>
+                +968 9297 0635<br>
+                Muscat, Oman
+              </div>
+              <div class="bc-logo-lt">MK</div>
+            </div>
+          </div>
+        </div>
+        <div class="biz-card-hint">Hover to preview · Click to hold</div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-copy">&copy; 2026 Mojtaba Keivanlou &nbsp;&middot;&nbsp; Muscat, Oman</div>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="mailto:keyvanlu.m@gmail.com">Email</a>
+      <a href="https://linkedin.com/in/MojtabaKeivanlou" target="_blank" rel="noopener">LinkedIn</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Populate local time on submit
+  document.getElementById('contact-form').addEventListener('submit', function () {
+    var d = new Date();
+    document.getElementById('local-time').value =
+      d.toLocaleString('en-GB', { timeZone: 'Asia/Muscat', dateStyle: 'medium', timeStyle: 'short' });
+  });
+
+  // Business card flip on click (touch)
+  var card = document.getElementById('biz-card');
+  if (card) {
+    card.addEventListener('click', function () { card.classList.toggle('flipped'); });
+  }
+</script>
+</body>
+</html>
