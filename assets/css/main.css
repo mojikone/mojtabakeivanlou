@@ -180,7 +180,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   position: absolute;
   bottom: 0;
   top: auto;
-  left: calc(80px - 54svh);
+  left: calc(80px - 49svh);
   height: 90svh;
   width: auto;
   max-width: none;
@@ -407,7 +407,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   .hero-photo-main {
     height: 70svh; width: auto;
     top: auto; bottom: 0;
-    left: calc(80px - 42svh); transform: none;
+    left: calc(80px - 38svh); transform: none;
   }
   .hero-bl { display: none; }
   .hero-br { display: none; }
