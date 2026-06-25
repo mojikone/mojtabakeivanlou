@@ -55,10 +55,10 @@ Primary sections:
 1. Hero
 2. Services / What I Do
 3. About / Profile
-4. Selected Work / Experience
+4. Experience / Career
 5. Technical Toolkit
 6. Contact / Footer
-7. Contact form and thank-you route/page if retained from the current branch
+7. Contact form and thank-you route/page
 
 The section order may follow the reference's emotional rhythm more than a
 traditional CV order: strong hero, compact navigation, large editorial section
@@ -135,11 +135,13 @@ inside a dedicated light panel.
 Use the detailed career history from the content branch. Keep the project depth,
 but present it in a style closer to the reference:
 
-- Large "Recent works" / "Selected work" style section title.
+- Large editorial career/experience section title.
 - Editorial project blocks rather than dense resume cards where possible.
 - Progressive disclosure for full project details is allowed.
 - Preserve important quantitative details: 16+ years, 3 countries, 50+ projects,
   Batinah 15,000 km², OMR 6M / USD 15.6M, and major project scopes.
+- Do not include a "Selected Work" section in this version. That area is
+  reserved for future work.
 
 ## Contact
 
@@ -147,7 +149,8 @@ Close with a large reference-style contact section:
 
 - Big "Let's work together" treatment.
 - Email, phone, WhatsApp, LinkedIn, CV download.
-- Contact form can remain as a route/page if it fits the final architecture.
+- Keep the contact form route/page.
+- Keep the thank-you route/page.
 
 ## Technical Architecture
 
