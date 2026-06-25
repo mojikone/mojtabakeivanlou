@@ -912,39 +912,38 @@ body {
 .tl-expand {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 12px;
+  gap: 5px;
+  margin-top: 10px;
   font-family: 'Poppins', sans-serif;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.9px;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--gold);
   background: none;
-  border: 1px solid rgba(196,154,60,0.3);
-  border-radius: 4px;
+  border: none;
   cursor: pointer;
-  padding: 5px 11px;
-  transition: background 0.2s, color 0.2s;
+  padding: 0;
+  opacity: 0.8;
+  transition: opacity 0.2s;
 }
-.tl-expand:hover { background: rgba(196,154,60,0.08); }
+.tl-expand:hover { opacity: 1; }
 .tl-expand svg { transition: transform 0.25s; flex-shrink: 0; }
 .tl-item.exp-open .tl-expand svg { transform: rotate(180deg); }
 
 .tl-projects {
-  margin-top: 16px;
-  border-left: 2px solid rgba(196,154,60,0.18);
-  padding-left: 14px;
-  display: flex;
+  margin-top: 14px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(196,154,60,0.2);
+  display: none;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
 }
+.tl-item.exp-open .tl-projects { display: flex; }
 .proj-item {
-  background: var(--white);
-  border: 1px solid var(--bdr-lt);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bdr-lt);
 }
+.proj-item:first-child { padding-top: 0; }
+.proj-item:last-child { border-bottom: none; }
 .proj-name {
   font-size: 12.5px;
   font-weight: 600;
@@ -1033,25 +1032,19 @@ body {
 .cta-detail {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 10px;
   font-size: 14px;
   color: rgba(232,240,247,0.7);
   transition: color 0.2s;
 }
 .cta-detail:hover { color: var(--gold); }
 .cta-detail-icon {
-  width: 38px; height: 38px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid var(--bdr-dk);
-  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   color: var(--gold);
-  transition: background 0.2s;
 }
-.cta-detail:hover .cta-detail-icon { background: rgba(196,154,60,0.12); }
 
 .cta-actions {
   display: flex;
@@ -1199,45 +1192,6 @@ body {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             Muscat, Oman
           </span>
-        </div>
-
-        <div class="hero-services">
-          <div class="hero-svc">
-            <div class="hero-svc-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5s2.5 2 5 2 2.5-2 5-2 2.5 2 2.5 2"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 2.5 2"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 2.5 2"/></svg></div>
-            Flood Modelling &amp; Protection
-          </div>
-          <div class="hero-svc">
-            <div class="hero-svc-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l4-14h10l4 14"/><path d="M3 17h18"/><path d="M10 8h4"/></svg></div>
-            Road &amp; Drainage Design
-          </div>
-          <div class="hero-svc">
-            <div class="hero-svc-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.6A5 5 0 0 0 18 8h-1.3A8 8 0 1 0 4 16"/><line x1="8" y1="19" x2="8" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="16" y1="19" x2="16" y2="21"/></svg></div>
-            Hydrology &amp; Climate
-          </div>
-          <div class="hero-svc">
-            <div class="hero-svc-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="8" x2="9" y2="8"/><polygon points="9,6 11,6 15,20 7,20"/><line x1="4" y1="20" x2="20" y2="20"/></svg></div>
-            Dam Engineering
-          </div>
-          <div class="hero-svc">
-            <div class="hero-svc-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
-            Stormwater &amp; Sewage
-          </div>
-          <div class="hero-svc">
-            <div class="hero-svc-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg></div>
-            Water Supply &amp; Irrigation
-          </div>
-          <div class="hero-svc">
-            <div class="hero-svc-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
-            GIS &amp; Spatial Analysis
-          </div>
-          <div class="hero-svc">
-            <div class="hero-svc-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg></div>
-            Surveying &amp; Mapping
-          </div>
-          <div class="hero-svc">
-            <div class="hero-svc-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
-            Engineering Automation
-          </div>
         </div>
 
         <div class="hero-actions">
@@ -1460,7 +1414,7 @@ body {
               <span>View all projects</span>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="tl-projects" hidden>
+            <div class="tl-projects">
               <div class="proj-item">
                 <div class="proj-name">Batinah Flood Protection Scheme — North &amp; South Al Batinah Governorates</div>
                 <div class="proj-meta">Feb 2023 – Present &nbsp;·&nbsp; Team Leader</div>
@@ -1563,7 +1517,7 @@ body {
               <span>View project</span>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="tl-projects" hidden>
+            <div class="tl-projects">
               <div class="proj-item">
                 <div class="proj-name">Shadow Lake Dam Safety Assessment — Glover, VT</div>
                 <div class="proj-meta">Jan 2021 – Nov 2021 &nbsp;·&nbsp; Hydraulic Engineer</div>
@@ -1588,7 +1542,7 @@ body {
               <span>View all projects</span>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="tl-projects" hidden>
+            <div class="tl-projects">
               <div class="proj-item">
                 <div class="proj-name">Flood Hazard &amp; Risk Mapping — Hormozgan Province Rivers</div>
                 <div class="proj-meta">Jan 2020 – Sep 2020 &nbsp;·&nbsp; Hydraulic Engineer</div>
@@ -1651,7 +1605,7 @@ body {
               <span>View all projects</span>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="tl-projects" hidden>
+            <div class="tl-projects">
               <div class="proj-item">
                 <div class="proj-name">Revision of Mashhad City's Main Landscape Irrigation Pipelines</div>
                 <div class="proj-meta">Jun 2019 – Jan 2020 &nbsp;·&nbsp; Hydraulic Engineer</div>
@@ -1696,7 +1650,7 @@ body {
               <span>View all positions</span>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="tl-projects" hidden>
+            <div class="tl-projects">
               <div class="proj-item">
                 <div class="proj-name">Majd Ab Shargh — Project Manager (Drainage)</div>
                 <div class="proj-meta">Apr 2017 – Jun 2019 &nbsp;·&nbsp; Project Manager</div>
@@ -1901,9 +1855,6 @@ body {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download CV
         </a>
-        <div class="cta-card-note">
-          <a href="contact.html">Business Card &amp; Enquiry Form →</a>
-        </div>
       </div>
 
     </div>
@@ -1974,14 +1925,13 @@ body {
 /* Accordion toggle */
 function toggleExp(btn) {
   var item = btn.closest('.tl-item');
-  var projects = item.querySelector('.tl-projects');
-  var expanded = btn.getAttribute('aria-expanded') === 'true';
-  var origLabel = btn.querySelector('span').dataset.orig || btn.querySelector('span').textContent;
-  btn.querySelector('span').dataset.orig = origLabel;
-  btn.setAttribute('aria-expanded', String(!expanded));
-  btn.querySelector('span').textContent = expanded ? origLabel : 'Hide';
-  projects.hidden = expanded;
-  item.classList.toggle('exp-open', !expanded);
+  var span = btn.querySelector('span');
+  var isOpen = item.classList.contains('exp-open');
+  var origLabel = span.dataset.orig || span.textContent;
+  span.dataset.orig = origLabel;
+  item.classList.toggle('exp-open');
+  btn.setAttribute('aria-expanded', String(!isOpen));
+  span.textContent = isOpen ? origLabel : 'Collapse';
 }
 </script>
 </body>
