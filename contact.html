@@ -165,6 +165,21 @@ body {
   background: var(--gold);
   flex-shrink: 0;
 }
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gold);
+  text-decoration: none;
+  opacity: 0.8;
+  margin-bottom: 18px;
+  transition: opacity 0.2s, gap 0.2s;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.back-link:hover { opacity: 1; gap: 10px; }
 .page-title {
   font-size: clamp(32px, 5vw, 54px);
   font-weight: 700;
@@ -564,7 +579,10 @@ textarea {
   <div class="page-header-grid"></div>
   <div class="wrap">
     <div class="page-header-inner">
-      <div class="label">Get In Touch</div>
+      <a class="back-link" href="index.html">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back to CV
+      </a>
       <h1 class="page-title">Start a <span>Project</span></h1>
       <p class="page-sub">Based in Muscat, Oman — available for consultancy, design review, hydraulic modelling, and international project collaboration. Fill in the form and I'll be in touch within one working day.</p>
     </div>
