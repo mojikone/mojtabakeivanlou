@@ -207,26 +207,78 @@ body {
 }
 
 /* ── SCROLL-TO-TOP FAB ───────────────────────────────────── */
-.scroll-top-fab {
+.stf {
   position: fixed;
   right: clamp(16px, 3vw, 32px);
   bottom: clamp(16px, 3vw, 32px);
   z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  opacity: 0; visibility: hidden; transform: translateY(12px);
+  transition: opacity 0.3s cubic-bezier(0.4,0,0.2,1), transform 0.3s cubic-bezier(0.4,0,0.2,1), visibility 0.3s;
+}
+.stf.show { opacity: 1; visibility: visible; transform: translateY(0); }
+
+.stf-btn {
   width: 52px; height: 52px;
   border-radius: 50%;
   background: var(--gold);
   color: #fff;
   border: none;
   cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+  flex-shrink: 0;
+  transition: background 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.stf.open .stf-btn,
+.stf:hover .stf-btn,
+.stf:focus-within .stf-btn { background: var(--dk2); }
+
+.stf-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+  pointer-events: none;
+}
+.stf.open .stf-menu,
+.stf:hover .stf-menu,
+.stf:focus-within .stf-menu { pointer-events: auto; }
+
+.stf-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.28);
-  opacity: 0; visibility: hidden; transform: translateY(12px);
-  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s, background 0.2s;
+  gap: 9px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.22);
+  color: rgba(232,240,247,0.88);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px) scale(0.95);
+  transition: opacity 0.28s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.4,0,0.2,1), background 0.2s, color 0.2s;
 }
-.scroll-top-fab.show { opacity: 1; visibility: visible; transform: translateY(0); }
-.scroll-top-fab:hover { background: var(--gold-lt); }
+.stf.open .stf-item,
+.stf:hover .stf-item,
+.stf:focus-within .stf-item {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--i) * 45ms);
+}
+.stf-item:hover { background: var(--gold); color: var(--dk1); border-color: transparent; }
+@media (max-width: 600px) { .stf-btn { width: 46px; height: 46px; } }
 .nav-inner {
   height: var(--nav-h);
   display: flex;
@@ -1892,19 +1944,49 @@ body {
   </div>
 </footer>
 
-<button class="scroll-top-fab" id="scroll-top-fab" aria-label="Back to top">
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="12" y1="19" x2="12" y2="6"/><polyline points="5 13 12 6 19 13"/>
-  </svg>
-</button>
+<div class="stf" id="stf">
+  <nav class="stf-menu" aria-label="Jump to section">
+    <a class="stf-item" href="#about"      style="--i:5">About</a>
+    <a class="stf-item" href="#expertise"  style="--i:4">Expertise</a>
+    <a class="stf-item" href="#experience" style="--i:3">Experience</a>
+    <a class="stf-item" href="#skills"     style="--i:2">Skills</a>
+    <a class="stf-item" href="#contact"    style="--i:1">Contact</a>
+  </nav>
+  <button class="stf-btn" id="stf-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="19" x2="12" y2="6"/><polyline points="5 13 12 6 19 13"/>
+    </svg>
+  </button>
+</div>
 
 <script>
 (function() {
-  /* Scroll-to-top FAB */
-  var fab = document.getElementById('scroll-top-fab');
-  function toggleFab() { fab.classList.toggle('show', window.scrollY > 300); }
-  window.addEventListener('scroll', toggleFab, { passive: true });
-  fab.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  var stf = document.getElementById('stf');
+  var btn = document.getElementById('stf-btn');
+
+  /* Show/hide after scrolling 300px */
+  function toggleStf() { stf.classList.toggle('show', window.scrollY > 300); }
+  window.addEventListener('scroll', toggleStf, { passive: true });
+
+  /* Touch: tap = toggle menu; Desktop: click = scroll to top */
+  btn.addEventListener('click', function(e) {
+    if (window.matchMedia('(hover: none)').matches) {
+      e.stopPropagation();
+      stf.classList.toggle('open');
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+
+  /* Close menu when a section link is clicked */
+  stf.querySelectorAll('.stf-item').forEach(function(a) {
+    a.addEventListener('click', function() { stf.classList.remove('open'); });
+  });
+
+  /* Close on outside click */
+  document.addEventListener('click', function(e) {
+    if (!stf.contains(e.target)) stf.classList.remove('open');
+  });
 
   /* Active nav link */
   var sections = document.querySelectorAll('section[id]');
