@@ -383,8 +383,9 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   .pill-nav { display: none; }
 }
 @media (max-width: 600px) {
-  .hero-photo-main { height: 48svh; top: 76svh; }
+  .hero-photo-main { height: 49svh; top: auto; bottom: -26svh; }
   .hero-br { display: none; }
+  .hero-bl { bottom: 16px; }
   .hero-stats { flex-wrap: wrap; gap: 16px; }
   .about-numbers { grid-template-columns: repeat(3,1fr); }
   .cta-photo-row { flex-direction: column; }
