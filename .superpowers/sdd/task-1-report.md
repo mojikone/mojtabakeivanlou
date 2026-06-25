@@ -15,3 +15,18 @@ Concern:
 
 Commit:
 - Created after staging Task 1 files with message: `chore: scaffold react vite site`
+
+---
+
+Review Fix Addendum:
+- Added `public/CNAME` with the exact custom domain value from the repository root CNAME so Vite copies it into the deployable output for the Pages workflow upload.
+- Restored the pre-scaffold SEO baseline in `index.html`: title, description, canonical URL, Open Graph tags, Twitter tags, and the Person JSON-LD block from the original content branch.
+- Replaced the broad `as any` in `vite.config.ts` with explicit config typing using `UserConfig` plus Vitest `InlineConfig`, keeping the `test` block type-safe without the prior cast.
+- Added `.gitignore` entries for `node_modules/`, `dist/`, `*.tsbuildinfo`, `vite.config.js`, and `vite.config.d.ts`, and removed those generated artifacts from the working tree after verification.
+
+Verification Addendum:
+- Command: `npm run build`
+- Result: succeeded (`tsc -b && vite build` exit code 0) and the built output included `dist/CNAME` with `mojtabakeivanlou.com` before cleanup.
+
+Commit Addendum:
+- Created follow-up fix commit after staging the targeted Task 1 files.

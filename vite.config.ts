@@ -1,7 +1,8 @@
-import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import type { InlineConfig } from "vitest";
+import type { UserConfig } from "vite";
 
-export default defineConfig({
+const config = {
   plugins: [react()],
   base: "/",
   test: {
@@ -9,4 +10,6 @@ export default defineConfig({
     globals: true,
     setupFiles: "./src/test/setup.ts"
   }
-} as any);
+} satisfies UserConfig & { test: InlineConfig };
+
+export default config;
