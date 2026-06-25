@@ -89,6 +89,7 @@ body {
   color: var(--text-lt);
   background: var(--white);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 /* ── LAYOUT HELPERS ──────────────────────────────────────── */
@@ -656,7 +657,7 @@ body {
 }
 .about-layout {
   display: grid;
-  grid-template-columns: 1fr 50%;
+  grid-template-columns: 1fr minmax(0, 50%);
   align-items: center;
 }
 .about-content {
@@ -668,6 +669,7 @@ body {
   align-items: stretch;
   align-self: stretch;
   overflow: hidden;
+  min-width: 0;
 }
 .about-illustration img {
   width: 100%;
@@ -1190,7 +1192,7 @@ body {
 @media (max-width: 1024px) {
   .hero-layout   { grid-template-columns: 1fr 260px; gap: 40px; }
   .hero-photo-frame { width: 210px; height: 210px; }
-  .about-layout  { grid-template-columns: 1fr 46%; }
+  .about-layout  { grid-template-columns: 1fr minmax(0, 46%); }
   .expertise-grid { grid-template-columns: repeat(2, 1fr); }
   .exp-layout    { grid-template-columns: 220px 1fr; gap: 50px; }
 }
