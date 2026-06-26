@@ -117,7 +117,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
 /* tags */
 .tag { display: inline-block; font-size: 12px; font-weight: 500; padding: 5px 13px; border-radius: 100px; background: rgba(20,20,20,0.08); color: var(--text); }
 .tag.hi { background: var(--lime); color: var(--text); }
-.tag-lt { background: rgba(235,233,228,0.1); color: var(--text-lt2); border: none; border-radius: 999px; }
+.tag-lt { display: inline-block; font-size: 12px; padding: 5px 13px; background: rgba(235,233,228,0.1); color: var(--text-lt2); border: none; border-radius: 999px; }
 .tag-lt.hi { background: rgba(168,206,46,0.2); color: var(--lime); border: none; font-weight: 600; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 
