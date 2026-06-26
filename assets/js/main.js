@@ -150,10 +150,16 @@ function toggleExp(btn) {
 
 /* ── LQIP blur-up ─────────────────────────────────────────── */
 document.querySelectorAll('.img-lqip[data-src]').forEach(function(img) {
-  var full = new Image();
-  full.onload = function() {
-    img.src = full.src;
-    img.classList.add('loaded');
-  };
-  full.src = img.dataset.src;
+  // rAF 1: ensure blur frame is painted before starting load
+  requestAnimationFrame(function() {
+    var full = new Image();
+    full.onload = function() {
+      // rAF 2: ensure swap happens in a new frame so transition fires
+      requestAnimationFrame(function() {
+        img.src = full.src;
+        img.classList.add('loaded');
+      });
+    };
+    full.src = img.dataset.src;
+  });
 });
