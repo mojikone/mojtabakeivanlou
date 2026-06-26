@@ -133,7 +133,11 @@
 /* ── BUSINESS CARD FLIP ───────────────────────────────────── */
 var bizCardMain = document.getElementById('biz-card-main');
 if (bizCardMain) {
-  bizCardMain.addEventListener('click', function () { this.classList.toggle('flipped'); });
+  bizCardMain.addEventListener('click', function () {
+    if (!window.matchMedia('(hover: hover)').matches) {
+      this.classList.toggle('flipped');
+    }
+  });
 }
 
 /* ── TIMELINE ACCORDION ───────────────────────────────────── */
