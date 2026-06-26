@@ -48,6 +48,27 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
 /* ─── Image fade-in on load ──────────────────────────────── */
 .fade-img { opacity: 0; transition: opacity 0.6s ease; }
 .fade-img.loaded { opacity: 1; }
+
+/* Hero: blurred low-res placeholder sits behind the sharp photo */
+.hero-photo-main.hero-ph { z-index: 0; filter: blur(8px); }
+
+/* About illustration: skeleton shimmer placeholder */
+.about-skel {
+  position: absolute; inset: 0; overflow: hidden;
+  background: var(--bg2); opacity: 1;
+  transition: opacity 0.4s ease; pointer-events: none;
+}
+.about-right.loaded .about-skel { opacity: 0; }
+.about-skel::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+  background-size: 200% 100%;
+  animation: about-shimmer 1.4s linear infinite;
+}
+@keyframes about-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 .reveal.d1 { transition-delay: 0.1s; }
 .reveal.d2 { transition-delay: 0.2s; }
 .reveal.d3 { transition-delay: 0.3s; }
@@ -320,6 +341,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   width: 50%;
   margin-left: clamp(24px, 4vw, 60px);
   margin-bottom: clamp(24px, 4vw, 60px);
+  position: relative;
 }
 .about-right img { width: 100%; height: auto; display: block; aspect-ratio: 2816 / 1536; }
 

@@ -150,10 +150,15 @@ function toggleExp(btn) {
 
 /* ── Image fade-in on load ────────────────────────────────── */
 document.querySelectorAll('.fade-img').forEach(function(img) {
-  if (img.complete && img.naturalWidth) {
+  function done() {
     img.classList.add('loaded');
+    var wrap = img.closest('.about-right');
+    if (wrap) { wrap.classList.add('loaded'); }
+  }
+  if (img.complete && img.naturalWidth) {
+    done();
   } else {
-    img.addEventListener('load', function() { img.classList.add('loaded'); });
-    img.addEventListener('error', function() { img.classList.add('loaded'); });
+    img.addEventListener('load', done);
+    img.addEventListener('error', done);
   }
 });
