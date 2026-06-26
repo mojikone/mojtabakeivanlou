@@ -57,9 +57,11 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   position: absolute; inset: 0;
   background: var(--bg2); opacity: 1;
   transition: opacity 0.6s ease; pointer-events: none;
+  /* no z-index — sits behind the in-flow img */
 }
 .about-right.loaded .about-skel { opacity: 0; }
 .about-right img {
+  position: relative; /* stacks above the absolute .about-skel */
   filter: blur(12px);
   transition: filter 0.9s ease, opacity 0.6s ease;
 }
