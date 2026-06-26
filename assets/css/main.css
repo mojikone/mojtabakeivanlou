@@ -365,8 +365,10 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   transition: background 0.2s;
   cursor: pointer;
 }
-.exp-card:hover { background: rgba(235,233,228,0.08); }
-.exp-card:hover .exp-card-desc { max-height: 200px; margin-top: 12px; }
+@media (hover: hover) {
+  .exp-card:hover { background: rgba(235,233,228,0.08); }
+  .exp-card:hover .exp-card-desc { max-height: 200px; margin-top: 12px; }
+}
 .exp-card-icon { color: var(--lime); margin-bottom: 14px; display: block; }
 .exp-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; user-select: none; }
 .exp-card-title { font-size: 15px; font-weight: 500; color: var(--text-lt); line-height: 1.3; }
