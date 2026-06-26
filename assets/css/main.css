@@ -557,7 +557,13 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   .skills-grid { grid-template-columns: 1fr; gap: 24px; }
   .topbar-cta { display: none; }
   .topbar-hamburger { display: none; }
-  .pill-nav { display: none; }
+}
+/* Mid-width range: pill-nav and the bottom-right Download/Start buttons
+   would collide horizontally. Keep the nav visible but drop it to its own
+   band at the very bottom and lift the buttons above it (no overlap). */
+@media (min-width: 769px) and (max-width: 1024px) and (min-height: 501px) {
+  .pill-nav { bottom: 16px; }
+  .hero-br { bottom: 80px; }
 }
 @media (max-width: 768px) {
   /* Mobile hero: right column — name, role, contact+buttons stacked */
