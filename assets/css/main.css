@@ -337,7 +337,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   margin-bottom: clamp(24px, 4vw, 60px);
   position: relative;
 }
-.about-right img { width: 100%; height: auto; display: block; aspect-ratio: 2816 / 1536; }
+.about-right img { width: 100%; height: auto; display: block; aspect-ratio: 2357 / 1396; }
 
 /* ─── EXPERTISE ──────────────────────────────────────────── */
 .expertise { background: var(--dk); padding: var(--sec-py) 0; color: var(--text-lt); position: relative; z-index: 1; }
