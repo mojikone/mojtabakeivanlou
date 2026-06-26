@@ -550,7 +550,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   .expertise-grid { grid-template-columns: repeat(2,1fr); }
 }
 @media (max-width: 860px) {
-  .about-right { float: none; width: 100%; padding-left: 0; margin-bottom: 32px; }
+  .about-right { float: none; width: 100%; padding-left: 0; margin-left: 0; margin-bottom: 32px; }
   .experience-layout { grid-template-columns: 1fr; }
   .exp-sidebar { position: static; }
   .expertise-grid { grid-template-columns: 1fr; }
