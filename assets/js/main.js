@@ -150,8 +150,15 @@ function toggleExp(btn) {
 
 /* ── EXPERTISE CARD EXPAND ────────────────────────────────── */
 document.querySelectorAll('.exp-card').forEach(function(card) {
+  card.addEventListener('mouseenter', function() {
+    if (!card.classList.contains('pinned')) card.classList.add('hovered');
+  });
+  card.addEventListener('mouseleave', function() {
+    card.classList.remove('hovered');
+  });
   card.addEventListener('click', function() {
-    card.classList.toggle('open');
+    card.classList.remove('hovered');
+    card.classList.toggle('pinned');
   });
 });
 
