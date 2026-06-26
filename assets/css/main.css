@@ -57,11 +57,12 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   position: absolute; inset: 0;
   width: 100%; height: 100%; object-fit: cover;
   filter: blur(8px); transform: scale(1.05);
-  z-index: 0;
+  z-index: 0; mix-blend-mode: multiply;
 }
 .about-illus-hq {
   position: relative; z-index: 1;
   transition: opacity 0.8s ease;
+  mix-blend-mode: multiply;
 }
 .reveal.d1 { transition-delay: 0.1s; }
 .reveal.d2 { transition-delay: 0.2s; }
