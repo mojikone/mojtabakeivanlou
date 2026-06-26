@@ -17,7 +17,8 @@ const config = {
   test: {
     environment: "jsdom",
     globals: true,
-    setupFiles: "./src/test/setup.ts"
+    setupFiles: "./src/test/setup.ts",
+    exclude: ["node_modules/**", "dist/**", "tests/**"]
   }
 } satisfies UserConfig & { test: InlineConfig };
 

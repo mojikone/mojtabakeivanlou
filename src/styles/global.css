@@ -343,7 +343,7 @@ main {
   grid-template-columns: minmax(0, 0.98fr) minmax(18rem, 0.7fr);
   gap: clamp(2rem, 7vw, 7rem);
   align-items: center;
-  background: #f8f8f2;
+  background: var(--color-paper);
 }
 
 .about-copy {
