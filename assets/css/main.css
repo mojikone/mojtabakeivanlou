@@ -52,16 +52,15 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
 /* Hero: blurred low-res placeholder sits behind the sharp photo */
 .hero-photo-main.hero-ph { z-index: 0; filter: blur(8px); }
 
-/* About illustration: blur-up placeholder */
+/* About illustration: blur-up placeholder (transparent line art) */
 .about-illus-lq {
   position: absolute; inset: 0;
   width: 100%; height: 100%; object-fit: cover;
   filter: blur(8px); transform: scale(1.05);
-  z-index: 0; mix-blend-mode: multiply;
+  z-index: 0;
 }
 .about-illus-hq {
   position: relative; z-index: 1;
-  mix-blend-mode: multiply;
 }
 .reveal.d1 { transition-delay: 0.1s; }
 .reveal.d2 { transition-delay: 0.2s; }
