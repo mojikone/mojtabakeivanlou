@@ -332,7 +332,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   border-radius: 100px; background: rgba(20,20,20,0.07); color: var(--text);
 }
 .lang-chip em { color: var(--text-2); font-style: normal; margin-left: 4px; }
-.about-numbers { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 32px; }
+.about-numbers { display: flex; justify-content: center; gap: clamp(48px, 8vw, 100px); margin-top: 40px; text-align: center; }
 .about-num-val { font-size: 32px; font-weight: 200; line-height: 1; letter-spacing: -0.03em; }
 .about-num-val em { font-style: normal; font-size: 0.55em; }
 .about-num-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-2); margin-top: 3px; }
