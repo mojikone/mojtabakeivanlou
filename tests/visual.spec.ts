@@ -22,6 +22,40 @@ test("mobile keeps pill nav visible and omits selected work", async ({ page }) =
   expect(overflow).toBe(false);
 });
 
+test("tablet hero keeps portrait clear of headline and actions", async ({ page }) => {
+  for (const width of [768, 900]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+
+    const metrics = await page.evaluate(() => {
+      const rect = (selector: string) => {
+        const element = document.querySelector(selector);
+        const box = element?.getBoundingClientRect();
+        return box
+          ? {
+              left: box.left,
+              top: box.top,
+              right: box.right,
+              bottom: box.bottom
+            }
+          : null;
+      };
+      const intersects = (a: ReturnType<typeof rect>, b: ReturnType<typeof rect>) =>
+        Boolean(a && b && !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom));
+      const portrait = rect(".hero-portrait img");
+      const textBoxes = [rect(".hero h1"), rect(".hero-title"), rect(".hero-tagline"), rect(".hero-actions")];
+
+      return {
+        hasPortraitTextOverlap: textBoxes.some((box) => intersects(portrait, box)),
+        hasHorizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth
+      };
+    });
+
+    expect(metrics.hasPortraitTextOverlap).toBe(false);
+    expect(metrics.hasHorizontalOverflow).toBe(false);
+  }
+});
+
 test("line artwork is on a light section", async ({ page }) => {
   await page.goto("/");
 

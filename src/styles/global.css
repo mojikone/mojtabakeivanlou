@@ -973,6 +973,27 @@ main {
   }
 }
 
+@media (min-width: 721px) and (max-width: 1199px) {
+  .hero-portrait {
+    left: clamp(-7.5rem, -8vw, -3.2rem);
+    width: min(42vw, 32rem);
+  }
+
+  .hero-content {
+    width: min(44rem, 56vw);
+  }
+
+  .quick-info {
+    display: none;
+  }
+
+  .experience-item > p,
+  .project-list {
+    width: auto;
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 720px) {
   .pill-nav {
     width: min(calc(100% - 0.5rem), 31rem);
