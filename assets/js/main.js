@@ -148,18 +148,12 @@ function toggleExp(btn) {
   span.textContent = isOpen ? orig : 'Collapse';
 }
 
-/* ── LQIP blur-up ─────────────────────────────────────────── */
-document.querySelectorAll('.img-lqip[data-src]').forEach(function(img) {
-  // rAF 1: ensure blur frame is painted before starting load
-  requestAnimationFrame(function() {
-    var full = new Image();
-    full.onload = function() {
-      // rAF 2: ensure swap happens in a new frame so transition fires
-      requestAnimationFrame(function() {
-        img.src = full.src;
-        img.classList.add('loaded');
-      });
-    };
-    full.src = img.dataset.src;
-  });
+/* ── Image fade-in on load ────────────────────────────────── */
+document.querySelectorAll('.fade-img').forEach(function(img) {
+  if (img.complete && img.naturalWidth) {
+    img.classList.add('loaded');
+  } else {
+    img.addEventListener('load', function() { img.classList.add('loaded'); });
+    img.addEventListener('error', function() { img.classList.add('loaded'); });
+  }
 });
