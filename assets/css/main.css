@@ -502,7 +502,9 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   cursor: pointer;
   transition: background 0.4s ease;
   border: 1px solid rgba(168,206,46,0.2);
+  text-align: left;
 }
+.bc-card.front .bc-mk { position:absolute; bottom:4mm; right:5mm; font-size:12pt; font-weight:800; color:var(--bc-accent-clr); letter-spacing:-0.5px; line-height:1; }
 /* bc-card light (white back) */
 .bc-card.bc-light {
   --bc-bg: #ffffff;
