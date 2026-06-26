@@ -15,6 +15,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: clip;
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-ui);
@@ -60,8 +61,8 @@ main {
 }
 
 .reveal {
-  opacity: 0.001;
-  transform: translate3d(0, 96px, 0);
+  opacity: 1;
+  transform: translate3d(0, 48px, 0);
   transition:
     transform 0.8s var(--ease-framer),
     opacity 0.8s var(--ease-framer);
@@ -142,17 +143,18 @@ main {
 .hero::after {
   position: absolute;
   inset: auto 0 0 0;
-  z-index: -1;
+  z-index: 0;
   height: 35%;
   background: linear-gradient(0deg, rgba(12, 25, 19, 0.42), transparent);
   content: "";
+  pointer-events: none;
 }
 
 .hero-portrait {
   position: absolute;
   left: clamp(-8.5rem, -8vw, -3rem);
   bottom: 0;
-  z-index: -1;
+  z-index: 0;
   width: min(54vw, 44rem);
   min-width: 21rem;
   pointer-events: none;
@@ -165,6 +167,8 @@ main {
 }
 
 .hero-content {
+  position: relative;
+  z-index: 1;
   align-self: center;
   justify-self: end;
   width: min(49rem, 58vw);
@@ -238,6 +242,7 @@ main {
 
 .hero-stats {
   position: absolute;
+  z-index: 1;
   left: clamp(1.2rem, 4vw, 4rem);
   right: clamp(1.2rem, 4vw, 4rem);
   bottom: clamp(5.4rem, 8vw, 7rem);
@@ -449,7 +454,8 @@ main {
 }
 
 .experience-item > p {
-  width: min(100%, 55rem);
+  width: auto;
+  max-width: 55rem;
   margin-left: max(8.2rem, 32%);
   color: rgba(250, 250, 250, 0.68);
 }
@@ -457,7 +463,8 @@ main {
 .project-list {
   display: grid;
   gap: 1rem;
-  width: min(100%, 55rem);
+  width: auto;
+  max-width: 55rem;
   margin: 1.5rem 0 0 max(8.2rem, 32%);
 }
 
