@@ -276,11 +276,12 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
 .hero-contact-link:hover { background: rgba(20,20,20,0.12); color: var(--text); }
 
 /* ─── ABOUT ──────────────────────────────────────────────── */
-.about { background: var(--bg); padding: var(--sec-py) 0; position: relative; z-index: 1; }
+.about { background: var(--bg); position: relative; z-index: 1; overflow: hidden; }
 .about-inner {
-  display: grid; grid-template-columns: 1fr 44%;
-  gap: clamp(40px,6vw,96px); align-items: start;
+  padding: var(--sec-py) var(--pad);
 }
+.about-inner::after { content: ''; display: table; clear: both; }
+.about-text { }
 .about-title {
   font-size: clamp(22px, 3vw, 38px); font-weight: 300;
   line-height: 1.2; letter-spacing: -0.02em;
@@ -306,13 +307,17 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   border-radius: 100px; background: rgba(20,20,20,0.07); color: var(--text);
 }
 .lang-chip em { color: var(--text-2); font-style: normal; margin-left: 4px; }
-.about-right { position: sticky; top: 28px; }
-.about-img { width: 100%; background: none; }
-.about-img img { width: 100%; display: block; }
-.about-numbers { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 16px; }
+.about-numbers { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 32px; }
 .about-num-val { font-size: 32px; font-weight: 200; line-height: 1; letter-spacing: -0.03em; }
 .about-num-val em { font-style: normal; font-size: 0.55em; }
 .about-num-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-2); margin-top: 3px; }
+.about-right {
+  float: right;
+  width: 50%;
+  margin-left: clamp(24px, 4vw, 60px);
+  margin-bottom: clamp(24px, 4vw, 60px);
+}
+.about-right img { width: 100%; height: auto; display: block; }
 
 /* ─── EXPERTISE ──────────────────────────────────────────── */
 .expertise { background: var(--dk); padding: var(--sec-py) 0; color: var(--text-lt); position: relative; z-index: 1; }
@@ -453,8 +458,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   .expertise-grid { grid-template-columns: repeat(2,1fr); }
 }
 @media (max-width: 860px) {
-  .about-inner { grid-template-columns: 1fr; }
-  .about-right { position: static; }
+  .about-right { float: none; width: 100%; padding-left: 0; margin-bottom: 32px; }
   .experience-layout { grid-template-columns: 1fr; }
   .exp-sidebar { position: static; }
   .expertise-grid { grid-template-columns: 1fr; }
@@ -497,7 +501,6 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   .pill-nav { display: flex; bottom: 16px; }
   .pill-nav a { font-size: 10px; padding: 3px 6px; }
   .hero-stats { flex-wrap: wrap; gap: 16px; }
-  .about-numbers { grid-template-columns: repeat(3,1fr); }
   .cta-photo-row { flex-direction: column; }
   .cta-photo-inline { margin: 8px 0; }
   .edu-item { flex-direction: column; }
