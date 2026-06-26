@@ -470,7 +470,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
     top: 28px;
   }
   .hero-name-over-text {
-    font-size: 11px;
+    font-size: 15px;
     text-align: right;
     white-space: nowrap;
   }
@@ -482,7 +482,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
     transform: none;
     text-align: right;
   }
-  .hero-role-headline { font-size: 17px; line-height: 1.4; }
+  .hero-role-headline { font-size: 20px; line-height: 1.4; }
   .hero-contact-row { display: flex; }
   .hero-contact-link { font-size: 9px; padding: 3px 8px; white-space: nowrap; }
   .hero-photo-main {
@@ -501,4 +501,18 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   .cta-photo-row { flex-direction: column; }
   .cta-photo-inline { margin: 8px 0; }
   .edu-item { flex-direction: column; }
+}
+/* Landscape phones — short viewport — prevent name/role overlapping contact+buttons */
+@media (max-height: 500px) {
+  .hero-center-block { top: 25%; }
+  .hero-br { bottom: 12px; }
+}
+@media (max-width: 768px) and (max-height: 500px) {
+  .hero-name-over { top: 8px; }
+  .hero-center-block { top: 28px; }
+  .hero-role-headline { font-size: 13px; line-height: 1.25; }
+  .hero-br { bottom: 48px; }
+  .hero-br-actions .btn-lime,
+  .hero-br-actions .btn-outline { font-size: 10px; padding: 6px 10px; }
+  .hero-contact-link { font-size: 8px; padding: 2px 6px; }
 }

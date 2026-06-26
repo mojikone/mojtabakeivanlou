@@ -66,10 +66,11 @@
 
   document.querySelectorAll('a[href^="#"]').forEach(function (a) {
     a.addEventListener('click', function (e) {
-      var target = document.querySelector(a.getAttribute('href'));
+      var href = a.getAttribute('href');
+      var target = document.querySelector(href);
       if (target) {
         e.preventDefault();
-        smoothTo(target.offsetTop);
+        smoothTo(href === '#home' ? 0 : target.offsetTop);
       }
     });
   });
@@ -89,6 +90,7 @@
   }
   window.addEventListener('scroll', updateActivePill, { passive: true });
   updateActivePill();
+  requestAnimationFrame(updateActivePill);
 
   /* ── REVEAL ON SCROLL ─────────────────────────────────── */
   var revealObs = new IntersectionObserver(function (entries) {
