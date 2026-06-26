@@ -466,7 +466,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
 @media (max-width: 768px) {
   /* Mobile hero: right column — name, role, contact+buttons stacked */
   .hero-name-over {
-    left: 52%; right: var(--pad);
+    left: 28%; right: var(--pad);
     top: 28px;
   }
   .hero-name-over-text {
@@ -476,7 +476,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   }
   .hero-center-block {
     display: block;
-    left: 52%; right: var(--pad);
+    left: 28%; right: var(--pad);
     top: 54px;
     bottom: auto;
     transform: none;
