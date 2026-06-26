@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,300&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/main.css?v=51">
+<link rel="stylesheet" href="assets/css/main.css?v=52">
 </head>
 <body>
 
@@ -73,9 +73,10 @@
 
     <div class="about-right reveal d2">
       <img src="assets/img/hydraulic-illustration-lq.png"
-           alt="" aria-hidden="true" class="about-illus-lq">
+           alt="" aria-hidden="true" class="about-illus-lq" id="about-illus-lq">
       <img src="assets/img/hydraulic-illustration.webp"
            onerror="this.src='assets/img/dam drone artwork2.png'"
+           onload="var lq=document.getElementById('about-illus-lq'); if(lq) lq.style.opacity='0';"
            alt="Hydraulic engineering illustration" class="about-illus-hq" loading="lazy">
     </div>
 
