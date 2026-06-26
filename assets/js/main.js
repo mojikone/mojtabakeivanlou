@@ -147,3 +147,13 @@ function toggleExp(btn) {
   btn.setAttribute('aria-expanded', String(!isOpen));
   span.textContent = isOpen ? orig : 'Collapse';
 }
+
+/* ── LQIP blur-up ─────────────────────────────────────────── */
+document.querySelectorAll('.img-lqip[data-src]').forEach(function(img) {
+  var full = new Image();
+  full.onload = function() {
+    img.src = full.src;
+    img.classList.add('loaded');
+  };
+  full.src = img.dataset.src;
+});
