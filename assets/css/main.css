@@ -449,7 +449,7 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
 .skills { background: var(--dk); padding: var(--sec-py) 0; color: var(--text-lt); position: relative; z-index: 1; }
 .skills-title { font-size: clamp(28px, 4vw, 48px); font-weight: 300; line-height: 0.93; letter-spacing: -0.025em; color: var(--text-lt); margin-bottom: clamp(36px,5vw,64px); }
 .skills-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 28px 48px; }
-.skill-cat-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--lime); margin-bottom: 14px; }
+.skill-cat-name { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-lt); margin-bottom: 14px; }
 
 /* ─── CTA ────────────────────────────────────────────────── */
 .cta { background: var(--bg); padding: var(--sec-py) 0; position: relative; z-index: 1; }
