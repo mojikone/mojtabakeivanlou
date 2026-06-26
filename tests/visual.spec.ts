@@ -56,6 +56,17 @@ test("tablet hero keeps portrait clear of headline and actions", async ({ page }
   }
 });
 
+test("home sections reveal as the page scrolls", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("/");
+
+  for (const selector of ["#services", "#about", "#experience"]) {
+    await page.locator(selector).scrollIntoViewIfNeeded();
+    await expect(page.locator(selector)).toHaveClass(/(?:^|\s)in(?:\s|$)/);
+    await expect(page.locator(selector)).toBeVisible();
+  }
+});
+
 test("line artwork is on a light section", async ({ page }) => {
   await page.goto("/");
 
