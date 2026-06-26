@@ -378,7 +378,8 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
 /* ─── EXPERIENCE ─────────────────────────────────────────── */
 .experience { background: var(--bg); padding: var(--sec-py) 0; position: relative; z-index: 1; }
 .exp-header { margin-bottom: clamp(32px,4vw,52px); }
-.exp-sidebar { position: static; }
+.experience-layout { display: grid; grid-template-columns: 280px 1fr; gap: clamp(40px,6vw,100px); align-items: start; }
+.exp-sidebar { position: sticky; top: 80px; }
 .exp-sidebar-title { font-size: clamp(32px,4vw,52px); font-weight: 300; line-height: 1; letter-spacing: -0.025em; margin: 10px 0 18px; }
 .exp-sidebar-sub { font-size: 14px; color: var(--text-2); line-height: 1.7; margin-bottom: 24px; }
 
