@@ -363,11 +363,17 @@ html { scrollbar-width: thin; scrollbar-color: #A8CE2E #1A3D2C; }
   border-right: 1px solid rgba(235,233,228,0.08);
   border-bottom: 1px solid rgba(235,233,228,0.08);
   transition: background 0.2s;
+  cursor: pointer;
 }
-.exp-card:hover { background: rgba(235,233,228,0.05); }
+.exp-card:hover { background: rgba(235,233,228,0.08); }
+.exp-card:hover .exp-card-desc { max-height: 200px; margin-top: 12px; }
 .exp-card-icon { color: var(--lime); margin-bottom: 14px; display: block; }
-.exp-card-title { font-size: 15px; font-weight: 500; color: var(--text-lt); line-height: 1.3; margin-bottom: 8px; }
-.exp-card-desc { font-size: 13px; color: var(--text-lt2); line-height: 1.7; }
+.exp-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; user-select: none; }
+.exp-card-title { font-size: 15px; font-weight: 500; color: var(--text-lt); line-height: 1.3; }
+.exp-card-chev { flex-shrink: 0; color: var(--text-lt2); transition: transform 0.25s ease; }
+.exp-card.open .exp-card-chev { transform: rotate(180deg); }
+.exp-card-desc { font-size: 13px; color: var(--text-lt2); line-height: 1.7; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, margin-top 0.3s ease; margin-top: 0; }
+.exp-card.open .exp-card-desc { max-height: 200px; margin-top: 12px; }
 
 /* ─── EXPERIENCE ─────────────────────────────────────────── */
 .experience { background: var(--bg); padding: var(--sec-py) 0; position: relative; z-index: 1; }

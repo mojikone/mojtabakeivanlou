@@ -148,6 +148,13 @@ function toggleExp(btn) {
   span.textContent = isOpen ? orig : 'Collapse';
 }
 
+/* ── EXPERTISE CARD EXPAND ────────────────────────────────── */
+document.querySelectorAll('.exp-card').forEach(function(card) {
+  card.addEventListener('click', function() {
+    card.classList.toggle('open');
+  });
+});
+
 /* ── Image fade-in on load ────────────────────────────────── */
 document.querySelectorAll('.fade-img').forEach(function(img) {
   function done() {
