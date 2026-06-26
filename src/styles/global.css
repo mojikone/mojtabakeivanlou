@@ -544,6 +544,413 @@ main {
   color: rgba(250, 250, 250, 0.68);
 }
 
+.contact-page,
+.thank-you-page {
+  min-height: 100vh;
+  background: var(--color-paper);
+}
+
+.contact-hero {
+  position: relative;
+  display: grid;
+  align-content: end;
+  min-height: 58svh;
+  padding: clamp(6rem, 10vw, 8rem) clamp(1rem, 5vw, 5rem) clamp(3rem, 6vw, 5rem);
+  background: var(--color-green);
+  color: var(--color-paper);
+  overflow: hidden;
+}
+
+.contact-hero::after {
+  position: absolute;
+  right: -5rem;
+  bottom: -8rem;
+  width: 24rem;
+  height: 24rem;
+  border: 1px solid rgba(191, 219, 57, 0.3);
+  border-radius: 999px;
+  content: "";
+}
+
+.route-home {
+  position: absolute;
+  top: clamp(1rem, 3vw, 2rem);
+  left: clamp(1rem, 4vw, 3rem);
+  display: inline-flex;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(250, 250, 250, 0.24);
+  border-radius: 999px;
+  color: var(--color-paper);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.contact-hero h1 {
+  width: min(100%, 62rem);
+  margin-top: 1rem;
+  font-family: var(--font-display);
+  font-size: clamp(4.3rem, 13vw, 10rem);
+  line-height: 0.86;
+}
+
+.contact-hero p:not(.eyebrow) {
+  width: min(100%, 42rem);
+  margin-top: 1.35rem;
+  color: rgba(250, 250, 250, 0.72);
+  font-size: clamp(1rem, 1.4vw, 1.1rem);
+  line-height: 1.65;
+}
+
+.contact-panel-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 0.75fr);
+  gap: clamp(1rem, 3vw, 2rem);
+  padding: clamp(1rem, 4vw, 4rem);
+  background: var(--color-mist);
+}
+
+.contact-form-panel,
+.contact-side-panel,
+.thank-you-card {
+  background: #fff;
+}
+
+.contact-form-panel,
+.contact-side-panel {
+  padding: clamp(1.2rem, 3vw, 2.4rem);
+}
+
+.contact-form-panel > p:not(.eyebrow),
+.availability-list p,
+.cv-link-card span {
+  color: var(--color-gray);
+  line-height: 1.65;
+}
+
+.contact-form-panel form {
+  margin-top: 1.5rem;
+}
+
+.botcheck {
+  position: absolute;
+  left: -9999px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.form-grid label {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--color-ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.form-grid label.full {
+  grid-column: 1 / -1;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea {
+  width: 100%;
+  border: 1px solid rgba(24, 35, 29, 0.16);
+  border-radius: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-size: 0.96rem;
+  font-weight: 500;
+  line-height: 1.2;
+  outline: none;
+}
+
+.form-grid input,
+.form-grid select {
+  min-height: 3.2rem;
+  padding: 0 1rem;
+}
+
+.form-grid textarea {
+  min-height: 10rem;
+  padding: 1rem;
+  resize: vertical;
+}
+
+.form-grid input:focus,
+.form-grid select:focus,
+.form-grid textarea:focus {
+  border-color: var(--color-green);
+  box-shadow: 0 0 0 3px rgba(191, 219, 57, 0.32);
+}
+
+.contact-form-panel button,
+.thank-you-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  margin-top: 1.35rem;
+  padding: 0.85rem 1.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.contact-side-panel {
+  display: grid;
+  align-content: start;
+  gap: 1.4rem;
+}
+
+.contact-side-panel h2 {
+  color: var(--color-green);
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  line-height: 0.95;
+}
+
+.direct-links {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.direct-links a,
+.cv-link-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid rgba(24, 35, 29, 0.14);
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+.direct-links a:hover,
+.cv-link-card:hover {
+  color: var(--color-green);
+}
+
+.availability-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.cv-link-card {
+  display: grid;
+}
+
+.cv-link-card strong {
+  color: var(--color-green);
+}
+
+.business-cards {
+  padding: clamp(4rem, 8vw, 7rem) clamp(1rem, 5vw, 5rem) 8rem;
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.business-cards .section-title {
+  color: var(--color-paper);
+}
+
+.business-card-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 90mm));
+  gap: clamp(1rem, 3vw, 2rem);
+  align-items: start;
+}
+
+.biz-card {
+  position: relative;
+  aspect-ratio: 90 / 55;
+  width: min(100%, 90mm);
+  overflow: hidden;
+  background: #0f211b;
+  color: var(--color-paper);
+  box-shadow: 0 2rem 4rem rgba(0, 0, 0, 0.22);
+}
+
+.biz-accent {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 1.2mm;
+  background: var(--color-lime);
+}
+
+.biz-circle {
+  position: absolute;
+  border: 1px solid rgba(191, 219, 57, 0.28);
+  border-radius: 999px;
+}
+
+.biz-circle-one {
+  right: -4mm;
+  top: -4mm;
+  width: 32mm;
+  height: 32mm;
+}
+
+.biz-circle-two {
+  right: 4mm;
+  top: 2mm;
+  width: 20mm;
+  height: 20mm;
+}
+
+.biz-front-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 5.5mm 5mm 5mm 8mm;
+}
+
+.biz-front-content h3 {
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 4vw, 2rem);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.biz-front-content h3 span {
+  display: block;
+  font-weight: 800;
+}
+
+.biz-front-content p,
+.biz-contact-lines {
+  width: min(100%, 12rem);
+  margin-top: 0.45rem;
+  color: rgba(250, 250, 250, 0.56);
+  font-size: clamp(0.48rem, 1.3vw, 0.62rem);
+  font-weight: 700;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+.biz-contact-lines {
+  display: grid;
+  gap: 0.16rem;
+  text-transform: none;
+}
+
+.biz-card-back {
+  padding: 4mm;
+}
+
+.biz-back-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.biz-back-head span {
+  color: rgba(250, 250, 250, 0.62);
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.biz-back-head i {
+  flex: 1;
+  height: 1px;
+  background: rgba(250, 250, 250, 0.2);
+}
+
+.biz-service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  height: calc(100% - 1.25rem);
+}
+
+.biz-service-grid span {
+  display: grid;
+  place-items: center;
+  gap: 0.2rem;
+  color: var(--color-paper);
+  text-align: center;
+}
+
+.biz-service-grid svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-lime);
+}
+
+.biz-service-grid em {
+  color: rgba(250, 250, 250, 0.62);
+  font-size: clamp(0.42rem, 1vw, 0.52rem);
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.thank-you-page {
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: var(--color-green);
+}
+
+.thank-you-card {
+  width: min(100%, 42rem);
+  padding: clamp(1.4rem, 5vw, 3rem);
+}
+
+.check-mark {
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1.5rem;
+  border-radius: 999px;
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+
+.thank-you-card h1 {
+  margin-top: 0.8rem;
+  color: var(--color-green);
+  font-family: var(--font-display);
+  font-size: clamp(3.2rem, 10vw, 7rem);
+  line-height: 0.88;
+}
+
+.thank-you-card p:not(.eyebrow) {
+  margin-top: 1rem;
+  color: var(--color-gray);
+  line-height: 1.65;
+}
+
+.thank-you-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.thank-you-card .direct-links {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 1.4rem;
+}
+
+.thank-you-card .direct-links a {
+  justify-content: center;
+  border-bottom: 1px solid rgba(24, 35, 29, 0.14);
+}
+
 @media (max-width: 1080px) {
   .hero-portrait {
     width: min(60vw, 34rem);
@@ -669,6 +1076,27 @@ main {
 
   .contact-cta {
     min-height: 58svh;
+  }
+
+  .contact-panel-section,
+  .business-card-row {
+    grid-template-columns: 1fr;
+  }
+
+  .business-card-row {
+    justify-items: center;
+  }
+
+  .contact-hero h1 {
+    font-size: clamp(3.5rem, 18vw, 6.4rem);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .thank-you-card .direct-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

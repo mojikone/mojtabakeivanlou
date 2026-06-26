@@ -5,6 +5,15 @@ import type { UserConfig } from "vite";
 const config = {
   plugins: [react()],
   base: "/",
+  build: {
+    rollupOptions: {
+      input: {
+        main: "index.html",
+        contact: "contact.html",
+        thankYou: "thank-you.html"
+      }
+    }
+  },
   test: {
     environment: "jsdom",
     globals: true,

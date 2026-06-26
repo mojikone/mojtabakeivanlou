@@ -21,8 +21,14 @@ describe("route shells", () => {
 
     render(<App />);
 
-    expect(screen.getByText("Contact route shell")).toBeInTheDocument();
     expect(screen.getByRole("main")).toHaveAttribute("data-route", "contact");
+    expect(screen.getByRole("form", { name: "Project enquiry" })).toHaveAttribute(
+      "action",
+      "https://api.web3forms.com/submit"
+    );
+    expect(screen.getByRole("form", { name: "Project enquiry" })).toHaveAttribute("method", "POST");
+    expect(screen.getByDisplayValue("48578b9d-2262-418b-a5b9-4d9bd167ffb4")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("https://mojtabakeivanlou.com/thank-you.html")).toBeInTheDocument();
   });
 
   it("renders the thank-you route shell for the thank-you routes", () => {
@@ -30,7 +36,7 @@ describe("route shells", () => {
 
     render(<App />);
 
-    expect(screen.getByText("Thank you route shell")).toBeInTheDocument();
     expect(screen.getByRole("main")).toHaveAttribute("data-route", "thank-you");
+    expect(screen.getByText("Enquiry Received")).toBeInTheDocument();
   });
 });
