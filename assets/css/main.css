@@ -571,6 +571,21 @@ html { scrollbar-width: thin; scrollbar-color: var(--lime) var(--dk); }
   .pill-nav { bottom: 16px; }
   .hero-br { bottom: 80px; }
 }
+/* Portrait tablets (e.g. Galaxy Tab S10 FE, ~800px wide). Here svh is large,
+   so the bottom-anchored hero photo grows tall enough that its right edge
+   pushes past page centre and the right-aligned role headline lands on top
+   of the subject. Desktop monitors at these widths are landscape and never
+   hit this, so the fix is scoped to portrait orientation only: trim the
+   photo height a touch and shift the headline fully into the clear zone to
+   the subject's right. */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
+  .hero-photo-main { height: 70svh; }
+  .hero-center-block {
+    left: 54%;
+    top: 40%;
+  }
+  .hero-role-headline { font-size: clamp(22px, 3.6vw, 32px); }
+}
 @media (max-width: 768px) {
   /* Mobile hero: right column — name, role, contact+buttons stacked */
   .hero-name-over {
