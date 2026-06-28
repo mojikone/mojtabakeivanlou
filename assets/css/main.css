@@ -581,10 +581,10 @@ html { scrollbar-width: thin; scrollbar-color: var(--lime) var(--dk); }
 @media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
   .hero-photo-main { height: 70svh; }
   .hero-center-block {
-    left: 54%;
+    left: 44%;
     top: 40%;
   }
-  .hero-role-headline { font-size: clamp(22px, 3.6vw, 32px); }
+  .hero-role-headline { font-size: clamp(26px, 3.6vw, 30px); }
 }
 @media (max-width: 768px) {
   /* Mobile hero: right column — name, role, contact+buttons stacked */
