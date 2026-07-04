@@ -320,6 +320,18 @@
       }
     });
   }
+
+  // WhatsApp on desktop: wa.me often fails to open the app — route to WhatsApp Web
+  document.querySelectorAll('a[href*="wa.me"]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (!isMobile) {
+        e.preventDefault();
+        var match = a.href.match(/wa\.me\/(\d+)/);
+        if (match) window.open('https://web.whatsapp.com/send?phone=' + match[1], '_blank');
+      }
+    });
+  });
 </script>
 </body>
 </html>
