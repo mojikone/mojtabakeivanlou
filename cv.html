@@ -74,14 +74,6 @@ body {
   padding: 13mm 16mm 16mm;
   box-shadow: 0 2px 24px rgba(0,0,0,.14);
 }
-.print-tip {
-  max-width: 210mm;
-  margin: 16px auto 0;
-  font-size: 8.5pt;
-  color: var(--muted);
-  text-align: center;
-}
-
 @page {
   size: A4;
   margin: 13mm 0 16mm;
@@ -97,7 +89,6 @@ body {
 @media print {
   body { background: #FFFFFF; }
   .sheet { max-width: none; margin: 0; padding: 0 16mm; box-shadow: none; }
-  .print-tip { display: none; }
   a { color: inherit; }
 }
 
@@ -583,8 +574,6 @@ section { margin-top: 14pt; }
   </section>
 
 </div><!-- /.sheet -->
-
-<div class="print-tip">Print to PDF: Chrome → Ctrl+P → Destination "Save as PDF" → Margins "Default" → enable "Background graphics".</div>
 
 </body>
 </html>
