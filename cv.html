@@ -161,9 +161,29 @@ section { margin-top: 14pt; }
 .exp-name svg { width: 10.5pt; height: 10.5pt; vertical-align: -2pt; margin-right: 4.5pt; color: var(--lime); }
 .exp-desc { font-size: 8.3pt; color: var(--muted); line-height: 1.42; margin-top: 1pt; }
 
-/* ── Experience ── */
-.job { margin-bottom: 12pt; }
-.job:last-child { margin-bottom: 0; }
+/* ── Experience (vertical timeline) ──
+   No positioned elements here: position:relative/absolute reorders the PDF
+   text stream (positioned boxes paint in a later phase), which scrambles
+   text-extraction order for ATS. The node circle is an in-flow inline-block
+   pulled into the gutter with negative margin instead. */
+.job {
+  border-left: 1.2pt solid var(--rule);
+  padding-left: 14pt;
+  padding-bottom: 12pt;
+}
+.job:last-child { padding-bottom: 2pt; }
+.job-company::before {
+  content: '';
+  display: inline-block;
+  width: 8.4pt;
+  height: 8.4pt;
+  border-radius: 50%;
+  background: var(--lime);
+  border: 1.8pt solid var(--green);
+  margin-left: -18.8pt;
+  margin-right: 10.4pt;
+  vertical-align: -0.6pt;
+}
 .job-head { break-inside: avoid; break-after: avoid; }
 .job-line1 { display: flex; justify-content: space-between; align-items: baseline; gap: 10pt; }
 .job-company { font-size: 11pt; font-weight: 600; color: var(--green); }
