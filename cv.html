@@ -16,6 +16,7 @@
 <meta name="twitter:title" content="CV — Mojtaba Keivanlou — Principal Hydraulic &amp; Water Resources Engineer">
 <meta name="twitter:image" content="https://mojtabakeivanlou.com/assets/img/mojtaba-waterfront4.webp">
 <link rel="canonical" href="https://mojtabakeivanlou.com/cv.html">
+<script src="assets/js/palette.js?v=5"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%231A3D2C'/%3E%3Ctext x='50' y='67' font-family='sans-serif' font-weight='700' font-size='44' text-anchor='middle' fill='%23A8CE2E'%3EMK%3C/text%3E%3C/svg%3E">
 <script type="application/ld+json">
 {
@@ -41,13 +42,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
 <style>
 /* ── Print: Chrome → Ctrl+P → Save as PDF · Margins: Default · Background graphics: ON ── */
+/* Tokens follow the site palette (palette.js sets --dk/--lime/--hero/--text/--text-2
+   inline on <html>); the hex fallbacks apply when palette.js is absent. */
 :root {
-  --ink:    #1E2422;
-  --green:  #1A3D2C;
-  --lime:   #A8CE2E;
-  --lime-soft: #F3F8E2;
-  --muted:  #6B7570;
-  --rule:   #DDE3DE;
+  --ink:    var(--text, #1E2422);
+  --green:  var(--dk, #1A3D2C);
+  --lime:   #A8CE2E; /* overridden by palette.js inline --lime */
+  --lime-soft: var(--hero, #F3F8E2);
+  --muted:  var(--text-2, #6B7570);
+  --rule:   rgba(var(--dk-rgb, 30, 36, 34), .16);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,7 +63,7 @@ body {
   font-weight: 400;
   color: var(--ink);
   line-height: 1.5;
-  background: #E9ECE9;
+  background: var(--bg2, #E9ECE9);
 }
 
 /* ── Screen preview: white sheet on gray ── */
@@ -214,6 +217,24 @@ section { margin-top: 14pt; }
 .langs { display: flex; gap: 24pt; }
 .lang b { font-weight: 600; }
 .lang span { color: var(--muted); font-size: 8.8pt; }
+
+/* ── Mobile screen layout (print output unaffected) ── */
+@media screen and (max-width: 840px) {
+  .sheet { margin: 0 auto; padding: 24px 22px; box-shadow: none; }
+  .exp-grid { grid-template-columns: 1fr 1fr; }
+}
+@media screen and (max-width: 560px) {
+  body { font-size: 10.5pt; }
+  .sheet { padding: 20px 14px; }
+  .cv-name { font-size: 20pt; }
+  .cv-role { font-size: 11pt; }
+  .cv-contact { gap: 4pt 12pt; }
+  .exp-grid { grid-template-columns: 1fr; gap: 8pt; }
+  .exp-desc { font-size: 9pt; }
+  .stats { flex-wrap: wrap; gap: 10pt 22pt; }
+  .job-line1, .job-line2, .edu-item { flex-wrap: wrap; }
+  .langs { gap: 16pt; }
+}
 </style>
 </head>
 <body>
