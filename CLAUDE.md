@@ -52,7 +52,7 @@ Sections in order: `#home`, `#about`, `#expertise`, `#experience`, `#skills`, `#
 - WhatsApp: JS UA-detects mobile → `wa.me/...`; desktop → `web.whatsapp.com/send?phone=...`
 
 **#about**
-- Title: "Principal Hydraulic and Water Resources Engineer"
+- Title: "Senior Hydraulic and Water Resources Engineer"
 - Subtitle: "Team Leader"
 - No inline contact links
 
@@ -93,7 +93,7 @@ Right column starts at `left: 28%` (gives ~250px width on 375px phones — wide 
 | `.hero-br` (contact + buttons) | `bottom: 64px; right: var(--pad)` |
 | `.pill-nav` | `bottom: 16px` |
 
-Role headline forced to 2 lines by `<br>` in HTML: `Principal Hydraulic &<br>Water Resources Engineer`.
+Role headline forced to 2 lines by `<br>` in HTML: `Senior Hydraulic &<br>Water Resources Engineer`.
 
 **Landscape phones (max-height: 500px):** separate rules prevent name/title block from overlapping the contact/button block — a real 40px overlap existed on 800×360px viewports where desktop CSS applies and `hero-br` (179px tall) started above `hero-center-block` bottom.
 
