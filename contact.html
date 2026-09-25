@@ -321,15 +321,30 @@
     });
   }
 
-  // WhatsApp on desktop: wa.me often fails to open the app — route to WhatsApp Web
+  // WhatsApp: open the app on phones (incl. desktop-site mode), WhatsApp Web on desktop
   document.querySelectorAll('a[href*="wa.me"]').forEach(function (a) {
     a.addEventListener('click', function (e) {
-      var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      var match = a.href.match(/wa\.me\/(\d+)/);
+      if (!match) return;
+      e.preventDefault();
+      // Phones in "desktop site" mode report a desktop user agent, so also treat
+      // a touch-first device with no hover (not a laptop) as mobile.
+      var mq = function (q) { return window.matchMedia && window.matchMedia(q).matches; };
+      var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints > 0 && mq('(pointer: coarse)') && mq('(hover: none)'));
       if (!isMobile) {
-        e.preventDefault();
-        var match = a.href.match(/wa\.me\/(\d+)/);
-        if (match) window.open('https://web.whatsapp.com/send?phone=' + match[1], '_blank');
+        window.open('https://web.whatsapp.com/send?phone=' + match[1], '_blank');
+        return;
       }
+      // Open the WhatsApp app; if it isn't installed the page stays visible, so fall back to wa.me.
+      var timer = setTimeout(function () {
+        if (!document.hidden) window.location.href = a.href;
+      }, 1500);
+      var cancel = function () { clearTimeout(timer); };
+      window.addEventListener('pagehide', cancel, { once: true });
+      window.addEventListener('blur', cancel, { once: true });
+      document.addEventListener('visibilitychange', cancel, { once: true });
+      window.location.href = 'whatsapp://send?phone=' + match[1];
     });
   });
 </script>
