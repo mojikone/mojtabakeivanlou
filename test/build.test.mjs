@@ -5,9 +5,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { build } from '../src/build.mjs';
 import { shortHash } from '../src/hash.mjs';
+import { yearsOfExperience } from '../assets/js/render/years.mjs';
+import { live } from './helpers/live.mjs';
 import { editSite, withRoot } from './helpers/project.mjs';
 
 const TODAY = new Date('2026-06-01T00:00:00Z');
+const YEARS = yearsOfExperience(live.site.experienceStart, TODAY);   // from the live content: the dashboard may change experienceStart
 const PAGES = ['index.html', 'contact.html', 'thank-you.html', 'cv.html'];
 const BLOB_ID = 'a'.repeat(32);
 const BULLET = 'experience.companies[0].projects[0].bullets[0]';
@@ -36,9 +39,9 @@ test('build writes pages, copies statics, hashes assets', async () => {
     }
     const idx = await readFile(join(out, 'index.html'), 'utf8');
     assert.match(idx, /main\.css\?v=[0-9a-f]{8}/);
-    assert.match(idx, /<span data-years>16<\/span>/);
+    assert.ok(idx.includes(`<span data-years>${YEARS}</span>`), `index.html shows ${YEARS} years`);
     assert.ok((await readFile(join(out, 'assets/js/palette.js'))).equals(await readFile('assets/js/palette.js')), 'palette.js is byte-identical');
-    assert.equal(r.years, 16);
+    assert.equal(r.years, YEARS);
     assert.ok((await stat(join(out, 'pdf'))).isDirectory(), 'dist/pdf/ exists');
     assert.deepEqual(await readdir(join(out, 'pdf')), [], 'dist/pdf/ is empty');
     assert.match(await readFile(join(out, 'admin/index.html'), 'utf8'), /<meta name="robots" content="noindex">/);
@@ -221,7 +224,7 @@ test('build reports a content file that is not JSON, or not there, by name', asy
 test('build normalises before it validates: a company without an id is given one', () => withRoot(async (root) => {
   // The validator reports a missing id as an error, so this only builds because normalizeSite ran first.
   const r = await build({ root, today: TODAY });
-  assert.equal(r.years, 16);
+  assert.equal(r.years, YEARS);
   assert.ok(existsSync(join(root, 'dist/index.html')));
 }, (root) => editSite(root, (site) => { delete site.experience.companies[0].id; })));
 

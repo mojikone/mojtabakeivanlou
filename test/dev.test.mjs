@@ -3,9 +3,10 @@ import { cp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { startDev } from '../src/dev.mjs';
+import { live } from './helpers/live.mjs';
 import { editSite, withRoot } from './helpers/project.mjs';
 
-const EMAIL = 'keyvanlu.m@gmail.com';
+const EMAIL = live.profile.email;   // from the live content: the dashboard may change it
 
 // Polls `check` until it returns something truthy; fails with `what` after `ms`.
 async function until(check, what, ms = 20000) {
