@@ -357,11 +357,10 @@ deploy, and by the repository variable `DEPLOY_FROM_ACTIONS`, so the branch can 
 tested without touching the live site until cutover (§16). Typical run time: 2 to 3 minutes,
 most of it Chromium download on a cache miss.
 
-**Scheduled trigger caveat.** GitHub runs `schedule` triggers only from the repository's default
-branch, which is `master` today. The cron above therefore only works once `redesign3_admin` is
-the default branch, which is the owner's decision (§16 step 4 lists it). If the owner prefers to
-keep `master` as default, the fallback is a four-line workflow committed to `master` whose only
-job is to call `workflow_dispatch` on the admin branch's workflow on the same schedule.
+**Scheduled trigger.** GitHub runs `schedule` triggers only from the repository's default
+branch, which is `master` today. The owner decided that `redesign3_admin` becomes the default
+branch at cutover (§16 step 4), so the cron above runs as written. Until cutover the scheduled
+rebuild simply does not fire, which is harmless.
 
 The dashboard reads this workflow's runs to show progress. A failed build never replaces the
 live site; the previous deployment stays up.
@@ -493,6 +492,14 @@ a single file:
   revoke the token on GitHub and paste a new one in the same step.
 - **Replacing a file** gives it a new id and a new FK; the old blob is deleted from the tree
   (it remains in history, encrypted under a key only old VKs can unwrap).
+- **Provision for a plain mode.** The owner may later decide to drop encryption if it proves
+  slow (he accepts the exposure). To keep that a small change, every file record in `site.json`
+  carries `"enc": true`, and the download path checks it: with `enc: false` the blob at
+  `vault/files/<id>.bin` is the raw file and is served to the browser without decryption, while
+  icons stay gated by a code. Plain mode is not built in v1; only the flag and the branch in the
+  download code are. For reference, WebCrypto AES-GCM handles 100 MB in roughly a second on a
+  laptop and a few seconds on a phone; the slow parts are the network and the one-second
+  PBKDF2 step, not the cipher.
 - **Threat model, stated plainly**: everything in the repo is public, including history, so an
   attacker can try codes offline against any version of `access.json`. At 600 000 PBKDF2
   iterations a 12-character mixed code is far beyond reach; a generated download code is
@@ -619,11 +626,15 @@ Clears `sessionStorage` keys `mk.admin` and `mk.vault` and returns to the gate. 
 
 ### 13.9 File size limits
 
-Defaults, pending the owner's answer on expected volume: a file is refused above 25 MB and
-warned about above 10 MB; the Files gauge turns amber at 300 MB total and red at 500 MB. The
-numbers are constants in one place. Reasons: a 25 MB file is still a 33 MB base64 request to
-the Git Data API and a quick decrypt on a phone; the public repo and the Pages site both start
-to degrade near 1 GB and history never shrinks.
+The owner expects reports of up to about 100 MB and asked for no limit below GitHub's own. So:
+a file is refused only above 100 MB, GitHub's hard per-file limit; above 50 MB the dashboard
+shows a note that the upload is a 130 MB request and the download is slow on phones. The Files
+gauge shows the total of all attachments and turns amber at 700 MB and red at 900 MB, because
+the public repo and the Pages site both degrade near 1 GB and history never shrinks; the owner
+manages the budget himself. The numbers are constants in one place. The upload path must
+stream: read the file, encrypt, base64-encode and send without holding more than about three
+copies in memory, and report a failed blob upload (GitHub may reject very large bodies) with
+the file name so the owner can compress or split it.
 
 ## 14. SEO and head
 
@@ -665,8 +676,8 @@ wrapper around the same Person. The parity test (§15) catches anything dropped.
 4. Cutover, done by the owner in the GitHub web UI, about two minutes:
    - Settings → Pages → Build and deployment → Source: **GitHub Actions**.
    - Settings → Secrets and variables → Actions → Variables → `DEPLOY_FROM_ACTIONS` = `true`.
-   - Settings → General → Default branch → `redesign3_admin` (OWNER DECISION PENDING, see §10:
-     needed for the yearly scheduled rebuild; otherwise the `master` dispatcher workflow).
+   - Settings → General → Default branch → `redesign3_admin` (owner's decision; needed for the
+     yearly scheduled rebuild, §10).
    - Re-run the latest workflow (or push). The first Actions deployment replaces the branch
      deployment; the custom domain and HTTPS settings are untouched.
 5. Keep `redesign3_colors_firebase` as the rollback. Rollback = Source back to "Deploy from a
@@ -727,3 +738,7 @@ wrapper around the same Person. The parity test (§15) catches anything dropped.
 - Experts before familiars within each skills category.
 - Draft on device, one Publish button.
 - Years of experience from 23 September 2009.
+- `redesign3_admin` becomes the repository's default branch at cutover.
+- No file size limit below GitHub's 100 MB; the owner manages the 1 GB Pages budget himself.
+- Encryption stays unless the owner finds it slow in practice; a plain mode is provisioned for,
+  not built.
