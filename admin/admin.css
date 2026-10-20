@@ -1,0 +1,130 @@
+/* Dashboard (spec 13). Loaded after ../assets/css/main.css, which supplies the tokens (--bg, --dk, --lime, ...),
+   Poppins, the reset, [hidden], the mk-spin keyframes and the Access pill (.hero-contact-link.access-pill).
+   Every class here starts with adm- so nothing collides with the site's own rules. */
+
+/* ─── GATE ─────────────────────────────────────────────── */
+.adm-gate {
+  min-height: 100vh; min-height: 100svh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  padding: 24px;
+}
+.adm-gate-name { font-size: 15px; font-weight: 600; letter-spacing: 0.01em; color: var(--text); }
+.adm-gate-name:empty { display: none; }
+
+.adm-standalone { max-width: 760px; margin: 0 auto; padding: 64px 24px; font-size: 14px; line-height: 1.5; }
+.adm-noscript { padding: 48px 24px; text-align: center; color: var(--text-2); }
+
+/* ─── SHELL ────────────────────────────────────────────── */
+.adm {
+  --adm-top-h: 56px;
+  --adm-nav-w: 232px;
+  --adm-line: rgba(var(--text-rgb), 0.12);
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: var(--adm-nav-w) minmax(0, 1fr);
+  grid-template-rows: var(--adm-top-h) 1fr;
+  grid-template-areas: "top top" "nav main";
+  font-size: 14px; line-height: 1.5;
+}
+.adm a:focus-visible, .adm button:focus-visible,
+.adm-standalone a:focus-visible, .adm-standalone button:focus-visible { outline: 2px solid var(--lime-dk); outline-offset: 2px; }
+
+/* top bar: dark green, name + lime "Admin", status, actions */
+.adm-top {
+  grid-area: top; position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 24px;
+  padding: 0 20px 0 24px;
+  background: var(--dk); color: var(--text-lt);
+}
+.adm-brand { font-size: 15px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap; }
+.adm-brand-tag { color: var(--lime); }
+.adm-status {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; color: var(--text-lt2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.adm-status::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--lime); }
+.adm-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+
+.adm-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 16px; border-radius: 100px;
+  font-size: 13px; font-weight: 600; line-height: 1;
+  transition: background 0.2s, color 0.2s, opacity 0.2s;
+}
+.adm-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.adm-btn-ghost { color: var(--text-lt); box-shadow: inset 0 0 0 1px rgba(var(--lt-rgb), 0.35); }
+.adm-btn-ghost:not(:disabled):hover { background: rgba(var(--lt-rgb), 0.1); }
+.adm-btn-lime { background: var(--lime); color: var(--text); }
+.adm-btn-lime:not(:disabled):hover { background: var(--lime-dk); }
+.adm-btn-dark { background: var(--dk); color: var(--text-lt); }
+.adm-btn-dark:hover { background: var(--dk2); }
+.adm-signout { margin-left: 4px; padding: 6px 2px; font-size: 13px; font-weight: 500; color: var(--text-lt2); }
+.adm-signout:hover { color: var(--text-lt); text-decoration: underline; }
+
+/* left nav: light, the active entry marked by a lime left border, a lime dot + count for unpublished changes */
+.adm-nav {
+  grid-area: nav; position: sticky; top: var(--adm-top-h); align-self: start;
+  height: calc(100vh - var(--adm-top-h)); overflow-y: auto;
+  padding: 18px 0;
+  background: var(--bg2); border-right: 1px solid var(--adm-line);
+  scrollbar-width: thin; scrollbar-color: rgba(var(--text-rgb), 0.25) transparent; /* not the site's lime-on-green bar */
+}
+.adm-nav-list { display: flex; flex-direction: column; }
+.adm-nav-link {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 18px 9px 21px; border-left: 3px solid transparent;
+  font-size: 13.5px; font-weight: 500; color: var(--text-2);
+  transition: background 0.15s, color 0.15s;
+}
+.adm-nav-link:hover { color: var(--text); background: rgba(var(--text-rgb), 0.04); }
+.adm-nav-link[aria-current="page"] {
+  border-left-color: var(--lime); color: var(--text); font-weight: 600;
+  background: rgba(var(--text-rgb), 0.05);
+}
+.adm-nav-dirty { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--dk); }
+.adm-nav-dirty::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--lime); }
+.adm-nav-sep { height: 1px; margin: 10px 21px; background: var(--adm-line); }
+
+/* main area: the selected section on the page background, its content in white cards */
+.adm-main { grid-area: main; min-width: 0; padding: 32px clamp(20px, 4vw, 48px) 64px; }
+.adm-section { max-width: 920px; }
+.adm-card {
+  background: var(--white); border: 1px solid var(--adm-line); border-radius: 10px;
+  padding: 24px 28px;
+}
+.adm-card + .adm-card { margin-top: 16px; }
+.adm-title { font-size: 20px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; }
+
+/* loading and load errors */
+.adm-loading { display: flex; align-items: center; gap: 12px; color: var(--text-2); }
+.adm-spinner {
+  flex: none; width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(var(--text-rgb), 0.15); border-top-color: var(--dk);
+  animation: mk-spin 0.7s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .adm-spinner { animation-duration: 2s; } }
+.adm-alert { border-left: 3px solid var(--lime-dk); }
+.adm-alert-title { font-size: 16px; font-weight: 600; }
+.adm-alert-text { margin: 4px 0 14px; color: var(--text-2); overflow-wrap: anywhere; }
+.adm-linkbtn { padding: 0; font-size: inherit; font-weight: 600; color: var(--dk); text-decoration: underline; }
+.adm-linkbtn:hover { color: var(--lime-dk); }
+
+/* ─── TABLET (below 900px): the nav becomes a scrolling row under the top bar ─── */
+@media (max-width: 900px) {
+  .adm {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas: "top" "nav" "main";
+  }
+  .adm-top { flex-wrap: wrap; gap: 4px 16px; padding: 10px 16px; }
+  .adm-status { order: 3; flex-basis: 100%; }
+  .adm-actions { margin-left: auto; }
+  .adm-nav { position: static; height: auto; overflow: auto hidden; padding: 0; border-right: 0; border-bottom: 1px solid var(--adm-line); }
+  .adm-nav-list { flex-direction: row; white-space: nowrap; }
+  .adm-nav-link { padding: 12px 14px 9px; border-left: 0; border-bottom: 3px solid transparent; }
+  .adm-nav-link[aria-current="page"] { border-bottom-color: var(--lime); }
+  .adm-nav-sep { flex: none; width: 1px; height: auto; margin: 10px 4px; }
+  .adm-main { padding: 24px 16px 48px; }
+}

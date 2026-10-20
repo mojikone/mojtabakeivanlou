@@ -5,8 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Admin</title>
+<script>
+  // Relative URLs below need the trailing slash: /admin -> /admin/ (GitHub Pages redirects by itself; a plain
+  // static server may not).
+  if (!/\/(index\.html)?$/.test(location.pathname)) location.replace(location.pathname + '/' + location.search + location.hash);
+</script>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%231A3D2C'/%3E%3Ctext x='50' y='67' font-family='sans-serif' font-weight='700' font-size='44' text-anchor='middle' fill='%23A8CE2E'%3EMK%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="admin.css">
+<script type="module" src="admin.mjs"></script>
 </head>
 <body>
-<p>Dashboard — coming in a later task</p>
+
+<!-- Gate (spec 13.1): only the site name and the Access pill, until an admin code is entered. -->
+<div class="adm-gate" id="gate" hidden>
+  <p class="adm-gate-name" id="gateName"></p>
+  <div id="gatePill"></div>
+</div>
+
+<!-- First-run setup (spec 13.2), reached through #setup without a session. -->
+<div class="adm-standalone" id="setupView" hidden></div>
+
+<!-- The dashboard (spec 13.3). -->
+<div class="adm" id="app" hidden>
+  <header class="adm-top">
+    <div class="adm-brand"><span id="brandName"></span> <span class="adm-brand-tag">Admin</span></div>
+    <p class="adm-status" id="status" aria-live="polite">Live</p>
+    <div class="adm-actions">
+      <button type="button" class="adm-btn adm-btn-ghost" id="previewButton" disabled>Preview</button>
+      <button type="button" class="adm-btn adm-btn-lime" id="publishButton" disabled>Publish</button>
+      <button type="button" class="adm-signout" id="signOut">Sign out</button>
+    </div>
+  </header>
+  <nav class="adm-nav" aria-label="Sections"><ul class="adm-nav-list" id="nav"></ul></nav>
+  <main class="adm-main" id="main"></main>
+</div>
+
+<noscript><p class="adm-noscript">The dashboard needs JavaScript.</p></noscript>
 </body>
 </html>
