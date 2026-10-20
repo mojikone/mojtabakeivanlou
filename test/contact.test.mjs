@@ -7,7 +7,8 @@ import { renderThankYou } from '../assets/js/render/thank-you.mjs';
 
 // What the parity test cannot see (the normaliser hides it) or what content drives: the form, the sidebar, the head.
 
-const site = normalizeSite(JSON.parse(await readFile('content/site.json', 'utf8')));
+// The frozen content the originals were extracted into (test/fixtures/site.parity.json), not the live content/site.json: the expected values below are the original site's.
+const site = normalizeSite(JSON.parse(await readFile('test/fixtures/site.parity.json', 'utf8')));
 const contextFor = (s) => renderContext(s, { today: new Date('2026-06-01T00:00:00Z') });
 const ctx = contextFor(site);
 

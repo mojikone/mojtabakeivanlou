@@ -3,7 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { normalizeSite, renderContext } from '../assets/js/render/model.mjs';
 import { renderHead, personJsonLd, indexJsonLd, cvJsonLd, HEAD_ORDER } from '../assets/js/render/head.mjs';
 
-const site = normalizeSite(JSON.parse(await readFile('content/site.json', 'utf8')));
+// The frozen content the originals were extracted into (test/fixtures/site.parity.json), not the live content/site.json: the expected values below are the original site's.
+const site = normalizeSite(JSON.parse(await readFile('test/fixtures/site.parity.json', 'utf8')));
 const ctx = renderContext(site, { today: new Date('2026-06-01T00:00:00Z'), versions: { 'assets/js/palette.js': 'abc123' } });
 
 const YEARS_SCRIPT = `<script id="mk-years">(function(){var s=document.documentElement.getAttribute('data-experience-start');if(!s)return;var d=new Date(s),n=new Date(),y=n.getUTCFullYear()-d.getUTCFullYear();if(n.getUTCMonth()<d.getUTCMonth()||(n.getUTCMonth()===d.getUTCMonth()&&n.getUTCDate()<d.getUTCDate()))y--;document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('[data-years]').forEach(function(e){e.textContent=y;});});})();</script>`;

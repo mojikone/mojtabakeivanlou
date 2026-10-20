@@ -42,7 +42,7 @@ Preview server: `.claude/launch.json` in this repo has the entry `website` (`npm
 
 `npm test` runs everything under `test/`. The PDF render test (`test/pdf.test.mjs`) starts Chromium and therefore runs only when `CI=true` (GitHub Actions sets it, and the workflow sets it explicitly) or `PDF_TEST=1`; otherwise it is reported as skipped with its reason.
 
-`test/parity.test.mjs` is the guard that the generated pages still equal the old site. It renders the four pages with `today` fixed at 2026-06-01 (16 years of experience) and compares each with `test/fixtures/original/<page>.html` after normalisation (`test/helpers/normalize.mjs`): comments dropped, whitespace collapsed, attributes sorted, entities decoded, JSON-LD canonicalised, `?v=` values ignored, and the additions removed (the Access pill, the `.proj-files` spans, the years safety-net script and `data-years` spans, `data-experience-start`, the module script and its preload).
+`test/parity.test.mjs` is the guard that the generated pages still equal the old site. It renders the four pages from `test/fixtures/site.parity.json` (below), with `today` fixed at 2026-06-01 (16 years of experience), and compares each with `test/fixtures/original/<page>.html` after normalisation (`test/helpers/normalize.mjs`): comments dropped, whitespace collapsed, attributes sorted, entities decoded, JSON-LD canonicalised, `?v=` values ignored, and the additions removed (the Access pill, the `.proj-files` spans, the years safety-net script and `data-years` spans, `data-experience-start`, the module script and its preload).
 
 - `index.html`, `contact.html`, `thank-you.html`: **zero** differences.
 - `cv.html`: exactly **three sanctioned differences**, each encoded in the test as a transformation of the original, so a fourth fails the test:
@@ -50,7 +50,7 @@ Preview server: `.claude/launch.json` in this repo has the entry `website` (`npm
   2. The "Surveying & Mapping" description says "geospatial data collection" (as the home page does).
   3. The original's single inline `<style>` is split: the `@page` rule (A4, margins, `@bottom-center` page-number footer) stays inline because the footer text is generated from `profile`; everything else is `assets/css/cv.css`, linked from the page.
 
-**Updating fixtures is deliberate, never casual.** `test/fixtures/original/*.html` are byte copies of the hand-written pages at commit `1de3ce8` (`git show 1de3ce8:index.html > test/fixtures/original/index.html`). They define "the site as it was". A parity failure means a template, `site.json` or the normaliser changed a page: find out which, and fix that. Never refresh a fixture, loosen a normaliser rule or add a fourth CV exception just to turn a test green, and never paste a built page into a fixture (the test would then compare the builder with itself). Change a fixture only when the owner has decided the baseline itself should change, for example a deliberate markup change in a template:
+**Updating fixtures is deliberate, never casual.** `test/fixtures/original/*.html` are byte copies of the hand-written pages at commit `1de3ce8` (`git show 1de3ce8:index.html > test/fixtures/original/index.html`). They define "the site as it was". A parity failure means a template or the normaliser changed a page (the frozen content cannot change): find out which, and fix that. Never refresh a fixture, loosen a normaliser rule or add a fourth CV exception just to turn a test green, and never paste a built page into a fixture (the test would then compare the builder with itself). Change a fixture only when the owner has decided the baseline itself should change, for example a deliberate markup change in a template:
 
 1. Change the template first and read the diff the test prints (up to 20 normalised differences).
 2. Edit only the affected fragment of the fixture, or re-extract it from a named commit with `git show <commit>:<page>.html`.
@@ -58,7 +58,9 @@ Preview server: `.claude/launch.json` in this repo has the entry `website` (`npm
 
 The fixtures are byte-exact on purpose: `.gitattributes` marks `test/fixtures/** -text` (no CRLF conversion), and the "inline @page rule … byte for byte" test depends on it. Do not let an editor re-save them. `test/fixtures/site.min.json` is the smallest valid site, used by the unit tests; keep it valid against the validator.
 
-> **Open issue (delete this note when fixed).** `test/parity.test.mjs` currently renders from the live `content/site.json`, not from a frozen copy of the content as extracted (spec §15.2). So the first deliberate content change, which is exactly what the dashboard publishes, makes the parity tests fail, and because the workflow runs `npm test` before building, it would stop the deploy. The fix is to give the parity test its own frozen copy (for example `test/fixtures/site.parity.json`). Until then, do not "repair" a content-triggered parity failure by editing the original-page fixtures or the normaliser; tell the owner.
+**The parity tests render a frozen copy of the content, not the live one.** `test/fixtures/site.parity.json` is a byte copy of `content/site.json` as it was extracted from the original pages (`cp content/site.json test/fixtures/site.parity.json`, at the migration). `test/parity.test.mjs` and the other tests whose expected values are the original site (`test/cv.test.mjs`, `test/head.test.mjs`, `test/contact.test.mjs`) read it instead of `content/site.json`. So `content/site.json` is free to change, which is exactly what the dashboard publishes, without touching the parity tests or stopping the deploy. Treat the file like `test/fixtures/original/*`: never edit it by hand, never refresh it from the live content to turn a test green; change it only together with a deliberate fixture-baseline change decided by the owner.
+
+What still guards the live content in CI is `test/content.test.mjs` (`validateSite` returns no errors for `content/site.json`) and the build test, which builds the real content. The template tests, which render the frozen content, prove the templates; those two prove the content.
 
 ---
 
@@ -107,7 +109,7 @@ The build also copies `assets/`, `vault/`, `admin/`, `CNAME`, `.nojekyll` and `r
 - **Triggers:** push to `redesign3_admin` or `redesign3_admin_test`; manual `workflow_dispatch`; and a yearly schedule, `30 3 24 9 *` (24 September 03:30 UTC), so the years-of-experience number rolls over. GitHub only runs schedules from the **default branch**, which is why the cutover makes `redesign3_admin` the default.
 - **`build` job (always):** checkout, Node 22 with npm cache, a cache of `~/.cache/puppeteer` (the Chromium download, keyed on `package-lock.json`), `npm ci`, `npm test` (with `CI=true`, which switches the PDF render test on), `npm run build`, `npm run pdf`, then upload `dist/` as the Pages artifact. Invalid content fails the build, and a failed build never replaces the live site.
 - **`deploy` job:** runs only when the ref is `refs/heads/redesign3_admin` **and** the repository variable `DEPLOY_FROM_ACTIONS` is `true`. A scratch branch such as `redesign3_admin_test` can therefore never deploy, and until the owner sets the variable nothing goes live.
-- `concurrency: pages` with `cancel-in-progress`: a newer run cancels an older one still running.
+- `concurrency` group `site-${{ github.ref }}` with `cancel-in-progress`: a newer run on the same branch cancels an older one still running. The group is per ref, so a push to `redesign3_admin_test` can never cancel a running `redesign3_admin` deploy.
 
 ---
 

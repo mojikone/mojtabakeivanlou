@@ -7,7 +7,8 @@ import { renderThankYou } from '../assets/js/render/thank-you.mjs';
 import { renderCv } from '../assets/js/render/cv.mjs';
 import { normalizeHtml, diffLines } from './helpers/normalize.mjs';
 
-const site = normalizeSite(JSON.parse(await readFile('content/site.json', 'utf8')));
+// The content as extracted from the original pages, frozen (see CLAUDE.md). content/site.json is free to change; this is not.
+const site = normalizeSite(JSON.parse(await readFile('test/fixtures/site.parity.json', 'utf8')));
 const ctx = renderContext(site, { today: new Date('2026-06-01T00:00:00Z') });
 const original = p => readFile(`test/fixtures/original/${p}.html`, 'utf8');
 

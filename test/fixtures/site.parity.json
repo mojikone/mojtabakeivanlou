@@ -1,0 +1,932 @@
+{
+  "schemaVersion": 1,
+  "site": {
+    "domain": "mojtabakeivanlou.com",
+    "gaId": "G-FMKJ61FF7F",
+    "web3formsKey": "48578b9d-2262-418b-a5b9-4d9bd167ffb4",
+    "formSubject": "New Project Enquiry — mojtabakeivanlou.com",
+    "experienceStart": "2009-09-23",
+    "cvPdfFilename": "CV_Mojtaba_Keivanlou_2026.pdf"
+  },
+  "profile": {
+    "firstName": "Mojtaba",
+    "lastName": "Keivanlou",
+    "roleTitle": "Senior Hydraulic & Water Resources Engineer",
+    "roleTitleLong": "Senior Hydraulic and Water Resources Engineer",
+    "heroHeadline": [
+      "Senior Hydraulic &",
+      "Water Resources Engineer"
+    ],
+    "roleSubtitle": "Team Leader",
+    "quote": "Deep hydraulic engineering paired with _modern computational practice_ — a combination rarely found at this seniority.",
+    "bio": "I am a **Senior Hydraulic and Water Resources Engineer** with {{years}} years of experience delivering water engineering projects in Iran and Oman, alongside remote international work — including US-regulated dam safety assessment. Currently serving as **Team Leader** on one of Oman's largest ongoing flood protection programmes — the Batinah Flood Protection Master Plan for the Ministry of Agriculture, Fisheries & Water Resources, covering the North and South Al Batinah Governorates (15,000 km²) and encompassing several dams, governorate-wide flood protection channels, and stormwater systems.\n\nI specialise in flood modelling and protection, climate adaptation, dam and spillway design, stormwater and sewage master planning, irrigation, water supply, and transient analysis — with a project record spanning national-scale flood risk programmes, US-regulated dam safety assessment, and multi-province flood hazard mapping.\n\nWhat distinguishes my practice: automation of engineering workflows, geospatial data pipelines, and AI-augmented project delivery alongside deep field expertise.",
+    "cvSummary": "Senior Hydraulic and Water Resources Engineer with {{years}} years of experience delivering water engineering projects in Iran and Oman, alongside remote international work including US-regulated dam safety assessment. Currently Team Leader on one of Oman's largest ongoing flood protection programmes — the Batinah Flood Protection Master Plan for the Ministry of Agriculture, Fisheries & Water Resources, covering the North and South Al Batinah Governorates (15,000 km²) and encompassing several dams, governorate-wide flood protection channels, and stormwater systems.\n\nSpecialised in flood modelling and protection, climate adaptation, dam and spillway design, stormwater and sewage master planning, irrigation, water supply, and transient analysis — with a project record spanning national-scale flood risk programmes and multi-province flood hazard mapping. Distinguished by automation of engineering workflows, geospatial data pipelines, and AI-augmented project delivery alongside deep field expertise.",
+    "email": "keyvanlu.m@gmail.com",
+    "phone": {
+      "display": "+968 9297 0635",
+      "e164": "+96892970635"
+    },
+    "whatsapp": "96892970635",
+    "linkedin": "https://linkedin.com/in/MojtabaKeivanlou",
+    "location": {
+      "city": "Muscat",
+      "country": "Sultanate of Oman",
+      "short": "Muscat, Oman",
+      "countryCode": "OM"
+    },
+    "stats": [
+      {
+        "value": "{{years}}",
+        "suffix": "+",
+        "label": "Years",
+        "cvLabel": "Years Experience"
+      },
+      {
+        "value": "2",
+        "suffix": "",
+        "label": "Countries",
+        "cvLabel": "Countries + US Remote"
+      },
+      {
+        "value": "50",
+        "suffix": "+",
+        "label": "Projects",
+        "cvLabel": "Projects Delivered"
+      }
+    ],
+    "businessCard": {
+      "titleLines": [
+        "Hydraulic & Hydrology",
+        "Water Resources",
+        "Wet Utilities"
+      ],
+      "cells": [
+        {
+          "label": "Flood Modeling",
+          "icon": "waves"
+        },
+        {
+          "label": "Road Drainage",
+          "icon": "road"
+        },
+        {
+          "label": "Hydrology & Climate",
+          "icon": "hydrology"
+        },
+        {
+          "label": "Dam Engineering",
+          "icon": "dam"
+        },
+        {
+          "label": "Stormwater & Sewage",
+          "icon": "network"
+        },
+        {
+          "label": "Water Supply & Irrigation",
+          "icon": "drop"
+        },
+        {
+          "label": "GIS",
+          "icon": "globe"
+        },
+        {
+          "label": "Surveying",
+          "icon": "survey"
+        },
+        {
+          "label": "Consultation",
+          "icon": "automation"
+        }
+      ]
+    }
+  },
+  "education": [
+    {
+      "degree": "MSc — Hydraulic Structures Engineering",
+      "school": "Sari University of Agricultural Sciences and Natural Resources (SANRU), Iran",
+      "schoolShort": "Sari University of Agricultural Sciences and Natural Resources",
+      "year": "2013"
+    },
+    {
+      "degree": "BSc — Water Sciences and Engineering",
+      "school": "University of Birjand, Iran",
+      "schoolShort": "University of Birjand",
+      "year": "2009"
+    }
+  ],
+  "languages": [
+    {
+      "name": "Persian",
+      "level": "Native"
+    },
+    {
+      "name": "English",
+      "level": "Fluent"
+    }
+  ],
+  "services": {
+    "intro": "From national flood masterplans to GIS automation — specialised hydraulic engineering delivered at international standards.",
+    "items": [
+      {
+        "title": "Flood Modelling & Protection",
+        "icon": "waves",
+        "description": "1D/2D hydraulic modelling, flood hazard & risk mapping, masterplanning of protection schemes at national scale.",
+        "keywords": [
+          "1D Hydraulic Modelling",
+          "2D Hydraulic Modelling",
+          "Flood Hazard Mapping",
+          "Flood Risk Mapping",
+          "Flood Protection Masterplanning",
+          "Flood Protection Scheme Design"
+        ]
+      },
+      {
+        "title": "Road & Drainage Design",
+        "icon": "road",
+        "description": "Hydraulic design of road drainage structures, culverts, bridges, and channels along major infrastructure corridors.",
+        "keywords": [
+          "Road Drainage Design",
+          "Culvert Hydraulic Design",
+          "Bridge Hydraulic Design",
+          "Open Channel Design",
+          "Drainage Structure Design"
+        ]
+      },
+      {
+        "title": "Hydrology & Climate Analysis",
+        "icon": "hydrology",
+        "description": "Rainfall-runoff modelling, frequency analysis, and hydrological studies incorporating climate change impact assessment.",
+        "keywords": [
+          "Rainfall-Runoff Modelling",
+          "Flood Frequency Analysis",
+          "Hydrological Studies",
+          "Climate Change Impact Assessment"
+        ]
+      },
+      {
+        "title": "Dam Engineering",
+        "icon": "dam",
+        "description": "Spillway hydraulic design, dam breach analysis, dam safety assessment under FEMA guidelines, and site selection studies.",
+        "keywords": [
+          "Spillway Design",
+          "Spillway Hydraulic Modelling",
+          "Dam Breach Analysis",
+          "Dam Safety Assessment",
+          "Dam Site Selection"
+        ]
+      },
+      {
+        "title": "Stormwater & Sewage Networks",
+        "icon": "network",
+        "description": "Gravity network design, urban drainage and sewage masterplanning, and network modelling using SewerGEMS and InfoWorks ICM.",
+        "keywords": [
+          "Stormwater Network Design",
+          "Sewage Network Design",
+          "Gravity Network Design",
+          "Urban Drainage Masterplanning",
+          "Sewage Masterplanning",
+          "Drainage Network Modelling"
+        ]
+      },
+      {
+        "title": "Water Supply & Irrigation",
+        "icon": "drop",
+        "description": "Urban and rural water supply networks, pressurised irrigation systems, and transmission pipelines with transient analysis.",
+        "keywords": [
+          "Water Supply Network Design",
+          "Pressurised Irrigation System Design",
+          "Water Transmission Pipeline Design",
+          "Water Hammer & Transient Analysis"
+        ]
+      },
+      {
+        "title": "GIS & Spatial Analysis",
+        "icon": "globe",
+        "description": "Advanced QGIS and ArcGIS workflows, geospatial data pipelines, flood hazard mapping, and drone-based photogrammetry.",
+        "keywords": [
+          "GIS Analysis",
+          "QGIS & ArcGIS Workflows",
+          "Geospatial Data Pipelines",
+          "Flood Hazard Mapping",
+          "Drone-Based Photogrammetry"
+        ]
+      },
+      {
+        "title": "Surveying & Mapping",
+        "icon": "survey",
+        "description": "Total station (Leica), GNSS, UAV drone mapping, and photogrammetry for engineering survey and geospatial data collection.",
+        "keywords": [
+          "Total Station Surveying",
+          "GNSS Surveying",
+          "UAV Drone Mapping",
+          "Photogrammetry",
+          "Engineering Survey"
+        ]
+      },
+      {
+        "title": "Engineering Automation",
+        "icon": "automation",
+        "description": "Python-based automation of hydraulic workflows, geospatial pipelines, and AI-augmented delivery.",
+        "keywords": [
+          "Hydraulic Workflow Automation",
+          "HEC-RAS Workflow Automation",
+          "Python Engineering Automation",
+          "Geospatial Pipeline Automation",
+          "AI-Augmented Project Delivery"
+        ]
+      }
+    ]
+  },
+  "experience": {
+    "intro": "{{years}} years across Iran and Oman, plus remote international projects — progressively leading larger and more complex water engineering programmes.",
+    "companies": [
+      {
+        "id": "renardet",
+        "name": "Renardet S.A. & Partners",
+        "period": "2022 – Present",
+        "current": true,
+        "role": "Senior Hydraulic Engineer · Team Leader",
+        "location": "Muscat, Sultanate of Oman",
+        "summary": "Leading the hydraulic team on one of Oman's largest ongoing flood protection programmes. Currently Team Leader on the Batinah Flood Protection Master Plan (15,000 km², OMR 6M / ~USD 15.6M) for the Ministry of Agriculture, Fisheries & Water Resources, with parallel project delivery across Dhofar Governorate and major road infrastructure corridors.",
+        "expandLabel": "View all projects",
+        "projects": [
+          {
+            "id": "batinah",
+            "name": "Batinah Flood Protection Scheme — North & South Al Batinah Governorates",
+            "period": "Feb 2023 – Present",
+            "role": "Team Leader",
+            "scope": "OMR 6M (~USD 15.6M) · 15,000 km² study area",
+            "bullets": [
+              {
+                "text": "Leading all technical aspects: hydrology studies, hydraulic modelling, flood risk mapping",
+                "files": []
+              },
+              {
+                "text": "Dam site selection; design of dam hydraulic structures and spillway modelling (Flow 3D)",
+                "files": []
+              },
+              {
+                "text": "Integrated HEC-HMS / HEC-RAS / Python model; SewerGEMS & InfoDrainage for channel design",
+                "files": []
+              },
+              {
+                "text": "Client and stakeholder management, report writing and reviewing",
+                "files": []
+              },
+              {
+                "text": "Flood mapping under existing and proposed conditions for insurance and cost-benefit analysis",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "majlas",
+            "name": "Majlas Dam Design Review — Quriyat",
+            "period": "Jan 2026 – Present",
+            "role": "Hydrology & Hydraulic Engineer",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Review and update of hydrology report; revised rainfall and design flow values",
+                "files": []
+              },
+              {
+                "text": "Flood protection channel design downstream of dam in Quriyat",
+                "files": []
+              },
+              {
+                "text": "Techno-Economic and Flood-Hazard Assessment of the Wadi Majlas Scheme",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "dhofar",
+            "name": "Detailed Design of Flood Protection Schemes — Dhofar Governorate",
+            "period": "Aug 2022 – Present",
+            "role": "Hydraulic Engineer",
+            "scope": "Wilayat Salalah, Taqah, Mirbat, Rakhyoot & Dhalkoot",
+            "bullets": [
+              {
+                "text": "Hydrology studies and hydraulic modelling",
+                "files": []
+              },
+              {
+                "text": "Dam site selection and dam break analysis",
+                "files": []
+              },
+              {
+                "text": "Hydraulic strategy and meeting coordination",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "batinah-carriageway",
+            "name": "Upgrading of Existing Batinah Dual Carriageway",
+            "period": "Jan 2022 – Mar 2023",
+            "role": "Hydraulic Engineer",
+            "scope": "230 km road corridor",
+            "bullets": [
+              {
+                "text": "Comprehensive hydrology analysis and design of road drainage structures",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "yankit",
+            "name": "Yankit Mixed Use Development",
+            "period": "Sep 2022 – Present",
+            "role": "Hydraulic Engineer",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Design of road drainage, stormwater system and sewage network",
+                "files": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "dubois-king",
+        "name": "DuBois & King",
+        "period": "2021",
+        "role": "Senior Hydraulic Engineer — Freelance Specialist",
+        "location": "Vermont, USA (Remote)",
+        "summary": "Dam safety assessment for Shadow Lake Dam under US federal and Vermont ANR standards. Comprehensive hydrology, dam breach modelling, and hazard classification per FEMA guidelines.",
+        "expandLabel": "View project",
+        "projects": [
+          {
+            "id": "shadow-lake",
+            "name": "Shadow Lake Dam Safety Assessment — Glover, VT",
+            "period": "Jan 2021 – Nov 2021",
+            "role": "",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Comprehensive hydrology analysis and hydraulic design of dam",
+                "files": []
+              },
+              {
+                "text": "Dam breach analysis and hazard classification per FEMA guidelines",
+                "files": []
+              },
+              {
+                "text": "Delivered under US federal and Vermont ANR regulatory requirements",
+                "files": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sazeh-pardazi",
+        "name": "Sazeh Pardazi Iran",
+        "period": "2020 – 2021",
+        "role": "Water Resources Engineer — Drainage & Water Supply",
+        "location": "Tehran, Iran",
+        "summary": "Flood hazard and risk mapping across three major Iranian provinces (409 km of river systems), river training and flood protection design, and water infrastructure projects including transmission pipelines and stormwater masterplanning.",
+        "expandLabel": "View all projects",
+        "projects": [
+          {
+            "id": "hormozgan",
+            "name": "Flood Hazard & Risk Mapping — Hormozgan Province",
+            "period": "Jan 2020 – Sep 2020",
+            "role": "",
+            "scope": "127 km of river system",
+            "bullets": [
+              {
+                "text": "Hydraulic modelling of the river system for flood hazard and risk mapping",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "lorestan",
+            "name": "River Training & Rehabilitation — Lorestan Province",
+            "period": "Aug 2020 – Jan 2021",
+            "role": "",
+            "scope": "190 km of rivers",
+            "bullets": [
+              {
+                "text": "Hydraulic modelling and detailed design of river training works",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "kerman",
+            "name": "Flood Protection — Kerman Province",
+            "period": "Jan 2021 – May 2021",
+            "role": "",
+            "scope": "92 km",
+            "bullets": [
+              {
+                "text": "Hydraulic modelling and detailed design of flood protection structures",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "karaj-pipeline",
+            "name": "Water Transmission Pipeline — Karaj WWTP to Eshtehard Industrial Zone",
+            "period": "Jun 2021 – Sep 2021",
+            "role": "",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Hydraulic design of the transmission pipeline",
+                "files": []
+              },
+              {
+                "text": "Surge (water hammer) analysis",
+                "files": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hydrotech-toos",
+        "name": "Hydrotech Toos (HTT)",
+        "period": "2019 – 2020",
+        "role": "Senior Hydraulic Engineer — Water Supply & Sewage",
+        "location": "Mashhad, Iran",
+        "summary": "Senior engineer on water supply, sewage, and irrigation networks for Mashhad metropolitan area's developing zones. Included network optimisation and leakage detection across Khorasan Razavi Province.",
+        "expandLabel": "View all projects",
+        "projects": [
+          {
+            "id": "khorasan-network",
+            "name": "Water Distribution Network Modelling — Khorasan Razavi Province",
+            "period": "Jun 2019 – Jan 2020",
+            "role": "",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Hydraulic modelling of existing distribution network across multiple cities",
+                "files": []
+              },
+              {
+                "text": "Leakage detection and network optimisation",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "mashhad-water",
+            "name": "Water Supply & Irrigation — Mashhad City",
+            "period": "Jun 2019 – Jan 2020",
+            "role": "",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Hydraulic design of new water supply network and landscape irrigation pipeline revision",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "mashhad-sewage",
+            "name": "Sewage Network Modelling — Mashhad City",
+            "period": "Jun 2019 – Jan 2020",
+            "role": "",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Hydraulic design of sewage network for developing areas",
+                "files": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "earlier-positions",
+        "name": "Earlier Positions — Iran",
+        "period": "2010 – 2019",
+        "role": "Project Manager · Hydraulic Engineer · GIS Technician",
+        "location": "Multiple Provinces, Iran",
+        "summary": "Progressive nine-year career from GIS/CAD technician to Project Manager — spanning irrigation system design, provincial flood hazard mapping, and leading field survey teams with Leica instruments.",
+        "expandLabel": "View all positions",
+        "projects": [
+          {
+            "id": "majd-ab-shargh",
+            "name": "Majd Ab Shargh — Project Manager (Drainage)",
+            "period": "Apr 2017 – Jun 2019",
+            "role": "",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Flood hazard and risk mapping — client interaction, team building, hydraulic modelling",
+                "files": []
+              },
+              {
+                "text": "Field surveying with Leica total station instruments",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "behin-ab-pazh",
+            "name": "Behin Ab Pazh — Hydraulic Engineer",
+            "period": "Aug 2015 – Mar 2017",
+            "role": "",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Flood hazard and risk mapping — hydrologic analysis and hydraulic modelling",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "zharfab-pay",
+            "name": "Zharfab Pay — Hydraulic Engineer",
+            "period": "Oct 2013 – Jul 2015",
+            "role": "",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Design of pressurised irrigation systems",
+                "files": []
+              }
+            ]
+          },
+          {
+            "id": "abgostaran",
+            "name": "Abgostaran Sabz Dasht — GIS & CAD Draftsman",
+            "period": "Oct 2010 – Dec 2013",
+            "role": "",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Comprehensive drainage project — east part of Mazandaran Province",
+                "files": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "skills": [
+    {
+      "category": "Hydraulic & Hydrological Modelling",
+      "tags": [
+        {
+          "name": "HEC-RAS 1D-2D",
+          "level": "expert"
+        },
+        {
+          "name": "HEC-HMS",
+          "level": "expert"
+        },
+        {
+          "name": "SewerGEMS",
+          "level": "expert"
+        },
+        {
+          "name": "InfoDrainage",
+          "level": "expert"
+        },
+        {
+          "name": "HY-8",
+          "level": "expert"
+        },
+        {
+          "name": "HEC-SSP",
+          "level": "expert"
+        },
+        {
+          "name": "Storm & Sanitary Analysis",
+          "level": "expert"
+        },
+        {
+          "name": "InfoWorks ICM",
+          "level": "familiar"
+        },
+        {
+          "name": "WaterGEMS",
+          "level": "familiar"
+        },
+        {
+          "name": "Hammer",
+          "level": "familiar"
+        },
+        {
+          "name": "Flow 3D",
+          "level": "familiar"
+        },
+        {
+          "name": "Delft3D",
+          "level": "familiar"
+        },
+        {
+          "name": "OpenFOAM",
+          "level": "familiar"
+        }
+      ]
+    },
+    {
+      "category": "GIS & Spatial Analysis",
+      "tags": [
+        {
+          "name": "QGIS (Advanced)",
+          "level": "expert"
+        },
+        {
+          "name": "ArcGIS - ArcGIS Pro",
+          "level": "expert"
+        },
+        {
+          "name": "Global Mapper",
+          "level": "expert"
+        },
+        {
+          "name": "Google Earth Engine",
+          "level": "expert"
+        },
+        {
+          "name": "PostGIS",
+          "level": "familiar"
+        },
+        {
+          "name": "QGIS Python Plugins",
+          "level": "familiar"
+        }
+      ]
+    },
+    {
+      "category": "Programming & Automation",
+      "tags": [
+        {
+          "name": "Python (Geospatial)",
+          "level": "expert"
+        },
+        {
+          "name": "VBA",
+          "level": "expert"
+        },
+        {
+          "name": "JAVA",
+          "level": "familiar"
+        },
+        {
+          "name": "R",
+          "level": "familiar"
+        },
+        {
+          "name": "PostgreSQL",
+          "level": "familiar"
+        },
+        {
+          "name": "MATLAB",
+          "level": "familiar"
+        },
+        {
+          "name": "Jython",
+          "level": "familiar"
+        }
+      ]
+    },
+    {
+      "category": "CAD & Design",
+      "tags": [
+        {
+          "name": "AutoCAD",
+          "level": "expert"
+        },
+        {
+          "name": "Civil 3D",
+          "level": "expert"
+        },
+        {
+          "name": "Subassembly Composer",
+          "level": "expert"
+        },
+        {
+          "name": "Infraworks",
+          "level": "familiar"
+        },
+        {
+          "name": "Rhino",
+          "level": "familiar"
+        },
+        {
+          "name": "Revit",
+          "level": "familiar"
+        }
+      ]
+    },
+    {
+      "category": "Survey & Field",
+      "tags": [
+        {
+          "name": "Total Station (Leica)",
+          "level": "expert"
+        },
+        {
+          "name": "GNSS - GPS",
+          "level": "expert"
+        },
+        {
+          "name": "UAV - Drone Mapping",
+          "level": "familiar"
+        },
+        {
+          "name": "Photogrammetry",
+          "level": "familiar"
+        }
+      ]
+    },
+    {
+      "category": "Project Management",
+      "tags": [
+        {
+          "name": "MS Project",
+          "level": "expert"
+        },
+        {
+          "name": "MBA",
+          "level": "familiar"
+        }
+      ]
+    },
+    {
+      "category": "Data & Dev Tools",
+      "tags": [
+        {
+          "name": "MS Office 365",
+          "level": "expert"
+        },
+        {
+          "name": "Docker",
+          "level": "familiar"
+        },
+        {
+          "name": "GitHub",
+          "level": "familiar"
+        },
+        {
+          "name": "Power BI",
+          "level": "familiar"
+        },
+        {
+          "name": "AI Engineering Workflows",
+          "level": "familiar"
+        },
+        {
+          "name": "VS Code",
+          "level": "familiar"
+        },
+        {
+          "name": "Cursor",
+          "level": "familiar"
+        },
+        {
+          "name": "OpenAI Codex",
+          "level": "familiar"
+        },
+        {
+          "name": "Claude",
+          "level": "familiar"
+        }
+      ]
+    }
+  ],
+  "contactPage": {
+    "heading": [
+      "Start a",
+      "Project"
+    ],
+    "projectTypes": [
+      "Flood Modelling & Hazard Mapping",
+      "Flood Protection Scheme Design",
+      "Dam Engineering & Safety Assessment",
+      "Hydrology & Hydrological Analysis",
+      "Road & Drainage Design",
+      "Stormwater & Sewage Network Design",
+      "Water Supply & Irrigation",
+      "GIS & Spatial Analysis",
+      "Engineering Automation & Python",
+      "Technical Review & Peer Check",
+      "Other / General Enquiry"
+    ],
+    "descriptionPlaceholder": "Tell me about your project — scope, location, timeline, and any specific requirements…"
+  },
+  "thankYou": {
+    "heading": [
+      "Message",
+      "received"
+    ],
+    "text": "Thank you for reaching out. I'll review your enquiry and get back to you within 1–2 business days."
+  },
+  "cta": {
+    "heading": [
+      "Let's work",
+      "together"
+    ],
+    "sub": "Available for consultancy, design review, hydraulic modelling, and international project collaboration."
+  },
+  "seo": {
+    "titleIndex": "{{name}} — {{roleTitle}}",
+    "titleCv": "CV — {{name}} — {{roleTitle}}",
+    "descriptionIndex": "Senior Hydraulic Engineer · HEC-RAS, HEC-HMS, SewerGEMS, InfoWorks ICM, Flow 3D, QGIS, Civil 3D, Python · {{years}} years · Oman, Iran, USA",
+    "ogDescriptionIndex": "{{years}} years of international experience in flood modelling, dam design, climate adaptation, and engineering automation.",
+    "descriptionCv": "CV of {{name}}, {{roleTitle}} — {{years}} years across Oman, Iran and the USA: flood protection masterplans, dam engineering, stormwater and sewage networks, GIS and engineering automation.",
+    "ogDescriptionCv": "{{years}} years of international experience: flood protection masterplans, dam engineering, stormwater networks, GIS and engineering automation.",
+    "titleContact": "Start a Project — {{name}}",
+    "descriptionContact": "Get in touch with {{name}} — {{roleTitle}}. Available for consultancy, design review, and project collaboration.",
+    "titleThankYou": "Message Received — {{name}}",
+    "descriptionThankYou": "",
+    "personDescription": "Senior hydraulic and water resources engineer with {{years}} years of international experience across Iran, Oman, and the USA.",
+    "knowsAbout": [
+      "Hydraulic Engineering",
+      "Water Resources Engineering",
+      "Flood Modelling",
+      "Flood Risk Assessment",
+      "Flood Protection Design",
+      "Flood Hazard Mapping",
+      "Hydrological Analysis",
+      "Climate Change Hydrology",
+      "Rainfall-Runoff Modelling",
+      "Dam Engineering",
+      "Spillway Design",
+      "Dam Breach Analysis",
+      "Dam Safety Assessment",
+      "Stormwater Drainage Design",
+      "Sewage Network Design",
+      "Road Drainage Design",
+      "Water Supply Design",
+      "Water Transmission",
+      "Water Hammer Analysis",
+      "Transient Analysis",
+      "Irrigation Design",
+      "Wadi Hydraulics",
+      "Arid Zone Hydrology",
+      "1D Hydraulic Modelling",
+      "2D Hydraulic Modelling",
+      "HEC-RAS",
+      "HEC-HMS",
+      "HEC-SSP",
+      "HY-8",
+      "SewerGEMS",
+      "InfoDrainage",
+      "InfoWorks ICM",
+      "WaterGEMS",
+      "InfoWater",
+      "Hammer",
+      "Flow 3D",
+      "Delft3D",
+      "OpenFOAM",
+      "ParaView",
+      "QGIS",
+      "ArcGIS",
+      "ArcGIS Pro",
+      "Global Mapper",
+      "Google Earth Engine",
+      "PostGIS",
+      "Civil 3D",
+      "AutoCAD",
+      "Storm & Sanitary Analysis",
+      "Subassembly Composer",
+      "Infraworks",
+      "Total Station",
+      "Leica",
+      "GNSS",
+      "GPS",
+      "UAV Drone Mapping",
+      "Photogrammetry",
+      "Python",
+      "Geospatial Python",
+      "HDF5",
+      "VBA",
+      "R",
+      "PostgreSQL",
+      "Jython",
+      "C#",
+      "MATLAB",
+      "SPSS",
+      "Power BI",
+      "Docker",
+      "GitHub",
+      "VS Code",
+      "Cursor",
+      "OpenAI Codex",
+      "Claude",
+      "Rhino",
+      "Revit",
+      "Project Management",
+      "MS Project",
+      "SAP2000",
+      "ETABS",
+      "GEO5",
+      "GeoStudio",
+      "AI-augmented Engineering",
+      "Engineering Workflow Automation",
+      "GIS Automation"
+    ]
+  }
+}

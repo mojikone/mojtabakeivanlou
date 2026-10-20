@@ -6,7 +6,8 @@ import { renderCv } from '../assets/js/render/cv.mjs';
 // What the CV parity test cannot see (the normaliser collapses whitespace, unwraps the years span and drops ?v=) or what
 // its exceptions cover (the inline <style>): the footer string, the current job, the tag order, bullets without files.
 
-const site = normalizeSite(JSON.parse(await readFile('content/site.json', 'utf8')));
+// The frozen content the originals were extracted into (test/fixtures/site.parity.json), not the live content/site.json: the expected values below are the original site's.
+const site = normalizeSite(JSON.parse(await readFile('test/fixtures/site.parity.json', 'utf8')));
 const today = new Date('2026-06-01T00:00:00Z');
 const contextFor = (s, options = {}) => renderContext(s, { today, ...options });
 const ctx = contextFor(site);
