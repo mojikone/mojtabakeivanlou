@@ -710,3 +710,104 @@ html { scrollbar-width: thin; scrollbar-color: var(--lime) var(--dk); }
   content: ''; width: 7px; height: 7px; border-radius: 50%;
   background: var(--lime-dk); flex-shrink: 0;
 }
+
+/* ─── ACCESS PILL AND GATED DOWNLOADS (spec 11.1, 11.2) ──── */
+/* Driven by assets/js/access-pill.mjs and assets/js/access.mjs. The pill is a .hero-contact-link
+   whose data-state is idle | open | checking | unlocked | admin. */
+
+/* hidden must win over the display values below (the code form, the .proj-files spans) */
+[hidden] { display: none !important; }
+
+/* The main button carries the pill's padding, so the whole pill is clickable. */
+.access-pill { padding: 0; }
+.access-pill-main {
+  display: inline-flex; align-items: center; gap: 5px;
+  font: inherit; color: inherit; line-height: inherit;
+  padding: 4px 10px; border-radius: 100px;
+}
+.access-pill-main svg { flex-shrink: 0; }
+
+/* open / checking: key icon + code field + a nested grey "Enter" pill; the pill grows leftwards */
+.access-pill[data-state="open"],
+.access-pill[data-state="checking"] { padding: 2px 2px 2px 10px; gap: 6px; }
+.access-pill[data-state="open"] .access-pill-main,
+.access-pill[data-state="checking"] .access-pill-main { padding: 0; }
+.access-pill[data-state="open"]:focus-within { background: rgba(var(--text-rgb),0.12); }
+.access-pill[data-state="checking"],
+.access-pill[data-state="checking"] .access-pill-main { cursor: progress; }
+.access-pill-form { display: inline-flex; align-items: center; gap: 4px; }
+.access-pill-form input {
+  width: 118px; background: transparent; border: 0; outline: 0; padding: 0;
+  font-family: inherit; font-size: 11px; color: var(--text);
+}
+.access-pill-form input::placeholder { color: var(--text-2); opacity: 0.7; }
+.access-pill-form button {
+  font: inherit; font-weight: 600; color: var(--text-2);
+  padding: 2px 9px; border-radius: 100px;
+  background: rgba(var(--text-rgb),0.08);
+  transition: background 0.2s, color 0.2s;
+}
+.access-pill-form button:hover { background: rgba(var(--text-rgb),0.16); color: var(--text); }
+.access-pill-form input:disabled,
+.access-pill-form button:disabled { opacity: 0.5; cursor: progress; }
+
+/* a wrong code: one shake, then the field clears and the pill returns to idle */
+@keyframes mk-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+.access-pill.is-shaking { animation: mk-shake 300ms ease-in-out; }
+@media (prefers-reduced-motion: reduce) {
+  .access-pill.is-shaking { animation: none; }
+}
+
+/* Download icons: the bullet becomes a flex row with its icons at the right end. top: 0 keeps the
+   dash on the first line (an absolutely positioned child of a flex row would sit at its centre). */
+.proj-bullets li { display: flex; align-items: center; gap: 10px; }
+.proj-bullets li::before { top: 0; }
+.proj-files { margin-left: auto; display: inline-flex; gap: 6px; flex-shrink: 0; }
+.proj-dl { position: relative; display: inline-flex; line-height: 0; }
+.proj-dl svg {
+  width: 13px; height: 13px; color: var(--text-2); opacity: 0.55;
+  transition: opacity 0.2s, color 0.2s;
+}
+.proj-dl:hover svg,
+.proj-dl:focus-visible svg { opacity: 1; color: var(--dk); }
+/* busy: a spinning ring replaces the icon while the file is fetched and decrypted */
+@keyframes mk-spin { to { transform: rotate(360deg); } }
+.proj-dl.is-busy { cursor: progress; }
+.proj-dl.is-busy svg { visibility: hidden; }
+.proj-dl.is-busy::after {
+  content: ''; position: absolute; inset: 1px;
+  border: 1.5px solid var(--text-2); border-right-color: transparent; border-radius: 50%;
+  animation: mk-spin 0.7s linear infinite;
+}
+.proj-dl.is-error,
+.proj-dl.is-error svg { color: var(--lime-dk); opacity: 1; }
+
+@media (max-width: 768px) {
+  /* pill sizes follow .hero-contact-link (9px text, 3px 8px padding) */
+  .access-pill-main { padding: 3px 8px; }
+  .access-pill[data-state="open"],
+  .access-pill[data-state="checking"] { padding: 2px 2px 2px 8px; }
+  .access-pill-form input { font-size: 9px; width: 100px; }
+  .access-pill-form button { padding: 1px 7px; }
+  /* the icons wrap under the bullet text, right-aligned (a small row gap keeps them with it) */
+  .proj-bullets li { flex-wrap: wrap; row-gap: 2px; }
+  .proj-files { flex-basis: 100%; margin-left: 0; justify-content: flex-end; }
+}
+/* Short landscape screens at desktop width (800x360): the extra Access row would bring the contact
+   pills up against the headline, so the stack is packed a little tighter there. */
+@media (min-width: 769px) and (max-height: 500px) {
+  .hero-contact-row { gap: 2px; }
+  .hero-br-actions { margin-top: 8px; }
+}
+@media (max-width: 768px) and (max-height: 500px) {
+  /* landscape phones: 8px text, 2px 6px padding */
+  .access-pill-main { padding: 2px 6px; }
+  .access-pill[data-state="open"],
+  .access-pill[data-state="checking"] { padding: 1px 1px 1px 6px; }
+  .access-pill-form input { font-size: 8px; }
+  .access-pill-form button { padding: 1px 6px; }
+}
