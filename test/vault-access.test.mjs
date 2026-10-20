@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, rm, writeFile, readFile, readdir, stat } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, readFile, readdir, stat, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -457,6 +457,7 @@ test('CLI: init, add-code, encrypt, list, revoke end to end; secrets never print
     assert.notEqual(keys2.vk, keys.vk);
     const fk1 = await unwrapFileKey(await importKey(admin2.payload.vk), keys2.files[record.id]);
     assert.deepEqual(await decryptFile(fk1, await readFile(binPath)), plain);
+    assert.deepEqual((await readdir(join(dir, 'vault'))).sort(), ['access.json', 'files', 'keys.json']); // no .tmp/.bak left
 
     // revoking the admin entry or an unknown id is refused and changes nothing
     assert.equal(run('revoke', '--admin-code', ADMIN_CODE, admin2.entry.id).status, 1);
@@ -469,6 +470,80 @@ test('CLI: init, add-code, encrypt, list, revoke end to end; secrets never print
       assert.ok(!(r.stdout + r.stderr).includes(TOKEN));
     }
     assert.ok(!(rev.stdout + rev.stderr).includes(code));
+  });
+});
+
+test('CLI: when the second file cannot be replaced, keys.json is rolled back, nothing is left behind, and the exit is non-zero', {
+  skip: process.platform !== 'win32' && 'a read-only file blocks a rename over it only on Windows',
+}, async () => {
+  await inTempDir(async (dir) => {
+    assert.equal(cli(dir, ...initArgs).status, 0);
+    const code = cli(dir, 'add-code', '--admin-code', ADMIN_CODE, '--label', 'Hirer').stdout.trim();
+    await writeFile(join(dir, 'f.txt'), 'kept file');
+    const record = JSON.parse(cli(dir, 'encrypt', '--admin-code', ADMIN_CODE, 'f.txt').stdout);
+    const accessPath = join(dir, 'vault', 'access.json');
+    const keysPath = join(dir, 'vault', 'keys.json');
+    const accessBefore = await readFile(accessPath, 'utf8');
+    const keysBefore = await readFile(keysPath, 'utf8');
+    const oldVk = await importKey((await unlock(JSON.parse(accessBefore), ADMIN_CODE)).payload.vk);
+    const dlId = (await unlock(JSON.parse(accessBefore), code)).entry.id;
+
+    // A read-only access.json stands in for a Windows file lock: revoke renames keys.json first,
+    // then renaming over access.json fails with EPERM (after its retries).
+    await chmod(accessPath, 0o444);
+    let r;
+    try {
+      r = cli(dir, 'revoke', '--admin-code', ADMIN_CODE, dlId);
+    } finally {
+      await chmod(accessPath, 0o644);
+    }
+    assert.equal(r.status, 1);
+    assert.ok(r.stderr.includes('Could not replace vault/access.json (EPERM).'), r.stderr);
+    assert.ok(r.stderr.includes('vault/keys.json restored from backup; nothing was changed'), r.stderr);
+    assert.ok(!r.stderr.includes(ADMIN_CODE));
+
+    // no split: both files as before, no .tmp/.bak, and keys.json still unwraps under the OLD vault key
+    assert.deepEqual((await readdir(join(dir, 'vault'))).sort(), ['access.json', 'files', 'keys.json']);
+    assert.equal(await readFile(keysPath, 'utf8'), keysBefore);
+    assert.equal(await readFile(accessPath, 'utf8'), accessBefore);
+    const fk = await unwrapFileKey(oldVk, JSON.parse(await readFile(keysPath, 'utf8')).files[record.id]);
+    assert.equal(dec(await decryptFile(fk, await readFile(join(dir, 'vault', 'files', `${record.id}.bin`)))), 'kept file');
+
+    // the vault still works, so the revoke can simply be run again
+    const again = cli(dir, 'revoke', '--admin-code', ADMIN_CODE, dlId);
+    assert.equal(again.status, 0, again.stderr);
+    assert.equal(await unlock(JSON.parse(await readFile(accessPath, 'utf8')), code), null);
+  });
+});
+
+test('CLI: leftover .tmp/.bak files from an interrupted write make every command refuse and print the recovery step', async () => {
+  await inTempDir(async (dir) => {
+    assert.equal(cli(dir, ...initArgs).status, 0);
+    const vault = join(dir, 'vault');
+    const accessBefore = await readFile(join(vault, 'access.json'), 'utf8');
+    // every command refuses, and stderr holds each expected line
+    const refuses = (...lines) => {
+      for (const args of [['list', '--admin-code', ADMIN_CODE], ['add-code', '--admin-code', ADMIN_CODE, '--label', 'x'], [...initArgs, '--force']]) {
+        const r = cli(dir, ...args);
+        assert.equal(r.status, 1, args[0]);
+        assert.equal(r.stdout, '');
+        for (const line of lines) assert.ok(r.stderr.includes(line), `${args[0]}: ${r.stderr}`);
+        assert.ok(!r.stderr.includes(ADMIN_CODE));
+      }
+    };
+
+    await writeFile(join(vault, 'access.json.tmp'), '{}');
+    refuses('stopped before replacing any vault file', '  delete vault/access.json.tmp');
+
+    await writeFile(join(vault, 'keys.json.bak'), '{}');
+    refuses('half-way', '  rename vault/keys.json.bak to vault/keys.json (replacing it)', '  delete vault/access.json.tmp');
+
+    await rm(join(vault, 'access.json.tmp'));
+    refuses('could not remove its backups', '  delete vault/keys.json.bak');
+
+    assert.equal(await readFile(join(vault, 'access.json'), 'utf8'), accessBefore); // nothing was touched
+    await rm(join(vault, 'keys.json.bak'));
+    assert.equal(cli(dir, 'list', '--admin-code', ADMIN_CODE).status, 0);
   });
 });
 

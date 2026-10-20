@@ -6,7 +6,7 @@
 // Nothing here prints them, with one deliberate exception: add-code prints the download code it
 // added. Data goes to stdout (the new code, the file record, the entry table); notes go to stderr.
 
-import { readFileSync, writeFileSync, renameSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, mkdirSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { basename, extname, join, resolve } from 'node:path';
 import process from 'node:process';
 import {
@@ -128,12 +128,127 @@ function readJson(path, name) {
   }
 }
 
-// Writes every file to a temporary name first, then renames them all, so an interrupted run never
-// leaves access.json and keys.json under different vault keys.
-function writeJsonFiles(pairs) {
+const rel = (path) => `vault/${basename(path)}`;
+const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
+
+// Windows reports these while another program (antivirus, indexer, editor) briefly holds a file.
+const TRANSIENT = new Set(['EPERM', 'EBUSY', 'EACCES']);
+const ATTEMPTS = 5;
+const RETRY_MS = 100;
+
+async function retrying(fn) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return fn();
+    } catch (e) {
+      if (!TRANSIENT.has(e.code) || attempt >= ATTEMPTS) throw e;
+      await sleep(RETRY_MS);
+    }
+  }
+}
+
+function tryRemove(path) {
+  try {
+    rmSync(path, { force: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Leftovers of an interrupted writeJsonFiles, and how to recover from them, or null when there
+// are none. Each step writes all <name>.tmp files first, then per file copies the original to
+// <name>.bak and renames <name>.tmp over it; it removes the .bak files only after every rename
+// succeeded, and removes the .tmp files after a rollback only once every original is restored.
+// So: .tmp without .bak = stopped before replacing anything; .tmp with .bak = stopped half-way,
+// restore from .bak; .bak alone = finished, only the backups are left.
+function leftoverAdvice() {
+  let names;
+  try {
+    names = readdirSync(VAULT);
+  } catch {
+    return null;
+  }
+  const tmps = names.filter((n) => n.endsWith('.tmp')).sort().map((n) => `vault/${n}`);
+  const baks = names.filter((n) => n.endsWith('.bak')).sort().map((n) => `vault/${n}`);
+  if (tmps.length === 0 && baks.length === 0) return null;
+  const lines = [];
+  if (baks.length && tmps.length) {
+    lines.push('A previous run stopped half-way through replacing vault files. To restore the files as they were before it:');
+    for (const b of baks) lines.push(`  rename ${b} to ${b.slice(0, -4)} (replacing it)`);
+    for (const t of tmps) lines.push(`  delete ${t}`);
+  } else if (baks.length) {
+    lines.push('A previous run replaced the vault files but could not remove its backups. The current files are complete:');
+    for (const b of baks) lines.push(`  delete ${b}`);
+  } else {
+    lines.push('A previous run stopped before replacing any vault file, so nothing changed:');
+    for (const t of tmps) lines.push(`  delete ${t}`);
+  }
+  lines.push('Then run the command again.');
+  return lines.join('\n');
+}
+
+function refuseLeftovers() {
+  const advice = leftoverAdvice();
+  if (advice) throw new CliError(advice);
+}
+
+// Replaces vault JSON files (access.json and keys.json must change together) as one recoverable
+// step. Every new file is written to <name>.tmp first; a failure there changes nothing. Then, one
+// file at a time, the original is copied to <name>.bak and <name>.tmp is renamed over it, retrying
+// briefly on EPERM/EBUSY/EACCES. If a rename still fails, the files already replaced are restored
+// from their .bak copies and every temporary file is removed, so the vault is as it was before.
+// This is not atomic: the renames are separate operations, and a crash or a failed restore can stop
+// it half-way. The .tmp/.bak files left behind then make every command refuse to run and print the
+// recovery step (leftoverAdvice) instead of working on a split state.
+async function writeJsonFiles(pairs) {
   mkdirSync(VAULT, { recursive: true });
-  for (const [path, value] of pairs) writeFileSync(`${path}.tmp`, `${JSON.stringify(value, null, 2)}\n`);
-  for (const [path] of pairs) renameSync(`${path}.tmp`, path);
+  refuseLeftovers();
+  const items = pairs.map(([path, value]) => ({ path, tmp: `${path}.tmp`, bak: `${path}.bak`, text: `${JSON.stringify(value, null, 2)}\n` }));
+
+  for (const item of items) {
+    try {
+      writeFileSync(item.tmp, item.text);
+    } catch (e) {
+      for (const it of items) tryRemove(it.tmp);
+      throw new CliError(`Could not write ${rel(item.tmp)} (${e.code ?? e.message}). Nothing was changed.`);
+    }
+  }
+
+  const replaced = [];
+  for (const item of items) {
+    try {
+      item.hadOriginal = existsSync(item.path);
+      // Written by hand, not copyFileSync, which on Windows would copy a read-only attribute too.
+      if (item.hadOriginal) writeFileSync(item.bak, readFileSync(item.path));
+      await retrying(() => renameSync(item.tmp, item.path));
+      replaced.push(item);
+    } catch (e) {
+      await rollBack(items, replaced, item, e);
+    }
+  }
+  for (const item of items) tryRemove(item.bak);
+}
+
+// Undoes the renames of a failed writeJsonFiles and always throws.
+async function rollBack(items, replaced, failed, error) {
+  const reason = `Could not replace ${rel(failed.path)} (${error.code ?? error.message}).`;
+  tryRemove(failed.bak); // its original was never replaced
+  const stuck = [];
+  for (const item of [...replaced].reverse()) {
+    try {
+      if (item.hadOriginal) await retrying(() => renameSync(item.bak, item.path));
+      else await retrying(() => rmSync(item.path, { force: true }));
+    } catch {
+      stuck.push(rel(item.path));
+    }
+  }
+  if (stuck.length) {
+    throw new CliError(`${reason} Could not restore ${stuck.join(', ')} either.\n${leftoverAdvice() ?? ''}`.trimEnd());
+  }
+  for (const item of items) tryRemove(item.tmp);
+  const restored = replaced.length ? ` ${replaced.map((it) => rel(it.path)).join(', ')} restored from backup;` : '';
+  throw new CliError(`${reason}${restored} nothing was changed. Close any program that holds the file and run the command again.`);
 }
 
 // Unlocks with the admin code and returns the files and keys every admin command needs.
@@ -190,7 +305,7 @@ async function init(opts) {
     vk,
   );
   const keys = createKeysFile(shortId());
-  writeJsonFiles([[KEYS, keys], [ACCESS, access]]);
+  await writeJsonFiles([[KEYS, keys], [ACCESS, access]]);
   note(`Wrote vault/access.json (admin entry ${access.entries[0].id}, ${github.owner}/${github.repo}@${github.branch}) and vault/keys.json (vault key ${keys.vk}).`);
 }
 
@@ -205,7 +320,7 @@ async function addCode(opts) {
     if (/already in use/.test(e.message)) throw new CliError('That code is already in use.');
     throw e;
   }
-  writeJsonFiles([[ACCESS, next]]);
+  await writeJsonFiles([[ACCESS, next]]);
   note(`Added download entry ${next.entries.at(-1).id} (${label}).`);
   out(code);
 }
@@ -225,7 +340,7 @@ async function encrypt(opts, [file]) {
   const next = { ...keys, files: { ...keys.files, [id]: await wrapFileKey(vk, fk) } };
   mkdirSync(FILES, { recursive: true });
   writeFileSync(join(FILES, `${id}.bin`), blob);
-  writeJsonFiles([[KEYS, next]]);
+  await writeJsonFiles([[KEYS, next]]);
   note(`Wrote vault/files/${id}.bin (${formatSize(blob.length)}) and added its key to vault/keys.json. File record:`);
   out(JSON.stringify({ id, name: basename(file), size: bytes.length, type: mimeType(file), enc: true }, null, 2));
 }
@@ -245,7 +360,7 @@ async function revoke(opts, [entryId]) {
   }
   const { label } = await readMeta(target, vk);
   const rotated = await rotateVault({ access, keys, vk, kek: admin.kek, adminEntryId: admin.entry.id, codesById, dropIds: [entryId] });
-  writeJsonFiles([[KEYS, rotated.keys], [ACCESS, rotated.access]]);
+  await writeJsonFiles([[KEYS, rotated.keys], [ACCESS, rotated.access]]);
   note(`Revoked ${entryId} (${label}). New vault key ${rotated.keys.vk}: ${Object.keys(rotated.keys.files).length} file key(s) rewrapped, ${rotated.access.entries.length} entry(ies) re-sealed.`);
 }
 
@@ -269,6 +384,7 @@ async function main(argv) {
   const spec = Object.hasOwn(COMMANDS, name) ? COMMANDS[name] : null;
   if (!spec) throw new UsageError(/^[a-z][a-z-]{0,30}$/.test(name) ? `unknown command "${name}"` : 'unknown command');
   const { opts, args } = parseArgs(rest, spec);
+  refuseLeftovers(); // never work on, or add to, a half-replaced vault
   await spec.run(opts, args);
 }
 
