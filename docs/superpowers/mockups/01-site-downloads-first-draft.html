@@ -1,0 +1,122 @@
+<h2>Mockup 1 of 2 — reports on the public site</h2>
+<p class="subtitle">How the lock link, the unlock box and the download icons would sit inside the Experience section. Colours follow your site's variables; the mockup uses the Original (lime) palette.</p>
+
+<style>
+  .mk { font-family: Poppins, system-ui, sans-serif; background:#EDEBE7; color:#141414; border-radius:12px; padding:28px 32px; border:1px solid #d9d6cf; }
+  .mk .eyebrow { font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#6B6B65; margin-bottom:6px; }
+  .mk h4 { font-size:26px; font-weight:600; line-height:1.1; margin:0 0 6px; color:#141414; }
+  .mk .sub { color:#6B6B65; font-size:13px; max-width:520px; margin:0 0 18px; }
+  .mk .tl { border-left:2px solid #1A3D2C; padding-left:18px; margin-top:12px; }
+  .mk .tl-period { font-size:11px; color:#6B6B65; letter-spacing:.08em; }
+  .mk .tl-company { font-weight:600; font-size:16px; margin-top:2px; }
+  .mk .tl-role { font-size:13px; color:#6B6B65; }
+  .mk .proj { margin-top:14px; padding:12px 14px; border-left:3px solid #A8CE2E; background:#E3E1DC; border-radius:0 8px 8px 0; }
+  .mk .proj-name { font-weight:600; font-size:14px; }
+  .mk .proj-meta { font-size:12px; color:#6B6B65; margin:2px 0 6px; }
+  .mk ul { margin:0; padding-left:18px; font-size:13px; color:#141414; }
+  .mk li { margin:2px 0; }
+  .mk .files { margin-top:9px; padding-top:8px; border-top:1px dashed #cfccc4; display:flex; flex-direction:column; gap:5px; }
+  .mk .file { display:flex; align-items:center; gap:8px; font-size:12.5px; color:#141414; text-decoration:none; }
+  .mk .file svg { width:13px; height:13px; stroke:#9c9a93; flex:none; }
+  .mk .file:hover svg { stroke:#1A3D2C; }
+  .mk .file .fmeta { color:#9c9a93; font-size:11px; }
+  .mk .lock { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:#9c9a93; text-decoration:none; margin-top:14px; }
+  .mk .lock svg { width:12px; height:12px; stroke:#9c9a93; }
+  .mk .unlock { margin-top:10px; display:flex; gap:8px; align-items:center; }
+  .mk .unlock input { font:inherit; font-size:13px; padding:8px 12px; border:1px solid #cfccc4; border-radius:8px; background:#fff; width:200px; color:#141414; }
+  .mk .unlock button { font:inherit; font-size:13px; padding:8px 14px; border:0; border-radius:8px; background:#1A3D2C; color:#EBE9E4; }
+  .mk .unlocked { font-size:11.5px; color:#1A3D2C; display:inline-flex; gap:6px; align-items:center; margin-top:14px; }
+  .mk .unlocked svg { width:12px; height:12px; stroke:#1A3D2C; }
+  .mk .note { font-size:12px; color:#6B6B65; font-style:italic; margin-top:10px; }
+  .legend { font-size:0.85rem; color:var(--text-secondary); margin:0.5rem 0 1.25rem; }
+  .legend b { color:var(--text-primary); }
+</style>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">A — Normal visitor (locked)</div>
+    <div class="mockup-body" style="padding:0">
+      <div class="mk">
+        <div class="eyebrow">Career</div>
+        <h4>Professional<br>Journey</h4>
+        <p class="sub">17 years across Iran and Oman, plus remote international projects.</p>
+        <div class="tl">
+          <div class="tl-period">2022 – PRESENT</div>
+          <div class="tl-company">Renardet S.A. &amp; Partners</div>
+          <div class="tl-role">Senior Hydraulic Engineer · Team Leader</div>
+          <div class="proj">
+            <div class="proj-name">Majlas Dam Design Review — Quriyat</div>
+            <div class="proj-meta">Mar 2026 – Present · Hydrology &amp; Hydraulic Engineer</div>
+            <ul>
+              <li>Design review of spillway hydraulics and flood routing</li>
+              <li>Techno-economic and flood-hazard assessment of the Wadi Majlas scheme</li>
+            </ul>
+            <!-- no file rows: attachments are invisible when locked -->
+          </div>
+        </div>
+        <a class="lock" href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Have an access code?</a>
+        <div class="unlock">
+          <input placeholder="Enter code" value="MK-7H2K-9QPD">
+          <button>Unlock</button>
+        </div>
+        <p class="note">The lock link is the only visible trace. The box opens when clicked. Nothing in the project cards hints that files exist.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">B — After unlocking (you, or a hirer with a code)</div>
+    <div class="mockup-body" style="padding:0">
+      <div class="mk">
+        <div class="eyebrow">Career</div>
+        <h4>Professional<br>Journey</h4>
+        <p class="sub">17 years across Iran and Oman, plus remote international projects.</p>
+        <div class="tl">
+          <div class="tl-period">2022 – PRESENT</div>
+          <div class="tl-company">Renardet S.A. &amp; Partners</div>
+          <div class="tl-role">Senior Hydraulic Engineer · Team Leader</div>
+          <div class="proj">
+            <div class="proj-name">Majlas Dam Design Review — Quriyat</div>
+            <div class="proj-meta">Mar 2026 – Present · Hydrology &amp; Hydraulic Engineer</div>
+            <ul>
+              <li>Design review of spillway hydraulics and flood routing</li>
+              <li>Techno-economic and flood-hazard assessment of the Wadi Majlas scheme</li>
+            </ul>
+            <div class="files">
+              <a class="file" href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Techno-Economic and Flood-Hazard Assessment of the Wadi Majlas Scheme <span class="fmeta">PDF · 4.2 MB</span></a>
+              <a class="file" href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Flood protection channel design downstream of dam — Quriyat <span class="fmeta">DOCX · 1.1 MB</span></a>
+            </div>
+          </div>
+        </div>
+        <span class="unlocked"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> Reports unlocked for this session · <u>lock</u></span>
+        <p class="note">Same tray-and-arrow icon as Download CV, drawn in the muted grey used for secondary text. It darkens on hover. File rows appear under every project that has attachments.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:1.5rem">Where should the lock link live?</h3>
+<p class="legend">Click one. It only affects where a visitor finds the "Have an access code?" entry point.</p>
+<div class="options">
+  <div class="option" data-choice="lock-experience" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Bottom of the Experience section (shown above)</h3>
+      <p>Next to the projects it unlocks. Quiet, but a hirer you've emailed will find it where you tell them to look.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="lock-contact" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Inside the "o" menu, below the colour themes</h3>
+      <p>Completely hidden from casual visitors. You'd tell the hirer "click the o in Mojtaba". Fewer strangers will ever see a lock.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="lock-url" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>No link at all — unlock through the address</h3>
+      <p>You send the hirer a link like mojtabakeivanlou.com/#code=MK-7H2K-9QPD. The site unlocks itself on arrival. Nothing visible on the page, ever. Can be combined with 1 or 2.</p>
+    </div>
+  </div>
+</div>

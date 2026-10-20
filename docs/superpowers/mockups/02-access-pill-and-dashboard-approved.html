@@ -1,0 +1,152 @@
+<h2>Mockup 2 of 2, revised — Access pill in place, multiple files per bullet</h2>
+<p class="subtitle">Two changes applied: the code box lives inside the pill itself, and a bullet can carry several files. Original (lime) palette.</p>
+
+<style>
+  .mk { font-family: Poppins, system-ui, sans-serif; background:#EDEBE7; color:#141414; border-radius:12px; padding:22px 26px; border:1px solid #d9d6cf; }
+  .mk .cap { font-size:11px; color:#6B6B65; font-style:italic; margin-top:12px; }
+  .pills { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .pill { font-size:11px; font-weight:500; color:#6B6B65; display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:100px; background:rgba(20,20,20,.06); height:22px; box-sizing:border-box; }
+  .pill svg { width:11px; height:11px; stroke:#6B6B65; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+  .pill.access { cursor:pointer; }
+  .pill.open { padding:2px 2px 2px 10px; gap:6px; background:rgba(20,20,20,.06); }
+  .pill.open input { font:inherit; font-size:11px; color:#141414; background:transparent; border:0; outline:0; width:118px; letter-spacing:.08em; padding:0; }
+  .pill.open input::placeholder { color:#9c9a93; letter-spacing:0; }
+  .pill.open .enter { font-size:10.5px; font-weight:600; color:#6B6B65; background:rgba(20,20,20,.08); border-radius:100px; padding:2px 9px; height:18px; display:inline-flex; align-items:center; }
+  .pill.open .enter:hover { background:rgba(20,20,20,.14); color:#141414; }
+  .states { display:flex; flex-direction:column; gap:18px; align-items:flex-end; }
+  .state-lbl { font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:#9c9a93; margin-bottom:6px; text-align:right; }
+
+  .proj { padding:12px 14px; border-left:3px solid #A8CE2E; background:#E3E1DC; border-radius:0 8px 8px 0; }
+  .proj-name { font-weight:600; font-size:14px; }
+  .proj-meta { font-size:12px; color:#6B6B65; margin:2px 0 6px; }
+  .bul { list-style:none; margin:0; padding:0; }
+  .bul li { font-size:13px; color:#6B6B65; line-height:1.6; padding-left:14px; position:relative; margin-bottom:3px; display:flex; align-items:center; gap:10px; }
+  .bul li::before { content:'–'; position:absolute; left:0; color:#8EB020; }
+  .bul li .dls { margin-left:auto; display:inline-flex; gap:6px; flex:none; }
+  .bul li .dl { display:inline-flex; width:13px; height:13px; position:relative; }
+  .bul li .dl svg { width:13px; height:13px; stroke:#a9a79f; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .bul li .dl:hover svg { stroke:#1A3D2C; }
+  .tip { position:absolute; right:0; top:18px; background:#141414; color:#EBE9E4; font-size:10px; padding:3px 7px; border-radius:5px; white-space:nowrap; }
+
+  .ad { font-family: Poppins, system-ui, sans-serif; background:#fbfbf9; color:#141414; border-radius:10px; border:1px solid #e2dfd8; font-size:12.5px; padding:12px; }
+  .lbl { font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:#6B6B65; margin:4px 0 8px; display:flex; align-items:center; gap:10px; }
+  .lbl .add { margin-left:auto; color:#1A3D2C; font-weight:600; text-transform:none; letter-spacing:0; font-size:11.5px; }
+  .brow { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .brow .grip { color:#bdbab2; font-size:14px; letter-spacing:-2px; }
+  .brow .in { flex:1; border:1px solid #e2dfd8; border-radius:7px; padding:6px 9px; background:#fff; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .brow .clip { height:26px; padding:0 8px; border-radius:7px; border:1px solid #e2dfd8; background:#fff; display:inline-flex; align-items:center; gap:5px; flex:none; font-size:11px; color:#6B6B65; }
+  .brow .clip svg { width:13px; height:13px; stroke:#6B6B65; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .brow .clip.has { background:#EAF3C5; border-color:#A8CE2E; color:#1A3D2C; font-weight:600; }
+  .brow .clip.has svg { stroke:#1A3D2C; }
+  .brow .x { color:#bdbab2; font-size:14px; width:18px; text-align:center; }
+  .files { margin:0 0 10px 32px; display:flex; flex-direction:column; gap:4px; }
+  .chip { display:inline-flex; align-items:center; gap:8px; font-size:11px; color:#1A3D2C; background:#EAF3C5; border-radius:6px; padding:4px 9px; width:fit-content; }
+  .chip .grip { color:#9fb86a; font-size:12px; letter-spacing:-2px; }
+  .chip b { font-weight:600; }
+  .chip .rm { color:#6B6B65; }
+  .chip.add { background:transparent; border:1px dashed #cfccc4; color:#6B6B65; }
+  .drop { margin:0 0 10px 32px; border:1.5px dashed #cfccc4; border-radius:8px; padding:10px; font-size:11px; color:#9c9a93; text-align:center; }
+</style>
+
+<h3>A — The Access pill, three states</h3>
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Idle → open → typing, all inside the same pill</div>
+    <div class="mockup-body" style="padding:0">
+      <div class="mk" style="display:flex; justify-content:flex-end; min-height:250px;">
+        <div class="states">
+          <div>
+            <div class="state-lbl">1 · idle</div>
+            <div class="pills">
+              <span class="pill"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-4-1L3 21l1.9-4.6A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg> WhatsApp</span>
+              <span class="pill access"><svg viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M13 10l3 3"/></svg> Access</span>
+            </div>
+          </div>
+          <div>
+            <div class="state-lbl">2 · clicked, pill widens</div>
+            <div class="pills">
+              <span class="pill"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-4-1L3 21l1.9-4.6A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg> WhatsApp</span>
+              <span class="pill access open"><svg viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M13 10l3 3"/></svg><input placeholder="Access code"><span class="enter">Enter</span></span>
+            </div>
+          </div>
+          <div>
+            <div class="state-lbl">3 · typing (masked)</div>
+            <div class="pills">
+              <span class="pill"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-4-1L3 21l1.9-4.6A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg> WhatsApp</span>
+              <span class="pill access open"><svg viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M13 10l3 3"/></svg><input value="••••••••••"><span class="enter">Enter</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="cap" style="padding:0 4px">Same grey, same height, same radius. The pill stretches to the left to make room for the field and the Enter button; the key icon stays. Enter key on the keyboard works too. Click outside or Escape collapses it back to "Access".</p>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">A bullet with two files, unlocked</div>
+    <div class="mockup-body" style="padding:0">
+      <div class="mk">
+        <div class="proj">
+          <div class="proj-name">Majlas Dam Design Review — Quriyat</div>
+          <div class="proj-meta">Mar 2026 – Present · Hydrology &amp; Hydraulic Engineer</div>
+          <ul class="bul">
+            <li><span>Techno-Economic and Flood-Hazard Assessment of the Wadi Majlas Scheme</span><span class="dls">
+              <a class="dl" href="#"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="tip">Techno-Economic Report.pdf · 4.2 MB</span></a>
+              <a class="dl" href="#"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+            </span></li>
+            <li style="margin-top:14px"><span>Flood protection channel design downstream of the dam</span><span class="dls">
+              <a class="dl" href="#"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+            </span></li>
+            <li><span>Spillway hydraulic review and dam-break routing</span></li>
+          </ul>
+        </div>
+        <p class="cap">One icon per file, side by side at the right. Hovering shows the file name and size (black tooltip shown on the first). On a phone the icons wrap under the bullet text and tap-to-download works the same.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:1.75rem">B — Dashboard: attaching several files to one bullet</h3>
+<div class="mockup">
+  <div class="mockup-header">Experience → Majlas Dam → Bullets (cropped)</div>
+  <div class="mockup-body" style="padding:0">
+    <div class="ad">
+      <div class="lbl">Bullets <span class="add">+ Add bullet</span></div>
+
+      <div class="brow"><span class="grip">⋮⋮</span><div class="in">Techno-Economic and Flood-Hazard Assessment of the Wadi Majlas Scheme</div><span class="clip has"><svg viewBox="0 0 24 24"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> 2 files</span><span class="x">×</span></div>
+      <div class="files">
+        <span class="chip"><span class="grip">⋮⋮</span>📄 <b>Wadi_Majlas_Techno_Economic_Report.pdf</b> · 4.2 MB · encrypted <span class="rm">· replace · remove</span></span>
+        <span class="chip"><span class="grip">⋮⋮</span>📄 <b>Wadi_Majlas_Flood_Hazard_Maps.pdf</b> · 11.8 MB · encrypted <span class="rm">· replace · remove</span></span>
+        <span class="chip add">＋ Add another file &nbsp;<span style="font-weight:400">or drop files here</span></span>
+      </div>
+
+      <div class="brow"><span class="grip">⋮⋮</span><div class="in">Flood protection channel design downstream of the dam</div><span class="clip has"><svg viewBox="0 0 24 24"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> 1 file</span><span class="x">×</span></div>
+      <div class="files">
+        <span class="chip"><span class="grip">⋮⋮</span>📄 <b>Quriyat_Channel_Design.docx</b> · 1.1 MB · encrypted <span class="rm">· replace · remove</span></span>
+        <span class="chip add">＋ Add another file</span>
+      </div>
+
+      <div class="brow"><span class="grip">⋮⋮</span><div class="in">Spillway hydraulic review and dam-break routing</div><span class="clip"><svg viewBox="0 0 24 24"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> Attach</span><span class="x">×</span></div>
+      <div class="drop">Drop one or more files here, or click Attach. PDF, Word, Excel, images, zip — up to 95 MB each.</div>
+    </div>
+  </div>
+</div>
+<p class="cap" style="font-family:system-ui; color:var(--text-secondary); font-size:.85rem; margin-top:.6rem">The paperclip button shows the count. Files list under the bullet in the order they will appear on the site; drag to reorder. The picker allows selecting several files at once.</p>
+
+<h3 style="margin-top:1.75rem">Still open: how publishing works</h3>
+<div class="options">
+  <div class="option" data-choice="publish-button" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Draft on device, one Publish button — my recommendation</h3>
+      <p>Edit freely across sections, press Publish once. One commit, one build. A "3 unpublished changes" badge reminds you.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="save-each" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Every Save goes live immediately</h3>
+      <p>Each section has its own Save that commits at once. Five edits mean five builds.</p>
+    </div>
+  </div>
+</div>

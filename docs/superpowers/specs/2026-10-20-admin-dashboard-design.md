@@ -121,7 +121,8 @@ code used by the public pages, the dashboard and the tests).
 
 ```
 content/site.json                 all content; the dashboard edits this
-vault/access.json                 wrapped keys per access code (public, encrypted)
+vault/access.json                 one entry per access code: the vault key wrapped under that code
+vault/keys.json                   one entry per file: the file's own key wrapped under the vault key
 vault/files/<id>.bin              encrypted attachments; <id> = 32 hex chars
 assets/css/main.css               existing + rules for the Access pill, download icons
 assets/css/cv.css                 the CSS that is inline in today's cv.html, moved to a file
@@ -158,7 +159,7 @@ JSON, UTF-8, 2-space indented, keys in the order below so diffs stay readable. E
 is rendered as text supports two things:
 
 - **Placeholders**: `{{years}}` (integer years of experience), `{{year}}` (current calendar
-  year), `{{name}}` (full name), `{{domain}}`.
+  year), `{{name}}` (full name), `{{roleTitle}}` (`profile.roleTitle`), `{{domain}}`.
 - **Rich text** (only in fields marked *rich*): `**bold**` → `<strong>`, `_italic_` → `<em>`,
   blank line → new paragraph. Everything is HTML-escaped first; no raw HTML is ever accepted.
 
@@ -199,13 +200,14 @@ is rendered as text supports two things:
     }
   },
   "education": [
-    { "degree": "MSc — Hydraulic Structures Engineering", "school": "Sari University of Agricultural Sciences and Natural Resources (SANRU), Iran", "year": "2013" },
-    { "degree": "BSc — Water Sciences and Engineering", "school": "University of Birjand, Iran", "year": "2009" }
-  ],
+    { "degree": "MSc — Hydraulic Structures Engineering", "school": "Sari University of Agricultural Sciences and Natural Resources (SANRU), Iran", "schoolShort": "Sari University of Agricultural Sciences and Natural Resources", "year": "2013" },
+    { "degree": "BSc — Water Sciences and Engineering", "school": "University of Birjand, Iran", "schoolShort": "University of Birjand", "year": "2009" }
+  ],   // schoolShort feeds JSON-LD alumniOf; the dashboard pre-fills it from school minus the bracket and country
   "languages": [ { "name": "Persian", "level": "Native" }, { "name": "English", "level": "Fluent" } ],
   "services": {
     "intro": "From national flood masterplans to GIS automation — specialised hydraulic engineering delivered at international standards.",
-    "items": [ { "title": "Flood Modelling & Protection", "icon": "waves", "description": "1D/2D hydraulic modelling, …" }, … ]   // 9 today
+    "items": [ { "title": "Flood Modelling & Protection", "icon": "waves", "description": "1D/2D hydraulic modelling, …",
+                 "keywords": ["Flood modelling", "HEC-RAS", "Flood hazard mapping", "…"] }, … ]   // 9 today; keywords feed JSON-LD serviceType (about 45 terms today)
   },
   "experience": {
     "intro": "{{years}} years across Iran and Oman, plus remote international projects — progressively leading larger and more complex water engineering programmes.",
@@ -288,6 +290,14 @@ Deliberately duplicated fields (`roleTitle` vs `roleTitleLong`, `bio` vs `cvSumm
 `cvLabel`): today's pages genuinely differ in those places and the owner must be able to keep
 them different.
 
+Accidental differences between today's `index.html` and `cv.html` are resolved in favour of
+`index.html`, with no per-page override field, because removing that drift is the point of the
+project. Two are known and become documented parity exceptions (§15): the stats order (the CV
+will follow the home page: Years, Countries, Projects) and the "Surveying & Mapping" description
+(the CV gains the words "geospatial data collection" the home page already has). JSON-LD values
+that have no other home get a field (`schoolShort`, `keywords`); `worksFor` is derived from the
+company marked `current`.
+
 ## 9. Build: `src/build.mjs`
 
 Plain Node 22, ES modules, no bundler, no templating library.
@@ -316,10 +326,10 @@ Plain Node 22, ES modules, no bundler, no templating library.
 `src/pdf.mjs` then launches puppeteer (bundled Chromium, `--no-sandbox` in CI), opens
 `dist/cv.html` through `src/serve.mjs` on a random local port (so Google Fonts load exactly as in
 the browser), waits for `document.fonts.ready`, and calls `page.pdf({ preferCSSPageSize: true,
-printBackground: true, displayHeaderFooter: false })`. `cv.css` keeps today's `@page` block
-(A4, 13mm/16mm margins, `@bottom-center` footer with page counters) so the PDF matches the
-current one. The footer text is generated from `profile` so it never goes stale. Output:
-`dist/pdf/<cvPdfFilename>`.
+printBackground: true, displayHeaderFooter: false })`. Today's `@page` block (A4, 13mm/16mm
+margins, `@bottom-center` footer with page counters) stays **inline in the CV template**, because
+its footer text is generated from `profile`; everything else from today's inline CV styles moves
+to `cv.css`. Output: `dist/pdf/<cvPdfFilename>`.
 
 `npm run dev` builds, serves `dist/` on port 3004 and rebuilds on changes to `content/`,
 `assets/`, `admin/` (Node's `fs.watch`). `.claude/launch.json` in the parent folder gets a
@@ -337,13 +347,21 @@ concurrency: { group: pages, cancel-in-progress: true }
 jobs:
   build:   ubuntu-latest · checkout · setup-node 22 (npm cache) · cache ~/.cache/puppeteer ·
            npm ci · npm test · npm run build · npm run pdf · upload-pages-artifact (dist)
-  deploy:  needs build · if: vars.DEPLOY_FROM_ACTIONS == 'true' · environment github-pages ·
-           deploy-pages
+  deploy:  needs build · if: github.ref == 'refs/heads/redesign3_admin' && vars.DEPLOY_FROM_ACTIONS == 'true' ·
+           environment github-pages · deploy-pages
 ```
 
-The `deploy` job is gated by the repository variable `DEPLOY_FROM_ACTIONS` so the branch can be
-pushed and tested without touching the live site until cutover (§16). Typical run time: 2 to 3
-minutes, most of it Chromium download on a cache miss.
+The `deploy` job is gated twice: by the branch name, so a scratch branch such as
+`redesign3_admin_test` (also listed under `push.branches` so it gets the build job) can never
+deploy, and by the repository variable `DEPLOY_FROM_ACTIONS`, so the branch can be pushed and
+tested without touching the live site until cutover (§16). Typical run time: 2 to 3 minutes,
+most of it Chromium download on a cache miss.
+
+**Scheduled trigger caveat.** GitHub runs `schedule` triggers only from the repository's default
+branch, which is `master` today. The cron above therefore only works once `redesign3_admin` is
+the default branch, which is the owner's decision (§16 step 4 lists it). If the owner prefers to
+keep `master` as default, the fallback is a four-line workflow committed to `master` whose only
+job is to call `workflow_dispatch` on the admin branch's workflow on the same schedule.
 
 The dashboard reads this workflow's runs to show progress. A failed build never replaces the
 live site; the previous deployment stays up.
@@ -423,11 +441,17 @@ show bullets exactly as today, with no icons and no file names; the PDF cannot d
 
 All cryptography is WebCrypto (`crypto.subtle`), available in browsers and Node 22. No library.
 
-- **Vault key** (VK): 256-bit AES-GCM key, generated once by the dashboard's first-run setup.
-  Never stored unwrapped anywhere except `sessionStorage` while a session is open.
-- **Files**: `vault/files/<id>.bin` = `IV (12 bytes) || AES-256-GCM(VK, IV, plaintext)`. One random
-  IV per file. The GCM tag is included by WebCrypto. Metadata (name, size, type) lives in
-  `site.json`, not in the blob.
+Three layers of keys, so that revoking a code can rotate the shared key without re-uploading
+a single file:
+
+- **File key** (FK, one per file): 256-bit AES-GCM key generated at upload.
+  `vault/files/<id>.bin` = `IV (12 bytes) || AES-256-GCM(FK, IV, plaintext)`. The GCM tag is
+  included by WebCrypto. Metadata (name, size, type) lives in `site.json`, not in the blob.
+- **Vault key** (VK): 256-bit AES-GCM key, generated by first-run setup and **replaced on every
+  revoke**. `vault/keys.json` = `{ "v": 1, "vk": "<8 hex id of the current VK>", "files": { "<file id>":
+  { "iv": "<b64>", "key": "<b64 AES-GCM(VK, iv, FK)>" } } }`. VK is never stored unwrapped
+  anywhere except `sessionStorage` while a session is open.
+- **Code-derived key** (KEK, one per code): wraps VK inside `vault/access.json`, below.
 - **Codes**: a code is a string the owner types or the dashboard generates (download codes:
   `MK-XXXX-XXXX` from an unambiguous alphabet, ~41 bits; admin code: at least 12 characters from
   at least three character classes, enforced by the dashboard with a strength meter and a
@@ -455,19 +479,28 @@ All cryptography is WebCrypto (`crypto.subtle`), available in browsers and Node 
     `meta` never contains the admin code.
   - `kind` is public. It tells an attacker which blob holds the token; it tells the site which
     entry to try first. Acceptable.
-- **Revoke** a download code = remove its entry and publish. A hirer who already unlocked keeps
-  access until their tab closes, and keeps any file they already downloaded; that is inherent.
-- **Change admin code** = rewrap the admin payload under a new KEK (same vault key). A leaked
-  admin code also means a leaked GitHub token: the dashboard's "change admin code" screen tells
-  the owner to revoke the token on GitHub and paste a new one in the same step.
-- **Rotate vault key** (re-encrypt all files, rewrap all entries): not in v1. Revoking codes is
-  the v1 control.
-- **Threat model, stated plainly**: everything in the repo is public, so an attacker can try
-  codes offline against `access.json`. At 600 000 PBKDF2 iterations a 12-character mixed code
-  is far beyond reach; a generated download code is reachable only with roughly a decade of GPU
-  time, which does not matter for files the owner would email on request anyway. The GitHub
-  token is fine-grained and limited to this one repository's contents and Actions metadata; its
-  worst case is defacement, reversible from git history.
+- **Revoke** a download code = in one publish: generate a new VK, rewrap every file key in
+  `keys.json` and every remaining entry's payload and `meta` in `access.json` under it, drop the
+  revoked entry. No file is re-uploaded; the commit carries two small JSON files. Git history
+  still holds the old `access.json`, so a revoked hirer who kept their code can recover the
+  **old** VK from history and with it every file that existed at revocation time, which they
+  could already have downloaded. They can never open a file added after the revoke, because
+  new file keys are wrapped only under the new VK. That is the guarantee, stated in the
+  dashboard's revoke confirmation in plain words.
+- **Change admin code** = rewrap the admin payload under the new KEK, and rotate VK as above
+  (the old admin code could otherwise still unwrap the old VK from history). A leaked admin
+  code also means a leaked GitHub token: the "change admin code" screen tells the owner to
+  revoke the token on GitHub and paste a new one in the same step.
+- **Replacing a file** gives it a new id and a new FK; the old blob is deleted from the tree
+  (it remains in history, encrypted under a key only old VKs can unwrap).
+- **Threat model, stated plainly**: everything in the repo is public, including history, so an
+  attacker can try codes offline against any version of `access.json`. At 600 000 PBKDF2
+  iterations a 12-character mixed code is far beyond reach; a generated download code is
+  reachable only with roughly a decade of GPU time, which does not matter for files the owner
+  would email on request anyway. Possession of a VK, current or historical, opens exactly the
+  files whose keys were wrapped under it. The GitHub token is fine-grained and limited to this
+  one repository's contents and Actions metadata; its worst case is defacement, reversible from
+  git history.
 
 ## 13. The dashboard (`/admin/`)
 
@@ -522,10 +555,16 @@ Section contents:
 - **Contact page**: heading, project types list, description placeholder, form subject,
   thank-you heading and text, CTA heading and sub.
 - **Access codes**: table (label, kind, code or ••••, created, actions). "+ New download code"
-  generates a code and shows it once in a copyable field, with a label field. Revoke. "Change
-  admin code" (asks for the current code, then new code twice, then optional new token).
+  generates a code and shows it in a copyable field, with a label field. Revoke asks for
+  confirmation with the sentence "This person will no longer be able to open any file added
+  from now on; files they could already download stay downloadable for them." and rotates the
+  vault key (§12) as part of the next publish. "Change admin code" (asks for the current code,
+  then the new code twice, then optionally a new token).
 - **Files**: every attachment across the site with where it is used; remove; detects orphaned
-  `vault/files/*.bin` (in the repo but not referenced) and offers deletion.
+  `vault/files/*.bin` (in the repo but not referenced) and offers deletion. A gauge shows the
+  total size of all attachments against a budget (defaults in §13.9), because each upload
+  stays in the public git history forever and GitHub Pages sites are soft-limited at about
+  1 GB.
 - **Settings**: experience start date, CV PDF filename, SEO fields and knowsAbout list, GA id,
   Web3Forms key, GitHub repo/branch (read-only display), "Replace GitHub token", "Reset draft".
 
@@ -561,7 +600,9 @@ shown un-hidden in the preview. The PDF is not previewed; the CV tab is close en
 4. Show the progress toast: "Saved to GitHub ✓" → poll
    `GET /repos/{o}/{r}/actions/runs?branch=<branch>&event=push&per_page=1` every 10 s until the
    run for that commit SHA concludes → "Building pages & PDF" → "Live on mojtabakeivanlou.com"
-   with a link, or the run's URL on failure. Then clear the draft and refetch the base.
+   with a link, or the run's URL on failure. A run concluded `cancelled` means a newer push
+   superseded it (the workflow cancels in-progress runs): the dashboard then follows the newest
+   run on the branch instead. Then clear the draft and refetch the base.
 5. The status area's "published N min ago" comes from the last successful run's timestamp.
 
 ### 13.7 Token lifecycle
@@ -576,16 +617,25 @@ in, because the API does not expose it.
 
 Clears `sessionStorage` keys `mk.admin` and `mk.vault` and returns to the gate. The draft stays.
 
+### 13.9 File size limits
+
+Defaults, pending the owner's answer on expected volume: a file is refused above 25 MB and
+warned about above 10 MB; the Files gauge turns amber at 300 MB total and red at 500 MB. The
+numbers are constants in one place. Reasons: a 25 MB file is still a 33 MB base64 request to
+the Git Data API and a quick decrypt on a phone; the public repo and the Pages site both start
+to degrade near 1 GB and history never shrinks.
+
 ## 14. SEO and head
 
 `head.mjs` generates per page: `<title>`, description, canonical, Open Graph, Twitter card,
 `theme-color`, favicon (the inline SVG favicon stays; `palette.js` repaints it), Google Fonts
-links, GA tag, the synchronous `palette.js` include, and JSON-LD. The Person schema on the home
-page is built from `profile`, `education` (alumniOf), `languages` (knowsLanguage), `services`
-(hasOccupation / knowsAbout extras) and `seo.knowsAbout`; the CV page keeps its ProfilePage
-wrapper. The builder reproduces today's JSON-LD structure field by field from the GitHub version
-of the pages and then sources each value from `site.json`; the parity test (§15) catches
-anything dropped.
+links, GA tag, the synchronous `palette.js` include, and JSON-LD. The rule for JSON-LD is:
+reproduce today's structure exactly, nothing added and nothing dropped, with every value
+sourced from `site.json`. Today's home-page Person schema uses `profile` (name, jobTitle,
+description, address, sameAs, image), `education` → `alumniOf` (via `schoolShort`),
+`services` → `hasOfferCatalog` with each offer's `serviceType` list (via `keywords`), the
+`current` company → `worksFor`, and `seo.knowsAbout`. The CV page keeps its `ProfilePage`
+wrapper around the same Person. The parity test (§15) catches anything dropped.
 
 ## 15. Migration and parity
 
@@ -597,8 +647,10 @@ anything dropped.
    compares each built page to the fixture copy of the original page after normalisation:
    collapse whitespace between tags, sort attributes, ignore `?v=` values, drop HTML comments,
    remove the Access pill `<button>` and every `.proj-files` span from the built output. The test
-   must pass with zero differences before the branch goes live, and stays in the suite as a
-   regression guard for the template markup.
+   must pass with zero differences for `index.html`, `contact.html` and `thank-you.html`, and
+   with exactly the two listed exceptions for `cv.html` (stats order; the "Surveying & Mapping"
+   wording, §8), which the test encodes explicitly so any third difference fails. It stays in
+   the suite as a regression guard for the template markup.
 3. The first dashboard publish must not change any rendered page except through the content the
    owner edits.
 
@@ -613,6 +665,8 @@ anything dropped.
 4. Cutover, done by the owner in the GitHub web UI, about two minutes:
    - Settings → Pages → Build and deployment → Source: **GitHub Actions**.
    - Settings → Secrets and variables → Actions → Variables → `DEPLOY_FROM_ACTIONS` = `true`.
+   - Settings → General → Default branch → `redesign3_admin` (OWNER DECISION PENDING, see §10:
+     needed for the yearly scheduled rebuild; otherwise the `master` dispatcher workflow).
    - Re-run the latest workflow (or push). The first Actions deployment replaces the branch
      deployment; the custom domain and HTTPS settings are untouched.
 5. Keep `redesign3_colors_firebase` as the rollback. Rollback = Source back to "Deploy from a
@@ -653,7 +707,8 @@ anything dropped.
 
 - Exact split of `admin.mjs` into modules, the look of the dashboard beyond the mockups (which
   are the reference: dark green top bar, light sidebar, white cards, lime accents), toast and
-  modal styling, keyboard shortcuts.
+  modal styling, keyboard shortcuts. The approved mockups are copied into
+  `docs/superpowers/mockups/` on this branch so the reference lives in the repo.
 - Which existing SVGs become named icons and their names.
 - Whether `src/serve.mjs` is a hand-written 40-line server or `npx serve` for local preview.
 - How the drag-and-drop ordering is implemented, as long as keyboard reordering exists too.
