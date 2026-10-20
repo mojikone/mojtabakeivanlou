@@ -155,6 +155,14 @@ test('importKey rejects anything that is not 32 bytes', async () => {
   await assert.rejects(importKey(''));
 });
 
+test('importKey rejects (never throws synchronously) on malformed base64 or a non-string', async () => {
+  let p1, p2;
+  assert.doesNotThrow(() => { p1 = importKey('!!!!'); });
+  assert.doesNotThrow(() => { p2 = importKey(undefined); });
+  await assert.rejects(p1);
+  await assert.rejects(p2);
+});
+
 // -- seal / open ----------------------------------------------------------
 
 test('seal/open roundtrip, with a 12-byte IV and a fresh IV every time', async () => {
@@ -211,6 +219,13 @@ test('open rejects a truncated ciphertext and a wrong-length IV', async () => {
   await assert.rejects(open(k, { iv: sealed.iv, data: toB64(fromB64(sealed.data).subarray(0, 8)) }));
   await assert.rejects(open(k, { iv: toB64(new Uint8Array(8)), data: sealed.data }));
   await assert.rejects(open(k, { iv: '', data: '' }));
+});
+
+test('open rejects with "decrypt failed" when the sealed object is missing or empty', async () => {
+  const k = await generateKey();
+  await assert.rejects(open(k, undefined), { message: 'decrypt failed' });
+  await assert.rejects(open(k, null), { message: 'decrypt failed' });
+  await assert.rejects(open(k, {}), { message: 'decrypt failed' });
 });
 
 test('a failed open rejects with an Error that does not leak the plaintext', async () => {
@@ -324,6 +339,13 @@ test('a KEK derived twice from the same code opens what the first sealed; a wron
 test('deriveKek rejects an empty or non-string code', async () => {
   await assert.rejects(deriveKek('', FAKE_SALT, ITER));
   await assert.rejects(deriveKek(undefined, FAKE_SALT, ITER));
+});
+
+test('deriveKek rejects a salt shorter than 16 bytes', async () => {
+  await assert.rejects(deriveKek('MK-TEST-CODE', toB64(new Uint8Array(15)), ITER), { message: 'salt too short' });
+  await assert.rejects(deriveKek('MK-TEST-CODE', '', ITER), { message: 'salt too short' });
+  // 16 bytes and longer are fine
+  await deriveKek('MK-TEST-CODE', toB64(new Uint8Array(32)), ITER);
 });
 
 test('deriveKek rejects a missing, non-integer or non-positive iteration count', async () => {
