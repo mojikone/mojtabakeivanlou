@@ -14,6 +14,8 @@ const CONTENT_SECTIONS = {
   site: 'settings', seo: 'settings',
 };
 const DRAFT_SECTIONS = { access: 'access', revoked: 'access', rotate: 'access', pending: 'files', deleted: 'files' };
+// Single fields of the content `site` key that the dashboard edits in another section than Settings.
+const SITE_FIELD_SECTIONS = { formSubject: 'contact' };
 const SECTIONS = ['profile', 'education', 'languages', 'services', 'experience', 'skills', 'contact', 'access', 'files', 'settings'];
 
 // ---- pure helpers -------------------------------------------------------------------------
@@ -182,7 +184,14 @@ export function createStore({ storage = browserStorage() } = {}) {
     const bySection = Object.fromEntries(SECTIONS.map((id) => [id, 0]));
     if (draft && base) {
       for (const [key, id] of Object.entries(CONTENT_SECTIONS)) {
+        if (key === 'site') continue;
         if (!same(draft.site[key], base.site?.[key])) bySection[id] = 1;
+      }
+      // content `site`: Settings, except the fields listed in SITE_FIELD_SECTIONS
+      const own = (s) => (isObj(s) ? Object.fromEntries(Object.entries(s).filter(([k]) => !(k in SITE_FIELD_SECTIONS))) : s);
+      if (!same(own(draft.site.site), own(base.site?.site))) bySection[CONTENT_SECTIONS.site] = 1;
+      for (const [field, id] of Object.entries(SITE_FIELD_SECTIONS)) {
+        if (!same(draft.site.site?.[field], base.site?.site?.[field])) bySection[id] = 1;
       }
       const pristine = { access: base.access, revoked: [], rotate: false, pending: [], deleted: [] };
       for (const [key, id] of Object.entries(DRAFT_SECTIONS)) {
@@ -192,10 +201,14 @@ export function createStore({ storage = browserStorage() } = {}) {
     return { total: Object.values(bySection).reduce((sum, n) => sum + n, 0), bySection };
   }
 
-  function reset() {
+  // Discards the draft: the stored copy is removed (a clean draft is never persisted, so the next init() loads its
+  // own base) and the in-memory draft is rebuilt from the remembered base, or from `newBase`, which then replaces it.
+  function reset(newBase) {
+    if (newBase !== undefined) base = structuredClone(newBase);
     if (!base) throw new Error('Draft store is not ready: call init(base) first');
     dropStored();
-    commit(freshDraft(base));
+    draft = freshDraft(base);
+    notify();
     return draft;
   }
 

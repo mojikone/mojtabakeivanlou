@@ -357,6 +357,16 @@ test('the section map covers every top-level key', () => {
   }
 });
 
+test('site.formSubject belongs to the contact section; the rest of the content site key to settings', () => {
+  const { store } = fresh();
+  store.set(['site', 'site', 'formSubject'], 'Another subject');
+  assert.deepEqual([store.dirty().bySection.contact, store.dirty().bySection.settings, store.dirty().total], [1, 0, 1]);
+  store.set(['site', 'site', 'domain'], 'example.org');
+  assert.deepEqual([store.dirty().bySection.contact, store.dirty().bySection.settings, store.dirty().total], [1, 1, 2]);
+  store.set(['site', 'site', 'formSubject'], SITE.site.formSubject);
+  assert.deepEqual([store.dirty().bySection.contact, store.dirty().bySection.settings, store.dirty().total], [0, 1, 1]);
+});
+
 test('several keys of one section count as one dirty section', () => {
   const { store } = fresh();
   store.set(['site', 'contactPage', 'title'], 'x');
@@ -398,7 +408,7 @@ test('dirty compares against the base given to init, not the stored base fields'
 
 // ---------------------------------------------------------------- reset
 
-test('reset restores the base, persists it and notifies', () => {
+test('reset restores the base, removes the stored draft and notifies', () => {
   const { store, storage } = fresh();
   store.set(['site', 'profile', 'email'], 'new@example.com');
   store.addPendingFile(BULLET, FILE);
@@ -415,7 +425,49 @@ test('reset restores the base, persists it and notifies', () => {
   assert.equal(store.dirty().total, 0);
   assert.equal(seen.length, 1);
   assert.equal(seen[0], d);
-  assert.deepEqual(JSON.parse(storage.getItem(KEY)).site, SITE);
+  assert.equal(storage.getItem(KEY), null, 'a clean draft is not persisted: it would pin the old base');
+});
+
+test('reset followed by init(newerBase) loads the newer base, not the old one', () => {
+  const { store, storage } = fresh();
+  store.set(['site', 'profile', 'email'], 'x@y.zz');
+  store.reset();
+  const newer = makeBase({ commit: 'newer999', shas: { site: 'sha-site-2', access: 'sha-access', keys: 'sha-keys' } });
+  newer.site.profile.firstName = 'Moji';
+
+  store.init(newer);
+  assert.equal(store.get().baseCommit, 'newer999');
+  assert.equal(store.get().baseShas.site, 'sha-site-2');
+  assert.equal(store.get().site.profile.firstName, 'Moji');
+  assert.equal(store.dirty().total, 0);
+
+  const nextSession = createStore({ storage });     // the next page load, same localStorage
+  nextSession.init(newer);
+  assert.equal(nextSession.get().baseCommit, 'newer999');
+  assert.equal(nextSession.get().site.profile.firstName, 'Moji');
+});
+
+test('reset(newBase) replaces the remembered base', () => {
+  const { store, storage } = fresh();
+  store.set(['site', 'profile', 'email'], 'x@y.zz');
+  const newer = makeBase({ commit: 'newer999' });
+  newer.site.profile.firstName = 'Moji';
+  const seen = [];
+  store.subscribe((d) => seen.push(d));
+
+  const d = store.reset(newer);
+  newer.site.profile.firstName = 'Mutated';           // the store keeps its own copy
+  assert.equal(seen.length, 1);
+  assert.equal(d.baseCommit, 'newer999');
+  assert.equal(d.site.profile.firstName, 'Moji');
+  assert.equal(store.dirty().total, 0);
+  assert.equal(storage.getItem(KEY), null);
+
+  store.set(['site', 'profile', 'firstName'], 'Changed');
+  assert.equal(store.dirty().bySection.profile, 1);
+  store.reset();                                       // a later plain reset uses the new base
+  assert.equal(store.get().site.profile.firstName, 'Moji');
+  assert.equal(store.get().baseCommit, 'newer999');
 });
 
 test('reset uses the base from the most recent init', () => {
