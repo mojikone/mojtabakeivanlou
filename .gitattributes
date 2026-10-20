@@ -1,0 +1,7 @@
+test/fixtures/** -text
+vault/files/*.bin binary
+*.pdf binary
+*.webp binary
+*.png binary
+*.jpg binary
+*.jpeg binary
