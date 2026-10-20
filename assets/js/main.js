@@ -67,6 +67,7 @@
   document.querySelectorAll('a[href^="#"]').forEach(function (a) {
     a.addEventListener('click', function (e) {
       var href = a.getAttribute('href');
+      if (href === '#') return;   // placeholder links (the download icons) handle their own clicks
       var target = document.querySelector(href);
       if (target) {
         e.preventDefault();
