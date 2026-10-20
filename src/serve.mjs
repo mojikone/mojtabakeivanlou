@@ -30,14 +30,19 @@ function notFound(res) {
 
 // Maps a request URL to a file path under root, or null when it must be refused.
 function resolveTarget(root, rawUrl) {
+  let rawPath;
   let pathname;
   try {
+    // The ".." check runs on the raw path: new URL() collapses dot segments (including %2e%2e)
+    // before they could be seen, so checking only the parsed pathname would miss them.
+    rawPath = decodeURIComponent(rawUrl.split('?')[0]);
     pathname = decodeURIComponent(new URL(rawUrl, 'http://localhost').pathname);
   } catch {
     return null;
   }
-  if (pathname.includes('..') || pathname.includes('\0')) return null;
+  if (rawPath.includes('..') || pathname.includes('..') || rawPath.includes('\0') || pathname.includes('\0')) return null;
   const target = resolve(join(root, pathname));
+  // Backstop: whatever the checks above missed, never leave the served root.
   if (target !== root && !target.startsWith(root + sep)) return null;
   return target;
 }

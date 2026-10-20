@@ -30,7 +30,6 @@ async function withSite(run) {
   const base = await mkdtemp(join(tmpdir(), 'serve-test-'));
   const site = join(base, 'site');
   await mkdir(join(site, 'empty'), { recursive: true });
-  await writeFile(join(base, 'secret.txt'), 'outside the served root');
   await writeFile(join(site, 'index.html'), '<p>home</p>');
   const types = {
     css: /^text\/css/, js: /^text\/javascript/, mjs: /^text\/javascript/, json: /^application\/json/,
@@ -59,9 +58,15 @@ test('never lists a directory without index.html', () => withSite(async (s) => {
 }));
 
 test('rejects any path containing ".." with 404', () => withSite(async (s) => {
-  for (const path of ['/../secret.txt', '/%2e%2e/secret.txt', '/empty/../../secret.txt', '/..%5csecret.txt']) {
-    assert.equal(await rawGet(s.port, path), 404, path);
-  }
+  // Control: the file every traversal path below would normalise to is reachable normally.
+  assert.equal(await rawGet(s.port, '/index.html'), 200);
+  // Each path resolves to /index.html once dot segments are collapsed, so only an up-front
+  // check on the raw path keeps these at 404.
+  for (const path of [
+    '/empty/../index.html', '/empty/%2e%2e/index.html', '/empty/%2E%2E/index.html',
+    '/empty/..%2findex.html', '/empty/..%5cindex.html', '/../index.html', '/%2e%2e/index.html',
+    '/empty/../../index.html',
+  ]) assert.equal(await rawGet(s.port, path), 404, path);
 }));
 
 test('binds to 127.0.0.1 and reports a url without trailing slash', () => withSite(async (s) => {
