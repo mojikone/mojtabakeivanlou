@@ -31,12 +31,13 @@ const jsonScript = (data) => JSON.stringify(data, null, 2).replace(/</g, '\\u003
 
 /**
  * Everything from <!DOCTYPE html> through </head>, including the <html> start tag.
- * Optional parts are left out when their value is missing: `description`, `ogDescription` (Open Graph and Twitter),
- * `canonicalPath` (null or undefined; '' is the site root), `jsonLd`. `styles` and `scripts` are site-relative paths,
- * versioned through `ctx.v`; `scripts` are extra synchronous includes after palette.js. `page: 'thank-you'` adds
- * robots noindex.
+ * Optional parts are left out when their value is missing: `description` (null, undefined or ''), `ogDescription`
+ * (Open Graph and Twitter), `canonicalPath` (null or undefined; '' is the site root), `jsonLd`. `styles` and `scripts`
+ * are site-relative paths, versioned through `ctx.v`; `scripts` are extra synchronous includes after palette.js.
+ * `inlineStyles` are CSS texts, each written verbatim (not escaped) as a <style> block, last in the head, so they
+ * override the stylesheets. `page: 'thank-you'` adds robots noindex.
  */
-export function renderHead({ site, ctx, page, title, description, ogDescription, canonicalPath, ogType, image = OG_IMAGE, jsonLd, styles = [], scripts = [] }) {
+export function renderHead({ site, ctx, page, title, description, ogDescription, canonicalPath, ogType, image = OG_IMAGE, jsonLd, styles = [], scripts = [], inlineStyles = [] }) {
   const gaId = site.site.gaId;
   const url = canonicalPath == null ? null : absolute(site, canonicalPath);
   const imageUrl = absolute(site, image);
@@ -47,7 +48,7 @@ export function renderHead({ site, ctx, page, title, description, ogDescription,
     '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
     html`<title>${title}</title>`,
     page === 'thank-you' && '<meta name="robots" content="noindex">',
-    description != null && html`<meta name="description" content="${description}">`,
+    description != null && description !== '' && html`<meta name="description" content="${description}">`,
     ogDescription != null && [
       html`<meta property="og:title" content="${title}">`,
       html`<meta property="og:description" content="${ogDescription}">`,
@@ -66,6 +67,7 @@ export function renderHead({ site, ctx, page, title, description, ogDescription,
     html`<script src="${ctx.v('assets/js/palette.js')}"></script>`,
     scripts.map((path) => html`<script src="${ctx.v(path)}"></script>`),
     YEARS_SCRIPT,
+    inlineStyles.map((css) => `<style>${css}</style>`),
   ].flat(Infinity).filter((line) => typeof line === 'string' && line !== '');
 
   return html`<!DOCTYPE html>

@@ -73,3 +73,25 @@ test('head.mjs and index.mjs are browser-safe: they import nothing from Node', a
     assert.doesNotMatch(source, /\bprocess\./, file);
   }
 });
+
+test('renderHead: inlineStyles become verbatim <style> blocks after palette.js, in order', () => {
+  const css = '\n  .a > .b { content: "x & y"; }\n';
+  const out = head({ inlineStyles: [css, '.c{}'], scripts: ['assets/js/extra.js'] });
+  assert.ok(out.includes(`<style>${css}</style>\n<style>.c{}</style>`), 'verbatim, not escaped');
+  const order = ['main.css', 'palette.js', 'extra.js', '<style>.c'].map((part) => out.indexOf(part));
+  assert.ok(order.every((at, i) => at > (order[i - 1] ?? -1)), `main.css, palette.js, scripts, then the styles (${order})`);
+  assert.doesNotMatch(head(), /<style>/);
+});
+
+test('renderHead: an empty description is left out, like a missing one', () => {
+  assert.doesNotMatch(head({ description: '' }), /name="description"/);
+  assert.doesNotMatch(head({ description: undefined }), /name="description"/);
+  assert.match(head({ description: 'D' }), /<meta name="description" content="D">/);
+});
+
+test('renderHead: a page without Open Graph, canonical or JSON-LD gets none of them; thank-you adds noindex', () => {
+  const out = head({ page: 'thank-you', title: 'T', description: undefined, ogDescription: undefined, canonicalPath: undefined, jsonLd: undefined });
+  assert.match(out, /<title>T<\/title>\n<meta name="robots" content="noindex">\n<link rel="icon"/);
+  assert.doesNotMatch(out, /property="og:|name="twitter:|rel="canonical"|application\/ld\+json/);
+  assert.doesNotMatch(head(), /noindex/);
+});

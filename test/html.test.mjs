@@ -1,5 +1,5 @@
 import { test } from 'node:test'; import assert from 'node:assert/strict';
-import { esc, Raw, raw, html, fill, inlineText, richText } from '../assets/js/render/html.mjs';
+import { esc, Raw, raw, html, frag, fill, plainText, inlineText, richText } from '../assets/js/render/html.mjs';
 
 const ctx = { years: 17, year: 2026, name: 'Mojtaba Keivanlou', roleTitle: 'Senior', domain: 'x.com' };
 test('html tag escapes values and passes raw through', () => {
@@ -114,4 +114,18 @@ test('richText: markers, years and escaping work per paragraph; unknown placehol
   assert.equal(richText('{{years}} <b>\n\n_i_ & **b**', ctx).html,
     '<p><span data-years>17</span> &lt;b&gt;</p><p><em>i</em> &amp; <strong>b</strong></p>');
   assert.throws(() => richText('ok\n\n{{nope}}', ctx), /Unknown placeholder/);
+});
+
+test('plainText: placeholders filled, text escaped, {{years}} kept live, bold and italic markers left alone', () => {
+  const out = plainText('A & <b> **x** _y_ {{name}}, {{years}} years', ctx);
+  assert.ok(out instanceof Raw);
+  assert.equal(out.html, 'A &amp; &lt;b&gt; **x** _y_ Mojtaba Keivanlou, <span data-years>17</span> years');
+  assert.equal(plainText('{{roleTitle}}', ctx).html, 'Senior');
+  assert.throws(() => plainText('{{nope}}', ctx), /Unknown placeholder/);
+});
+
+test('frag: like html, but returns Raw so an enclosing html leaves it alone', () => {
+  const inner = frag`<b>${'<i>'}</b>`;
+  assert.ok(inner instanceof Raw);
+  assert.equal(html`<p>${inner}</p>`, '<p><b>&lt;i&gt;</b></p>');
 });

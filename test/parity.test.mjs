@@ -2,6 +2,8 @@ import { test } from 'node:test'; import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { normalizeSite, renderContext } from '../assets/js/render/model.mjs';
 import { renderIndex } from '../assets/js/render/index.mjs';
+import { renderContact } from '../assets/js/render/contact.mjs';
+import { renderThankYou } from '../assets/js/render/thank-you.mjs';
 import { normalizeHtml, diffLines } from './helpers/normalize.mjs';
 
 const site = normalizeSite(JSON.parse(await readFile('content/site.json', 'utf8')));
@@ -10,6 +12,16 @@ const original = p => readFile(`test/fixtures/original/${p}.html`, 'utf8');
 
 test('index.html matches the original', async () => {
   const a = normalizeHtml(renderIndex(site, ctx)), b = normalizeHtml(await original('index'));
+  assert.equal(a, b, diffLines(a, b).join('\n'));
+});
+
+test('contact.html matches the original', async () => {
+  const a = normalizeHtml(renderContact(site, ctx)), b = normalizeHtml(await original('contact'));
+  assert.equal(a, b, diffLines(a, b).join('\n'));
+});
+
+test('thank-you.html matches the original', async () => {
+  const a = normalizeHtml(renderThankYou(site, ctx)), b = normalizeHtml(await original('thank-you'));
   assert.equal(a, b, diffLines(a, b).join('\n'));
 });
 

@@ -49,6 +49,17 @@ export function fill(text, ctx) {
   return substitute(text, ctx, String(ctx.years));
 }
 
+// html`` returns a string, which an enclosing html`` would escape; a fragment built to be nested is therefore Raw.
+export const frag = (strings, ...values) => raw(html(strings, ...values));
+
+/**
+ * A plain (not rich) text field: placeholders filled and escaped, the {{years}} count kept live as
+ * <span data-years>, no **bold** or _italic_ markers.
+ */
+export function plainText(text, ctx) {
+  return raw(String(text).split('{{years}}').map((part) => esc(fill(part, ctx))).join(`<span data-years>${ctx.years}</span>`));
+}
+
 // Stands in for {{years}} while the text is escaped and the markers are converted, so the span is not escaped.
 // A private-use character; any real occurrence in the input is dropped so it cannot forge a span.
 const YEARS_MARK = '';

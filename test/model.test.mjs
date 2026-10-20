@@ -81,12 +81,19 @@ test('validateSite: every required string is reported by path when blank, and wh
     'thankYou.heading[0]', 'thankYou.heading[1]', 'thankYou.text',
     'cta.heading[0]', 'cta.heading[1]', 'cta.sub',
     'seo.titleIndex', 'seo.titleCv', 'seo.descriptionIndex', 'seo.ogDescriptionIndex',
-    'seo.descriptionCv', 'seo.ogDescriptionCv', 'seo.personDescription', 'seo.knowsAbout[0]',
+    'seo.descriptionCv', 'seo.ogDescriptionCv', 'seo.titleContact', 'seo.descriptionContact', 'seo.titleThankYou',
+    'seo.personDescription', 'seo.knowsAbout[0]',
   ];
   for (const path of required) {
     assert.ok(errorsOf(withValue(path, '  ')).includes(`${path} is empty`), `${path} blank`);
     if (!/\[\d+\]$/.test(path)) assert.ok(errorsOf(withValue(path, undefined)).includes(`${path} is missing`), `${path} missing`);
   }
+});
+
+test('validateSite: seo.descriptionThankYou must be present and a string, but may be empty (the page has no description)', () => {
+  assert.deepEqual(errorsOf(withValue('seo.descriptionThankYou', '')), []);
+  assert.ok(errorsOf(withValue('seo.descriptionThankYou', undefined)).includes('seo.descriptionThankYou is missing'));
+  assert.ok(errorsOf(withValue('seo.descriptionThankYou', 5)).includes('seo.descriptionThankYou must be a string'));
 });
 
 test('validateSite: wrong types are reported, never thrown', () => {

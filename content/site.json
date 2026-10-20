@@ -837,6 +837,10 @@
     "ogDescriptionIndex": "{{years}} years of international experience in flood modelling, dam design, climate adaptation, and engineering automation.",
     "descriptionCv": "CV of {{name}}, {{roleTitle}} — {{years}} years across Oman, Iran and the USA: flood protection masterplans, dam engineering, stormwater and sewage networks, GIS and engineering automation.",
     "ogDescriptionCv": "{{years}} years of international experience: flood protection masterplans, dam engineering, stormwater networks, GIS and engineering automation.",
+    "titleContact": "Start a Project — {{name}}",
+    "descriptionContact": "Get in touch with {{name}} — {{roleTitle}}. Available for consultancy, design review, and project collaboration.",
+    "titleThankYou": "Message Received — {{name}}",
+    "descriptionThankYou": "",
     "personDescription": "Senior hydraulic and water resources engineer with {{years}} years of international experience across Iran, Oman, and the USA.",
     "knowsAbout": [
       "Hydraulic Engineering",

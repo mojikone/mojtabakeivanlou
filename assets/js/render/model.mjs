@@ -213,7 +213,8 @@ export function validateSite(site, { icons, today = new Date() } = {}) {
     string(site.cta.sub, 'cta.sub');
   }
   if (object(site.seo, 'seo')) {
-    strings(site.seo, 'seo', ['titleIndex', 'titleCv', 'descriptionIndex', 'ogDescriptionIndex', 'descriptionCv', 'ogDescriptionCv', 'personDescription']);
+    strings(site.seo, 'seo', ['titleIndex', 'titleCv', 'descriptionIndex', 'ogDescriptionIndex', 'descriptionCv', 'ogDescriptionCv', 'titleContact', 'descriptionContact', 'titleThankYou', 'personDescription']);
+    string(site.seo.descriptionThankYou, 'seo.descriptionThankYou', { empty: true });   // the thank-you page may have no description
     stringList(site.seo.knowsAbout, 'seo.knowsAbout');
   }
 

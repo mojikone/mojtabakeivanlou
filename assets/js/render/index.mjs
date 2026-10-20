@@ -3,7 +3,7 @@
 // The home page. Every text comes from site.json; what stays here is page furniture (section titles, button and
 // pill labels, image paths, the QR codes) that the content model deliberately does not cover.
 
-import { html, raw, esc, fill, inlineText, richText } from './html.mjs';
+import { html, raw, frag, fill, plainText, inlineText, richText } from './html.mjs';
 import { icon } from './icons.mjs';
 import { sortedTags } from './model.mjs';
 import { renderHead, indexJsonLd, jsString, OG_IMAGE } from './head.mjs';
@@ -13,17 +13,6 @@ const QR_DARK = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAkcAAAJHCAYAAACaQ
 const QR_LIGHT = 'data:image/png;base64,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';
 
 const SEP = ' &nbsp;&middot;&nbsp; ';
-
-// html`` returns a string, which an enclosing html`` would escape; fragments are therefore Raw.
-const frag = (strings, ...values) => raw(html(strings, ...values));
-
-/**
- * A plain (not rich) text field: placeholders filled and escaped, the {{years}} count kept live as
- * <span data-years>, no **bold** or _italic_ markers.
- */
-export function plainText(text, ctx) {
-  return raw(String(text).split('{{years}}').map((part) => esc(fill(part, ctx))).join(`<span data-years>${ctx.years}</span>`));
-}
 
 // "a · b" (as stored) shown with the page's non-breaking separator.
 const separated = (text, ctx) => raw(String(text).split(' · ').map((part) => plainText(part, ctx).html).join(SEP));
@@ -53,8 +42,8 @@ function filesSpan(files, ctx) {
     : frag`<span class="proj-files" hidden>${links}</span>`;
 }
 
-// Two-line heading: the second line in the accent colour.
-const heading = ([first, second], ctx) => frag`${plainText(first, ctx)}<br><span class="lime">${plainText(second, ctx)}</span>`;
+/** A two-line heading: the second line in the accent colour. */
+export const heading = ([first, second], ctx) => frag`${plainText(first, ctx)}<br><span class="lime">${plainText(second, ctx)}</span>`;
 
 // The palette picker hides in the second letter of the first name ("M[o]jtaba").
 function nameWithTrigger(profile, ctx) {
@@ -64,12 +53,12 @@ function nameWithTrigger(profile, ctx) {
 
 const initials = (profile, ctx) => [profile.firstName, profile.lastName].map((part) => Array.from(fill(part, ctx))[0] ?? '').join('');
 
-/** The flip business card of the contact section (also on contact.html). */
-export function businessCard(site, ctx) {
+/** The flip business card of the contact section (also on contact.html, where `wrapperClass` is "sidebar-biz-card"). */
+export function businessCard(site, ctx, wrapperClass = 'biz-card-cta') {
   const p = site.profile;
   const t = (text) => plainText(text, ctx);
   const contactIcon = { width: '9', height: '9', 'stroke-width': '1.5' };
-  return frag`<div class="biz-card-cta">
+  return frag`<div class="${wrapperClass}">
         <div class="card-scene">
           <div class="card-flip" id="biz-card-main">
             <!-- Front -->
