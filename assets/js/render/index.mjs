@@ -410,7 +410,6 @@ export function renderIndex(site, ctx) {
     ogType: 'profile',
     image: OG_IMAGE,
     jsonLd: indexJsonLd(site, ctx),
-    styles: ['assets/css/main.css'],
   });
   return html`${raw(head)}<body>
 

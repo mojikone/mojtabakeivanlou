@@ -57,7 +57,6 @@ export function renderThankYou(site, ctx) {
     page: 'thank-you',
     title: fill(site.seo.titleThankYou, ctx),
     description: fill(site.seo.descriptionThankYou, ctx),
-    styles: ['assets/css/main.css'],
     inlineStyles: [STYLE],
   });
   return html`${raw(head)}<body>

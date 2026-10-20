@@ -4,6 +4,7 @@ import { normalizeSite, renderContext } from '../assets/js/render/model.mjs';
 import { renderIndex } from '../assets/js/render/index.mjs';
 import { renderContact } from '../assets/js/render/contact.mjs';
 import { renderThankYou } from '../assets/js/render/thank-you.mjs';
+import { renderCv } from '../assets/js/render/cv.mjs';
 import { normalizeHtml, diffLines } from './helpers/normalize.mjs';
 
 const site = normalizeSite(JSON.parse(await readFile('content/site.json', 'utf8')));
@@ -23,6 +24,78 @@ test('contact.html matches the original', async () => {
 test('thank-you.html matches the original', async () => {
   const a = normalizeHtml(renderThankYou(site, ctx)), b = normalizeHtml(await original('thank-you'));
   assert.equal(a, b, diffLines(a, b).join('\n'));
+});
+
+// ---- cv.html: exactly three sanctioned differences, each one a transformation of the ORIGINAL -------------------
+// Each helper throws unless the original has exactly the text it expects, so none of them can widen silently.
+
+const count = (text, needle) => text.split(needle).length - 1;
+
+const STAT = String.raw`\s*<div><div class="stat-val">[^<]*</div><div class="stat-lbl">([^<]*)</div></div>`;
+
+/** (1) site.json orders the stats Years / Countries / Projects (as the home page does); the original CV had Years / Projects / Countries. */
+function reorderStats(originalHtml) {
+  const found = [...originalHtml.matchAll(new RegExp(`(<div class="stats">)(${STAT})(${STAT})(${STAT})`, 'g'))];
+  assert.equal(found.length, 1, 'reorderStats: the original has one stats block of three');
+  const [whole, open, years, yearsLabel, projects, projectsLabel, countries, countriesLabel] = found[0];
+  assert.deepEqual([yearsLabel, projectsLabel, countriesLabel], ['Years Experience', 'Projects Delivered', 'Countries + US Remote']);
+  return originalHtml.replace(whole, () => open + years + countries + projects);
+}
+
+/** (2) The Surveying & Mapping description in site.json says "geospatial data collection" (as the home page does). */
+function addGeospatial(originalHtml) {
+  const SURVEY = /(Surveying &amp; Mapping<\/div>\s*<div class="exp-desc">[^<]*?)(data collection\.<\/div>)/g;
+  assert.equal([...originalHtml.matchAll(SURVEY)].length, 1, 'addGeospatial: one Surveying & Mapping description');
+  return originalHtml.replace(SURVEY, (_, before, after) => `${before}geospatial ${after}`);
+}
+
+/**
+ * (3) The original's single inline <style>, split: `pageBlock` is the `@page { … }` rule with its nested `@bottom-center`
+ * (it stays inline, generated from profile), `rest` is everything else (it is assets/css/cv.css now).
+ */
+function extractCvStyle(originalHtml) {
+  const styles = [...originalHtml.matchAll(/<style>([^]*?)<\/style>/g)];
+  assert.equal(styles.length, 1, 'extractCvStyle: the original has one <style>');
+  const css = styles[0][1];
+  const start = css.indexOf('@page {');
+  assert.ok(start >= 0 && count(css, '@page') === 1, 'extractCvStyle: one @page rule');
+  let depth = 0, end = start;
+  for (; end < css.length; end++) {
+    if (css[end] === '{') depth++;
+    else if (css[end] === '}' && --depth === 0) break;
+  }
+  assert.ok(end < css.length, 'extractCvStyle: the @page rule is closed');
+  return { pageBlock: css.slice(start, end + 1), rest: css.slice(0, start) + css.slice(end + 1) };
+}
+
+const collapse = (css) => css.replace(/\s+/g, ' ').trim();
+const CV_CSS_LINK = `<link rel="stylesheet" href="${ctx.v('assets/css/cv.css')}">`;
+const inlineStyleOf = (page) => {
+  const styles = [...page.matchAll(/<style>([^]*?)<\/style>/g)];
+  assert.equal(styles.length, 1, 'one inline <style>');
+  return styles[0][1];
+};
+
+test('cv.html matches the original, apart from the three sanctioned differences', async () => {
+  const originalHtml = await original('cv');
+  const built = renderCv(site, ctx);
+  // (3) on the built side: the <link> to cv.css, which the original (with its CSS inline) cannot have.
+  assert.equal(count(built, CV_CSS_LINK), 1, 'the page links cv.css once');
+  const { pageBlock } = extractCvStyle(originalHtml);
+  const reduced = originalHtml.replace(/<style>[^]*?<\/style>/, () => `<style>\n${pageBlock}\n</style>`);
+  const a = normalizeHtml(built.replace(CV_CSS_LINK, ''));
+  const b = normalizeHtml(addGeospatial(reorderStats(reduced)));
+  assert.equal(a, b, diffLines(a, b).join('\n'));
+});
+
+test('assets/css/cv.css is the rest of the original inline CSS (whitespace collapsed)', async () => {
+  const { rest } = extractCvStyle(await original('cv'));
+  assert.equal(collapse(await readFile('assets/css/cv.css', 'utf8')), collapse(rest));
+});
+
+test('the inline @page rule of cv.html is the original one, byte for byte', async () => {
+  const { pageBlock } = extractCvStyle(await original('cv'));
+  assert.equal(inlineStyleOf(renderCv(site, ctx)), `\n${pageBlock}\n`);
 });
 
 // ---- What the normaliser hides: the additions the original page does not have -----------------------------------

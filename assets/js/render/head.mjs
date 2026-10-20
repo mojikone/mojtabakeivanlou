@@ -14,9 +14,18 @@ const YEARS_SCRIPT = `<script id="mk-years">(function(){var s=document.documentE
 // The "MK" tile; palette.js repaints it in the chosen theme colours.
 const FAVICON = `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%231A3D2C'/%3E%3Ctext x='50' y='67' font-family='sans-serif' font-weight='700' font-size='44' text-anchor='middle' fill='%23A8CE2E'%3EMK%3C/text%3E%3C/svg%3E">`;
 
-const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,300&display=swap" rel="stylesheet">`;
+/** The Google Fonts stylesheet of the site pages (the CV asks for its own weights). */
+const FONTS_URL = 'https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,300&display=swap';
+
+// Written as given, like the originals (`&display=swap` unescaped), so only a plain https URL is accepted.
+const FONTS_URL_SHAPE = /^https:\/\/[^\s"'<>`]+$/;
+
+/**
+ * The head's segments in the order index.html, contact.html and thank-you.html have them. `order` may rearrange them
+ * (the CV does) but must name each one exactly once; a segment with nothing to show renders nothing.
+ */
+export const HEAD_ORDER = Object.freeze(['ga', 'charset', 'viewport', 'title', 'robots', 'description', 'og', 'twitter', 'canonical',
+  'jsonLd', 'favicon', 'fonts', 'stylesheets', 'palette', 'scripts', 'yearsScript', 'inlineStyles']);
 
 /** A single-quoted JavaScript string literal that is also safe inside an HTML <script> or attribute. */
 export function jsString(value) {
@@ -29,46 +38,68 @@ const absolute = (site, path) => (path ? `${siteUrl(site)}/${path}` : siteUrl(si
 // JSON inside <script>: "<" is written as < so the text can never close the element or open a comment.
 const jsonScript = (data) => JSON.stringify(data, null, 2).replace(/</g, '\\u003c');
 
+function checkOrder(order) {
+  const ok = order.length === HEAD_ORDER.length && new Set(order).size === order.length && order.every((name) => HEAD_ORDER.includes(name));
+  if (!ok) throw new Error(`renderHead: order must name each of ${HEAD_ORDER.join(', ')} exactly once`);
+}
+
 /**
  * Everything from <!DOCTYPE html> through </head>, including the <html> start tag.
  * Optional parts are left out when their value is missing: `description` (null, undefined or ''), `ogDescription`
- * (Open Graph and Twitter), `canonicalPath` (null or undefined; '' is the site root), `jsonLd`. `styles` and `scripts`
- * are site-relative paths, versioned through `ctx.v`; `scripts` are extra synchronous includes after palette.js.
- * `inlineStyles` are CSS texts, each written verbatim (not escaped) as a <style> block, last in the head, so they
- * override the stylesheets. `page: 'thank-you'` adds robots noindex.
+ * (Open Graph and Twitter), `canonicalPath` (null or undefined; '' is the site root), `jsonLd`. `stylesheets` and
+ * `scripts` are site-relative paths, versioned through `ctx.v`; `stylesheets` defaults to main.css, `scripts` are extra
+ * synchronous includes after palette.js. `fonts` is the Google Fonts stylesheet URL (default FONTS_URL). `inlineStyles`
+ * are CSS texts, each written verbatim (not escaped) as a <style> block, last in the head, so they override the
+ * stylesheets. `page: 'thank-you'` adds robots noindex. `order` lists the segment names of HEAD_ORDER in the order they
+ * are written (default HEAD_ORDER).
  */
-export function renderHead({ site, ctx, page, title, description, ogDescription, canonicalPath, ogType, image = OG_IMAGE, jsonLd, styles = [], scripts = [], inlineStyles = [] }) {
+export function renderHead({
+  site, ctx, page, title, description, ogDescription, canonicalPath, ogType, image = OG_IMAGE, jsonLd,
+  fonts = FONTS_URL, stylesheets = ['assets/css/main.css'], scripts = [], inlineStyles = [], order = HEAD_ORDER,
+}) {
+  checkOrder(order);
+  if (typeof fonts !== 'string' || !FONTS_URL_SHAPE.test(fonts)) throw new Error(`renderHead: fonts must be an https URL without spaces, quotes or angle brackets, got ${fonts}`);
   const gaId = site.site.gaId;
   const url = canonicalPath == null ? null : absolute(site, canonicalPath);
   const imageUrl = absolute(site, image);
-  const lines = [
-    html`<script async src="https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}"></script>`,
-    `<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config',${jsString(gaId)});</script>`,
-    '<meta charset="UTF-8">',
-    '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
-    html`<title>${title}</title>`,
-    page === 'thank-you' && '<meta name="robots" content="noindex">',
-    description != null && description !== '' && html`<meta name="description" content="${description}">`,
-    ogDescription != null && [
+  const hasOg = ogDescription != null;
+  const segments = {
+    ga: [
+      html`<script async src="https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}"></script>`,
+      `<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config',${jsString(gaId)});</script>`,
+    ],
+    charset: '<meta charset="UTF-8">',
+    viewport: '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+    title: html`<title>${title}</title>`,
+    robots: page === 'thank-you' && '<meta name="robots" content="noindex">',
+    description: description != null && description !== '' && html`<meta name="description" content="${description}">`,
+    og: hasOg && [
       html`<meta property="og:title" content="${title}">`,
       html`<meta property="og:description" content="${ogDescription}">`,
       html`<meta property="og:type" content="${ogType}">`,
       url != null && html`<meta property="og:url" content="${url}">`,
       html`<meta property="og:image" content="${imageUrl}">`,
+    ],
+    twitter: hasOg && [
       '<meta name="twitter:card" content="summary">',
       html`<meta name="twitter:title" content="${title}">`,
       html`<meta name="twitter:image" content="${imageUrl}">`,
     ],
-    url != null && html`<link rel="canonical" href="${url}">`,
-    jsonLd != null && `<script type="application/ld+json">\n${jsonScript(jsonLd)}\n</script>`,
-    FAVICON,
-    FONTS,
-    styles.map((path) => html`<link rel="stylesheet" href="${ctx.v(path)}">`),
-    html`<script src="${ctx.v('assets/js/palette.js')}"></script>`,
-    scripts.map((path) => html`<script src="${ctx.v(path)}"></script>`),
-    YEARS_SCRIPT,
-    inlineStyles.map((css) => `<style>${css}</style>`),
-  ].flat(Infinity).filter((line) => typeof line === 'string' && line !== '');
+    canonical: url != null && html`<link rel="canonical" href="${url}">`,
+    jsonLd: jsonLd != null && `<script type="application/ld+json">\n${jsonScript(jsonLd)}\n</script>`,
+    favicon: FAVICON,
+    fonts: [
+      '<link rel="preconnect" href="https://fonts.googleapis.com">',
+      '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
+      `<link href="${fonts}" rel="stylesheet">`,
+    ],
+    stylesheets: stylesheets.map((path) => html`<link rel="stylesheet" href="${ctx.v(path)}">`),
+    palette: html`<script src="${ctx.v('assets/js/palette.js')}"></script>`,
+    scripts: scripts.map((path) => html`<script src="${ctx.v(path)}"></script>`),
+    yearsScript: YEARS_SCRIPT,
+    inlineStyles: inlineStyles.map((css) => `<style>${css}</style>`),
+  };
+  const lines = order.map((name) => segments[name]).flat(Infinity).filter((line) => typeof line === 'string' && line !== '');
 
   return html`<!DOCTYPE html>
 <html lang="en" data-experience-start="${site.site.experienceStart}">

@@ -268,7 +268,6 @@ export function renderContact(site, ctx) {
     title: fill(site.seo.titleContact, ctx),
     description: fill(site.seo.descriptionContact, ctx),
     canonicalPath: 'contact.html',
-    styles: ['assets/css/main.css'],
     inlineStyles: [STYLE],
   });
   return html`${raw(head)}<body>
