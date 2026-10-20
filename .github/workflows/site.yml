@@ -1,0 +1,31 @@
+name: site
+on:
+  push: { branches: [redesign3_admin, redesign3_admin_test] }
+  schedule: [{ cron: "30 3 24 9 *" }]
+  workflow_dispatch:
+permissions: { contents: read, pages: write, id-token: write }
+concurrency: { group: pages, cancel-in-progress: true }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/cache@v4
+        with: { path: ~/.cache/puppeteer, key: "puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}" }
+      - run: npm ci
+      - run: npm test
+        env: { CI: "true" }
+      - run: npm run build
+      - run: npm run pdf
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: dist }
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/redesign3_admin' && vars.DEPLOY_FROM_ACTIONS == 'true'
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
