@@ -62,12 +62,13 @@ const nextId = () => `adm-skill-${++seq}`;
 // Which categories are open is kept here, not in the DOM: the rows are rebuilt after every move and remove, and the
 // draft has no ids. `ids` runs in step with draft.site.skills (the list callbacks below keep it so; build() trims or
 // extends it when the draft changed while another section was shown). Module level, so it survives a visit elsewhere.
-const remembered = { ids: [], open: new Set() };
+// `live` maps a category id to the tag list that is mounted for it right now (see tagList).
+const remembered = { ids: [], open: new Set(), live: new Map() };
 
 export function render(container, store) {
-  const state = { ...remembered, summaries: new Map() };   // ids and open are the shared array and set
+  const state = { ...remembered, summaries: new Map() };   // ids, open and live are the shared containers
 
-  return formSection(container, store, {
+  const teardown = formSection(container, store, {
     title: 'Skills & software',
     hint: 'The Skills section of the home page and the CV: categories of tags, experts first.',
     keys: ['skills'],
@@ -109,6 +110,7 @@ export function render(container, store) {
           onRemove: (index) => {
             const [id] = state.ids.splice(index, 1);
             state.open.delete(id);
+            state.live.delete(id);
             categories.onRemove(index);
           },
           onMove: (from, to) => {
@@ -120,6 +122,10 @@ export function render(container, store) {
       ]);
     },
   });
+  return () => {
+    teardown();
+    state.live.clear();                     // nothing is mounted any more
+  };
 }
 
 // One category: its name, the open / closed switch with a summary, and the tags.
@@ -155,6 +161,13 @@ function categoryRow(view, state, category, id) {
 
 // The tags of one category, in display order. The category is found by its id each time, so an Undo that comes after the
 // categories were reordered still lands in the right one.
+//
+// A tag list is rebuilt whenever the categories list re-renders (add, move or remove a category), and the Undo toast of
+// a tag removed before that belongs to the OLD list. That list is detached, and its write is an "own" write, so nothing
+// would redraw the visible list: the restored tag would be missing and the rows would keep draft indices from before
+// the insert, writing into the neighbouring tag. So every mounted list registers in state.live (category id -> list),
+// and a structural write made through any other instance of the category first settles and then rebuilds the live one.
+// (The alternative, looking the draft index up at write time, would not make the restored tag appear.)
 function tagList(view, state, id) {
   const where = () => state.ids.indexOf(id);
   const path = () => [...SKILLS, where(), 'tags'];
@@ -162,7 +175,19 @@ function tagList(view, state, id) {
   const removed = [];                         // where each removed tag stood in the draft, so Undo can put it back there
   const added = new WeakSet();                // what "+ Add tag" made, to tell an add from an Undo in onInsert
 
-  return listEditor({
+  const self = { root: null, remount: null };
+  // An insert, remove or move runs through here. The list the user is working in redraws itself (listEditor does,
+  // after the callback); a stale instance leaves that to the live one, which is settled before the write (pending
+  // field writes carry draft indices from before it) and rebuilt after it.
+  const structural = (write) => {
+    const live = state.live.get(id);
+    const other = live && live !== self ? live : null;
+    if (other) flushPending(other.root);
+    write();
+    other?.remount();
+  };
+
+  const root = listEditor({
     items: () => {
       const tags = tagsNow();
       return displayOrder(tags).order.map((stored) => tags[stored]);
@@ -183,7 +208,7 @@ function tagList(view, state, id) {
         const k = removed.findLastIndex((r) => r.name === tag?.name && r.level === tag?.level);
         if (k >= 0) at = Math.min(removed.splice(k, 1)[0].stored, tags.length);
       }
-      view.write.insert(path(), at, tag);
+      structural(() => view.write.insert(path(), at, tag));
     },
     onRemove: (display) => {
       if (where() < 0) return;
@@ -191,11 +216,11 @@ function tagList(view, state, id) {
       const stored = displayOrder(tags).order[display];
       if (stored === undefined) return;
       removed.push({ stored, name: tags[stored]?.name, level: tags[stored]?.level });
-      view.write.remove(path(), stored);
+      structural(() => view.write.remove(path(), stored));
     },
     onMove: (from, to) => {
       const move = where() < 0 ? null : displayOrder(tagsNow()).moveDisplayed(from, to);
-      if (move) view.write.move(path(), move.fromStored, move.toStored);
+      if (move) structural(() => view.write.move(path(), move.fromStored, move.toStored));
       else keepFocus(from);
     },
     renderItem: (tag, display, api) => {
@@ -206,6 +231,14 @@ function tagList(view, state, id) {
       });
     },
   });
+
+  self.root = root;
+  self.remount = () => {
+    if (!root.isConnected) return;          // not on the page (another section, a rebuilt form): nothing to redraw
+    root.replaceWith(tagList(view, state, id));   // the new list registers itself as the live one
+  };
+  state.live.set(id, self);
+  return root;
 }
 
 // A tag: its name and the Expert / Familiar switch.
