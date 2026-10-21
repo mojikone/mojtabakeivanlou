@@ -59,7 +59,7 @@ export function render(container, store, ctx = {}) {
     const mine = ++turn;
     const draft = store.get();
     let rows = null;
-    try { rows = await listCodes(draft, session.vk); } catch { rows = null; }
+    try { rows = await listCodes(draft, session.ok); } catch { rows = null; }
     if (!alive || mine !== turn) return;     // left, or a newer paint is on its way
     paintNotice(draft);
     const revoked = asList(draft.revoked).length;
@@ -67,7 +67,7 @@ export function render(container, store, ctx = {}) {
     pending.textContent = revoked
       ? 'Struck-through codes stop working when you publish; the vault key is renewed then.'
       : 'The vault key is renewed when you publish.';
-    table.replaceChildren(rows ? codesTable(rows) : el('p', { class: 'adm-form-error', text: "The access codes cannot be read with this session's vault key. Sign out and sign in again." }));
+    table.replaceChildren(rows ? codesTable(rows) : el('p', { class: 'adm-form-error', text: "The access codes cannot be read with this session's keys. Sign out and sign in again." }));
   }
 
   function codesTable(rows) {
@@ -200,7 +200,7 @@ function newCodeCard(store, getSession) {
     const done = inflight.begin('codes');   // Publish waits for the new entry (inflight.mjs)
     try {
       const name = label.control.value.trim();
-      const code = await createDownloadCode(store, getSession().vk, { label: name, code: custom.control.value });
+      const code = await createDownloadCode(store, getSession(), { label: name, code: custom.control.value });
       label.control.value = '';
       custom.control.value = '';
       showResult(name, code);
@@ -276,7 +276,7 @@ function changeAdminForm(store, getSession, update) {
         const refused = await validateNewToken(createGitHub, getSession(), newToken);
         if (refused) throw new Error(refused);
       }
-      const done = await changeAdminCode(store, { currentCode: current.control.value, newCode: next.control.value, newToken }, getSession().vk);
+      const done = await changeAdminCode(store, { currentCode: current.control.value, newCode: next.control.value, newToken }, getSession());
       for (const f of [current, next, again, token]) f.control.value = '';
       meter.update('');
       update(newToken ? { ...done, token: newToken } : done);

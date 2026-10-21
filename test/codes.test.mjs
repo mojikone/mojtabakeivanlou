@@ -12,7 +12,7 @@ import {
   sessionChanged, today, budgetLevel, validateNewToken, sessionMatchesDraft,
 } from '../admin/modules/codes.mjs';
 import {
-  createAccessFile, createKeysFile, addEntry, unlock, generateKey, exportKey, shortId,
+  createAccessFile, createKeysFile, addEntry, unlock, generateKey, exportKey, importKey, readMeta, shortId,
 } from '../assets/js/vault.mjs';
 
 const ITER = 1000; // production uses 600000; tests stay fast
@@ -29,22 +29,25 @@ const GITHUB = { token: TOKEN, owner: 'mojikone', repo: 'mojtabakeivanlou', bran
 const DAY = '2026-10-21';
 const CODE_SHAPE = /^MK-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/;
 
-// A test vault with one admin entry (and the given download codes), loaded into a fresh draft store.
+// A test vault with one admin entry (and the given download codes), loaded into a fresh draft store. `vk` is the vault
+// key, `ok` the owner key (admin payload only; it seals the metas); the session holds both, as the gate stores it.
 async function setup({ downloads = [], site = clone(SITE) } = {}) {
   const vk = await generateKey();
   const vkB64 = await exportKey(vk);
+  const ok = await generateKey();
+  const okB64 = await exportKey(ok);
   let access = createAccessFile(ITER);
-  access = await addEntry(access, { kind: 'admin', code: ADMIN_CODE, payload: { vk: vkB64, github: GITHUB }, meta: { label: 'Admin', created: DAY } }, vk);
+  access = await addEntry(access, { kind: 'admin', code: ADMIN_CODE, payload: { vk: vkB64, ok: okB64, github: GITHUB }, meta: { label: 'Admin', created: DAY } }, ok);
   for (const [i, code] of downloads.entries()) {
-    access = await addEntry(access, { kind: 'download', code, payload: { vk: vkB64 }, meta: { label: `Hirer ${i + 1}`, created: DAY, code } }, vk);
+    access = await addEntry(access, { kind: 'download', code, payload: { vk: vkB64 }, meta: { label: `Hirer ${i + 1}`, created: DAY, code } }, ok);
   }
   const keys = createKeysFile(shortId());
   const base = { commit: 'head0', shas: { site: 'sha-site-0', access: 'sha-access-0', keys: 'sha-keys-0' }, site, access, keys };
   const store = createStore({ storage: null });
   store.init(base);
   const admin = await unlock(access, ADMIN_CODE);
-  const session = { entryId: admin.entry.id, vk: vkB64, kek: await exportKey(admin.kek), github: { ...GITHUB } };
-  return { store, vk, vkB64, base, session, adminId: admin.entry.id };
+  const session = { entryId: admin.entry.id, vk: vkB64, ok: okB64, kek: await exportKey(admin.kek), github: { ...GITHUB } };
+  return { store, vk, vkB64, ok, okB64, base, session, adminId: admin.entry.id };
 }
 
 // Rejects with a message that matches `pattern` and names none of `secrets`.
@@ -59,10 +62,10 @@ async function rejectsQuietly(promise, pattern, secrets = []) {
 /* --- download codes --- */
 
 test('createDownloadCode generates an MK code; listCodes shows it with its label, kind, date and code', async () => {
-  const { store, vk, adminId } = await setup();
-  const code = await createDownloadCode(store, vk, { label: '  Hirer - Acme  ' });
+  const { store, ok, session, adminId } = await setup();
+  const code = await createDownloadCode(store, session, { label: '  Hirer - Acme  ' });
   assert.match(code, CODE_SHAPE);
-  const rows = await listCodes(store.get(), vk);
+  const rows = await listCodes(store.get(), ok);
   assert.equal(rows.length, 2);
   assert.deepEqual(rows[0], { id: adminId, kind: 'admin', label: 'Admin', created: DAY, revoked: false });
   const { id, ...rest } = rows[1];
@@ -72,16 +75,41 @@ test('createDownloadCode generates an MK code; listCodes shows it with its label
   assert.equal(today(new Date(2026, 0, 5, 23, 59)), '2026-01-05', 'the local calendar date');
 });
 
-test('listCodes accepts the vault key as base64 too, and never lists a code for the admin entry', async () => {
-  const { store, vkB64 } = await setup({ downloads: ['MK-AAAA-BBBB'] });
-  const rows = await listCodes(store.get(), vkB64);
+test('listCodes accepts the owner key as base64 too, and never lists a code for the admin entry', async () => {
+  const { store, okB64 } = await setup({ downloads: ['MK-AAAA-BBBB'] });
+  const rows = await listCodes(store.get(), okB64);
   assert.equal(rows[1].code, 'MK-AAAA-BBBB');
   assert.equal('code' in rows[0], false);
 });
 
-test('the download payload is exactly { vk }: the code unlocks the vault key and nothing else', async () => {
-  const { store, vk, vkB64 } = await setup();
-  const code = await createDownloadCode(store, vk, { label: 'Hirer' });
+test('the vault key a download code yields reads no label and no code: every row is unreadable', async () => {
+  const { store, session } = await setup({ downloads: ['MK-AAAA-BBBB', 'MK-CCCC-DDDD'] });
+  await createDownloadCode(store, session, { label: 'Hirer 3', code: 'MK-EEEE-FFFF' });
+  const hit = await unlock(store.get().access, 'MK-EEEE-FFFF');
+  assert.deepEqual(Object.keys(hit.payload), ['vk']);
+  const rows = await listCodes(store.get(), hit.payload.vk);
+  assert.equal(rows.length, 4);
+  for (const row of rows) {
+    assert.equal(row.unreadable, true);
+    assert.equal(row.label, '');
+    assert.equal('code' in row, false);
+  }
+  for (const entry of store.get().access.entries) await assert.rejects(readMeta(entry, await importKey(hit.payload.vk)), { message: 'decrypt failed' });
+});
+
+test('createDownloadCode refuses a session whose keys are not the ones of its admin entry, and changes nothing', async () => {
+  const { store, session } = await setup({ downloads: ['MK-AAAA-BBBB'] });
+  const before = store.get();
+  const other = await exportKey(await generateKey());
+  for (const stale of [{ ...session, vk: other }, { ...session, ok: other }, { ...session, kek: other }, { ...session, entryId: 'ffffffff' }, { ...session, ok: undefined }]) {
+    await rejectsQuietly(createDownloadCode(store, stale, { label: 'Hirer' }), /keys do not match/, [other, session.vk, session.ok]);
+  }
+  assert.equal(store.get(), before);
+});
+
+test('the download payload is exactly { vk }: the code unlocks the vault key and nothing else (never the owner key)', async () => {
+  const { store, ok, session, vkB64 } = await setup();
+  const code = await createDownloadCode(store, session, { label: 'Hirer' });
   const hit = await unlock(store.get().access, code.toLowerCase());
   assert.equal(hit.kind, 'download');
   assert.deepEqual(hit.payload, { vk: vkB64 });
@@ -89,49 +117,49 @@ test('the download payload is exactly { vk }: the code unlocks the vault key and
 });
 
 test('a custom code is trimmed, upper-cased when it looks like MK-..., and unlocks', async () => {
-  const { store, vk } = await setup();
-  assert.equal(await createDownloadCode(store, vk, { label: 'A', code: '  mk-abcd-efgh ' }), 'MK-ABCD-EFGH');
-  assert.equal(await createDownloadCode(store, vk, { label: 'B', code: ' summer-visit ' }), 'summer-visit');
-  const rows = await listCodes(store.get(), vk);
+  const { store, ok, session } = await setup();
+  assert.equal(await createDownloadCode(store, session, { label: 'A', code: '  mk-abcd-efgh ' }), 'MK-ABCD-EFGH');
+  assert.equal(await createDownloadCode(store, session, { label: 'B', code: ' summer-visit ' }), 'summer-visit');
+  const rows = await listCodes(store.get(), ok);
   assert.deepEqual(rows.slice(1).map((r) => r.code), ['MK-ABCD-EFGH', 'summer-visit']);
   assert.equal((await unlock(store.get().access, 'MK-ABCD-EFGH')).entry.id, rows[1].id);
   assert.equal((await unlock(store.get().access, 'summer-visit')).entry.id, rows[2].id);
 });
 
 test('a weak custom code is refused and the draft is unchanged', async () => {
-  const { store, vk } = await setup();
+  const { store, ok, session } = await setup();
   const before = store.get();
-  await rejectsQuietly(createDownloadCode(store, vk, { label: 'A', code: 'abc1234' }), /at least 8 characters/, ['abc1234']);
-  await rejectsQuietly(createDownloadCode(store, vk, { label: 'A', code: `   ${'x'.repeat(7)}  ` }), /at least 8 characters/);
+  await rejectsQuietly(createDownloadCode(store, session, { label: 'A', code: 'abc1234' }), /at least 8 characters/, ['abc1234']);
+  await rejectsQuietly(createDownloadCode(store, session, { label: 'A', code: `   ${'x'.repeat(7)}  ` }), /at least 8 characters/);
   assert.equal(store.get(), before);
 });
 
 test('a code already in use is refused (any case), including the admin code', async () => {
-  const { store, vk } = await setup({ downloads: ['MK-AAAA-BBBB', 'Holiday-2026'] });
+  const { store, ok, session } = await setup({ downloads: ['MK-AAAA-BBBB', 'Holiday-2026'] });
   const before = store.get();
-  await rejectsQuietly(createDownloadCode(store, vk, { label: 'A', code: 'mk-aaaa-bbbb' }), /already in use/, ['MK-AAAA-BBBB']);
-  await rejectsQuietly(createDownloadCode(store, vk, { label: 'A', code: 'HOLIDAY-2026' }), /already in use/);
-  await rejectsQuietly(createDownloadCode(store, vk, { label: 'A', code: ADMIN_CODE }), /already in use/, [ADMIN_CODE]);
+  await rejectsQuietly(createDownloadCode(store, session, { label: 'A', code: 'mk-aaaa-bbbb' }), /already in use/, ['MK-AAAA-BBBB']);
+  await rejectsQuietly(createDownloadCode(store, session, { label: 'A', code: 'HOLIDAY-2026' }), /already in use/);
+  await rejectsQuietly(createDownloadCode(store, session, { label: 'A', code: ADMIN_CODE }), /already in use/, [ADMIN_CODE]);
   assert.equal(store.get(), before);
 });
 
 test('a code needs a label', async () => {
-  const { store, vk } = await setup();
-  await rejectsQuietly(createDownloadCode(store, vk, { label: '  ' }), /label/);
-  await rejectsQuietly(createDownloadCode(store, vk, {}), /label/);
+  const { store, ok, session } = await setup();
+  await rejectsQuietly(createDownloadCode(store, session, { label: '  ' }), /label/);
+  await rejectsQuietly(createDownloadCode(store, session, {}), /label/);
   assert.equal(store.get().access.entries.length, 1);
 });
 
 /* --- revoke --- */
 
 test('revoke marks the entry in revoked and sets rotate; listCodes flags it; twice is once', async () => {
-  const { store, vk } = await setup({ downloads: ['MK-AAAA-BBBB', 'MK-CCCC-DDDD'] });
-  const [, first, second] = await listCodes(store.get(), vk);
+  const { store, ok, session } = await setup({ downloads: ['MK-AAAA-BBBB', 'MK-CCCC-DDDD'] });
+  const [, first, second] = await listCodes(store.get(), ok);
   revoke(store, first.id);
   revoke(store, first.id);
   assert.deepEqual(store.get().revoked, [first.id]);
   assert.equal(store.get().rotate, true);
-  const rows = await listCodes(store.get(), vk);
+  const rows = await listCodes(store.get(), ok);
   assert.equal(rows[1].revoked, true);
   assert.equal(rows[2].revoked, false);
   assert.equal(store.dirty().bySection.access, 1);
@@ -148,8 +176,8 @@ test('revoke refuses the admin entry and an unknown id', async () => {
 });
 
 test('unrevoke undoes a revoke; rotate goes back to false once nothing is revoked', async () => {
-  const { store, vk } = await setup({ downloads: ['MK-AAAA-BBBB', 'MK-CCCC-DDDD'] });
-  const [, first, second] = await listCodes(store.get(), vk);
+  const { store, ok, session } = await setup({ downloads: ['MK-AAAA-BBBB', 'MK-CCCC-DDDD'] });
+  const [, first, second] = await listCodes(store.get(), ok);
   revoke(store, first.id);
   revoke(store, second.id);
   unrevoke(store, first.id);
@@ -166,25 +194,25 @@ test('unrevoke undoes a revoke; rotate goes back to false once nothing is revoke
 /* --- change admin code --- */
 
 test('changeAdminCode refuses a weak new code and changes nothing', async () => {
-  const { store, vk } = await setup();
+  const { store, ok, session } = await setup();
   const before = store.get();
-  await rejectsQuietly(changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: 'short-1A' }, vk), /12 characters/, [ADMIN_CODE, 'short-1A']);
-  await rejectsQuietly(changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: 'alllowercaseletters' }, vk), /three/);
+  await rejectsQuietly(changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: 'short-1A' }, session), /12 characters/, [ADMIN_CODE, 'short-1A']);
+  await rejectsQuietly(changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: 'alllowercaseletters' }, session), /three/);
   assert.equal(store.get(), before);
 });
 
 test('changeAdminCode refuses a wrong current code, a download code, and a new code already in use', async () => {
-  const { store, vk } = await setup({ downloads: ['MK-AAAA-BBBB'] });
+  const { store, ok, session } = await setup({ downloads: ['MK-AAAA-BBBB'] });
   const before = store.get();
-  await rejectsQuietly(changeAdminCode(store, { currentCode: 'Wrong-Admin-Code-9', newCode: NEW_ADMIN_CODE }, vk), /current admin code/, ['Wrong-Admin-Code-9', NEW_ADMIN_CODE]);
-  await rejectsQuietly(changeAdminCode(store, { currentCode: 'MK-AAAA-BBBB', newCode: NEW_ADMIN_CODE }, vk), /current admin code/);
-  await rejectsQuietly(changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: ADMIN_CODE }, vk), /already in use/, [ADMIN_CODE]);
+  await rejectsQuietly(changeAdminCode(store, { currentCode: 'Wrong-Admin-Code-9', newCode: NEW_ADMIN_CODE }, session), /current admin code/, ['Wrong-Admin-Code-9', NEW_ADMIN_CODE]);
+  await rejectsQuietly(changeAdminCode(store, { currentCode: 'MK-AAAA-BBBB', newCode: NEW_ADMIN_CODE }, session), /current admin code/);
+  await rejectsQuietly(changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: ADMIN_CODE }, session), /already in use/, [ADMIN_CODE]);
   assert.equal(store.get(), before);
 });
 
 test('changeAdminCode: the new code opens a NEW admin entry with the same vault key and GitHub details; the old one is revoked', async () => {
-  const { store, vk, vkB64, adminId } = await setup({ downloads: ['MK-AAAA-BBBB'] });
-  const { kekB64, entryId } = await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: ` ${NEW_ADMIN_CODE} ` }, vk);
+  const { store, ok, session, vkB64, adminId } = await setup({ downloads: ['MK-AAAA-BBBB'] });
+  const { kekB64, entryId } = await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: ` ${NEW_ADMIN_CODE} ` }, session);
   const draft = store.get();
   assert.notEqual(entryId, adminId);
   assert.deepEqual(draft.revoked, [adminId]);
@@ -192,34 +220,44 @@ test('changeAdminCode: the new code opens a NEW admin entry with the same vault 
   const hit = await unlock(draft.access, NEW_ADMIN_CODE);
   assert.equal(hit.entry.id, entryId);
   assert.equal(hit.kind, 'admin');
-  assert.deepEqual(hit.payload, { vk: vkB64, github: GITHUB });
+  assert.deepEqual(hit.payload, { vk: vkB64, ok: session.ok, github: GITHUB }, 'the owner key is carried into the new admin payload');
   assert.equal(await exportKey(hit.kek), kekB64);
-  const rows = await listCodes(draft, vk);
+  const rows = await listCodes(draft, ok);
   assert.deepEqual(rows.map((r) => [r.kind, r.label, r.revoked]), [['admin', 'Admin', true], ['download', 'Hirer 1', false], ['admin', 'Me', false]]);
   assert.equal(rows[2].created, today());
   assert.ok(!JSON.stringify(draft).includes(NEW_ADMIN_CODE));
 });
 
+test('changeAdminCode refuses a session whose keys are not the ones of the current admin entry', async () => {
+  const { store, session } = await setup();
+  const before = store.get();
+  const other = await exportKey(await generateKey());
+  for (const stale of [{ ...session, vk: other }, { ...session, ok: other }, { ...session, ok: undefined }]) {
+    await rejectsQuietly(changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE }, stale), /keys do not match/, [ADMIN_CODE, NEW_ADMIN_CODE, other]);
+  }
+  assert.equal(store.get(), before);
+});
+
 test('changeAdminCode with a new token seals the new token in the new admin entry', async () => {
-  const { store, vk } = await setup();
-  await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE, newToken: ` ${NEW_TOKEN} ` }, vk);
+  const { store, ok, session } = await setup();
+  await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE, newToken: ` ${NEW_TOKEN} ` }, session);
   const hit = await unlock(store.get().access, NEW_ADMIN_CODE);
   assert.deepEqual(hit.payload.github, { ...GITHUB, token: NEW_TOKEN });
   assert.ok(!JSON.stringify(store.get()).includes(NEW_TOKEN));
 });
 
 test('after changeAdminCode the replaced code no longer counts as current; a second change revokes the first new entry', async () => {
-  const { store, vk, adminId } = await setup();
-  const first = await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE }, vk);
-  await rejectsQuietly(changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: 'Third-Admin-Code-3' }, vk), /current admin code/);
-  const second = await changeAdminCode(store, { currentCode: NEW_ADMIN_CODE, newCode: 'Third-Admin-Code-3' }, vk);
+  const { store, ok, session, adminId } = await setup();
+  const first = await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE }, session);
+  await rejectsQuietly(changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: 'Third-Admin-Code-3' }, session), /current admin code/);
+  const second = await changeAdminCode(store, { currentCode: NEW_ADMIN_CODE, newCode: 'Third-Admin-Code-3' }, session);
   assert.deepEqual(store.get().revoked, [adminId, first.entryId]);
   assert.equal((await unlock(store.get().access, 'Third-Admin-Code-3')).entry.id, second.entryId);
 });
 
 test('after changeAdminCode and a publish, the old admin code no longer unlocks and the new one does', async () => {
-  const { store, vk, vkB64, base, session } = await setup({ downloads: ['MK-AAAA-BBBB'] });
-  const change = await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE }, vk);
+  const { store, ok, vkB64, base, session } = await setup({ downloads: ['MK-AAAA-BBBB'] });
+  const change = await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE }, session);
   const next = applySessionChange(session, change);
   const gh = fakeGitHub(base);
   const result = await publish({ store, gh, fileStore: createMemoryFileStore(), session: next, pollMs: 0, storage: null });
@@ -229,7 +267,13 @@ test('after changeAdminCode and a publish, the old admin code no longer unlocks 
   const hit = await unlock(committed, NEW_ADMIN_CODE);
   assert.equal(hit.entry.id, change.entryId);
   assert.equal(hit.payload.vk, result.vk);
+  assert.equal(hit.payload.ok, result.ok);
   assert.notEqual(result.vk, vkB64, 'the vault key was rotated in the same commit');
+  assert.notEqual(result.ok, session.ok, 'and the owner key with it');
+  for (const entry of committed.entries) {
+    await readMeta(entry, await importKey(result.ok));
+    await assert.rejects(readMeta(entry, await importKey(session.ok)), { message: 'decrypt failed' });
+  }
   assert.equal(committed.entries.filter((e) => e.kind === 'admin').length, 1);
   assert.equal((await unlock(committed, 'MK-AAAA-BBBB')).payload.vk, result.vk, 'the download code is kept');
 });
@@ -237,9 +281,9 @@ test('after changeAdminCode and a publish, the old admin code no longer unlocks 
 /* --- a session that signed in with the replaced code --- */
 
 test('a session whose admin entry the draft replaces is stale; the new code resumes it, or the change is cancelled', async () => {
-  const { store, vk, session, adminId } = await setup();
+  const { store, ok, session, adminId } = await setup();
   assert.equal(isStaleSession(store.get(), session), false);
-  const change = await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE }, vk);
+  const change = await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE }, session);
   assert.equal(isStaleSession(store.get(), session), true, 'signed in again with the old code before publishing');
   assert.equal(isStaleSession(store.get(), applySessionChange(session, change)), false);
 
@@ -256,11 +300,11 @@ test('a session whose admin entry the draft replaces is stale; the new code resu
 });
 
 test('sessionMatchesDraft: the publish guard, ok only for a live admin entry of the draft that is the session', async () => {
-  const { store, vk, session } = await setup({ downloads: ['MK-AAAA-BBBB'] });
+  const { store, ok, session } = await setup({ downloads: ['MK-AAAA-BBBB'] });
   assert.deepEqual(sessionMatchesDraft(store.get(), session), { ok: true, reason: null });
 
   // fail-closed: a change the shell never applied leaves the session on the replaced entry, which stops the publish
-  const change = await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE }, vk);
+  const change = await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE }, session);
   assert.deepEqual(sessionMatchesDraft(store.get(), session), { ok: false, reason: 'stale' });
   assert.deepEqual(sessionMatchesDraft(store.get(), applySessionChange(session, change)), { ok: true, reason: null });
 
@@ -284,7 +328,7 @@ test('replaceToken re-seals the admin payload with the new token under the sessi
   const draft = store.get();
   const hit = await unlock(draft.access, ADMIN_CODE);
   assert.equal(hit.entry.id, adminId);
-  assert.deepEqual(hit.payload, { vk: vkB64, github: { ...GITHUB, token: NEW_TOKEN } });
+  assert.deepEqual(hit.payload, { vk: vkB64, ok: session.ok, github: { ...GITHUB, token: NEW_TOKEN } }, 'the keys stay');
   assert.equal(draft.rotate, true);
   const after = draft.access.entries.find((e) => e.id === adminId);
   assert.deepEqual(Object.keys(after), Object.keys(before));
@@ -356,6 +400,9 @@ test('applySessionChange returns a new session; onSessionChanged handlers get ea
   assert.deepEqual(applySessionChange(session, { token: NEW_TOKEN }).github, { ...GITHUB, token: NEW_TOKEN });
   assert.equal(session.kek, 'a2VrMQ==', 'the old session is untouched');
   assert.equal(applySessionChange(session, {}).github.token, TOKEN);
+  // a rotation: the new vault key and owner key
+  assert.deepEqual(applySessionChange({ ...session, ok: 'b3duZXI=' }, { vk: 'bmV3LXZr', ok: 'bmV3LW9r' }), { ...session, vk: 'bmV3LXZr', ok: 'bmV3LW9r' });
+  assert.equal(applySessionChange({ ...session, ok: 'b3duZXI=' }, { vk: '', ok: '' }).ok, 'b3duZXI=', 'empty values change nothing');
 
   const seen = [];
   const off = onSessionChanged((change) => seen.push(change));

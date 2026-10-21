@@ -150,11 +150,12 @@ function siteUrl(site) {
   return typeof domain === 'string' && domain.trim() ? `https://${domain.trim()}/` : null;
 }
 
-// Revoke = rotate (spec 12): a new vault key for everything kept, the revoked entries dropped. The code of every kept
-// download entry is read from its meta with the current vault key; one that cannot be read stops the publish, so a
-// rotation never silently locks a hirer out. Codes are added to `secrets` so no message can carry them.
+// Revoke = rotate (spec 12): a new vault key and a new owner key for everything kept, the revoked entries dropped. The
+// code of every kept download entry is read from its meta with the current owner key; one that cannot be read stops
+// the publish, so a rotation never silently locks a hirer out. Codes are added to `secrets` so no message can carry them.
 async function rotateDraft(draft, session, secrets) {
   const vk = await importKey(session.vk);
+  const ok = await importKey(session.ok);
   const kek = await importKey(session.kek);
   const entries = draft.access?.entries ?? [];
   const revoked = new Set(draft.revoked ?? []);
@@ -163,9 +164,9 @@ async function rotateDraft(draft, session, secrets) {
     if (entry.kind !== 'download' || revoked.has(entry.id)) continue;
     let meta;
     try {
-      meta = await readMeta(entry, vk);
+      meta = await readMeta(entry, ok);
     } catch {
-      throw new Error(`Access entry ${entry.id} cannot be read with the current vault key, so its code cannot be kept. Nothing was published.`);
+      throw new Error(`Access entry ${entry.id} cannot be read with the current owner key, so its code cannot be kept. Nothing was published.`);
     }
     if (typeof meta?.code === 'string') {
       codesById[entry.id] = meta.code;
@@ -176,6 +177,7 @@ async function rotateDraft(draft, session, secrets) {
     access: draft.access,
     keys: draft.keys,
     vk,
+    ok,
     kek,
     adminEntryId: session.entryId,
     codesById,
@@ -243,15 +245,16 @@ export async function finalizePublished({ store, gh, fileStore, draft = store.ge
  *   store       the draft store (state.mjs), already init()ed
  *   gh          the GitHub client (github.mjs)
  *   fileStore   the pending-file store (files.mjs) holding the ciphertext of every pending file
- *   session     { vk, kek, entryId } — base64 vault key, base64 KEK of the admin code, the admin entry id
+ *   session     { vk, ok, kek, entryId } — base64 vault key, owner key and KEK of the admin code, the admin entry id
  *   icons       the icon map (render/icons.mjs) the validator checks service icons against
  *   onProgress  (step, info) => void; steps: validating, checking, committing, building { sha },
  *               live { sha, url, runId? }, conflict { paths },
  *               failed { sha?, runUrl? | reason: 'timeout' (+ runUrl when a run was seen) | error }
  *   pollMs      delay before each poll of the run (default 10000); maxPolls (default 90)
- * Resolves { sha } (plus vk, base64, when the vault key was rotated), { conflict: true, paths } or
- * { failed: true, runUrl | reason (+ runUrl) | error }. A failure after the commit reached the branch also carries
- * that commit's `sha` (the content is saved: the caller runs finalizePublished) and `vk` when a rotation was committed.
+ * Resolves { sha } (plus vk and ok, base64, when the vault key and owner key were rotated), { conflict: true, paths }
+ * or { failed: true, runUrl | reason (+ runUrl) | error }. A failure after the commit reached the branch also carries
+ * that commit's `sha` (the content is saved: the caller runs finalizePublished) and `vk` and `ok` when a rotation was
+ * committed.
  * After live the draft is already rebased (finalizePublished). After a failure the draft and the blobs are untouched.
  * Rejects only with PublishValidationError, or with an AuthError raised before the commit reached the branch.
  */
@@ -262,10 +265,12 @@ export async function publish({
   const emit = (step, info) => {
     try { onProgress(step, info); } catch { /* a broken progress display must not break the publish */ }
   };
-  const secrets = [session?.vk, session?.kek, session?.github?.token];
+  const secrets = [session?.vk, session?.ok, session?.kek, session?.github?.token];
   let sha = null;                                     // set once the commit is on the branch
   let vk = null;                                      // the new vault key (base64), once rotated
-  const result = (fields) => (sha ? { ...fields, sha, ...(vk ? { vk } : {}) } : fields);
+  let ok = null;                                      // the new owner key (base64), rotated with it
+  const rotatedKeys = () => (vk ? { vk, ok } : {});
+  const result = (fields) => (sha ? { ...fields, sha, ...rotatedKeys() } : fields);
 
   try {
     const draft = store.get();
@@ -293,7 +298,8 @@ export async function publish({
       const rotated = await rotateDraft(working, session, secrets);
       working = { ...working, access: rotated.access, keys: rotated.keys, rotate: true }; // revoked alone rotates too
       vk = await exportKey(rotated.vk);
-      secrets.push(vk);
+      ok = await exportKey(rotated.ok);
+      secrets.push(vk, ok);
     }
 
     emit('committing');
@@ -333,7 +339,7 @@ export async function publish({
     try {
       await finalizePublished({ store, gh, fileStore, draft: working, sha });
     } catch { /* the draft stays as it was; the next publish reports a conflict and offers to reload */ }
-    return vk ? { sha, vk } : { sha };
+    return { sha, ...rotatedKeys() };
   } catch (err) {
     if (err instanceof PublishValidationError) throw err;
     if (err instanceof AuthError && !sha) throw err;

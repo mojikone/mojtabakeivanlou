@@ -6,7 +6,8 @@ import { createAccessFile, createKeysFile } from '../../assets/js/vault.mjs';
 /* ─── SESSION (spec 13.1, 13.8) ─── */
 
 // Written by the gate here and by the public unlock flow (assets/js/access.mjs); all three or none.
-//   mk.admin  JSON { entryId, vk, github: { token, owner, repo, branch } }
+//   mk.admin  JSON { entryId, vk, ok, github: { token, owner, repo, branch } }: the admin payload (ok is the owner key
+//             that seals the access codes' labels and codes, spec 12)
 //   mk.vault  base64 vault key (the same as mk.admin.vk)
 //   mk.kek    base64 raw KEK of the admin code
 export const SESSION_KEYS = Object.freeze(['mk.admin', 'mk.vault', 'mk.kek']);
@@ -14,11 +15,11 @@ const GITHUB_FIELDS = ['token', 'owner', 'repo', 'branch'];
 
 const filled = (x) => typeof x === 'string' && x !== '';
 
-/** { entryId, vk, kek, github } when every field is there, else null. Copies only the known fields. */
-export function toSession({ entryId, vk, kek, github } = {}) {
-  if (!filled(vk) || !filled(kek) || !github || !GITHUB_FIELDS.every((k) => filled(github[k]))) return null;
+/** { entryId, vk, ok, kek, github } when every field is there, else null. Copies only the known fields. */
+export function toSession({ entryId, vk, ok, kek, github } = {}) {
+  if (!filled(vk) || !filled(ok) || !filled(kek) || !github || !GITHUB_FIELDS.every((k) => filled(github[k]))) return null;
   const { token, owner, repo, branch } = github;
-  return { entryId: typeof entryId === 'string' ? entryId : '', vk, kek, github: { token, owner, repo, branch } };
+  return { entryId: typeof entryId === 'string' ? entryId : '', vk, ok, kek, github: { token, owner, repo, branch } };
 }
 
 /** The signed-in session, or null when any of the three keys is missing or malformed (then the gate asks again). */
@@ -37,7 +38,7 @@ export function readSession(storage) {
 export function writeSession(storage, session) {
   if (!storage) return false;
   try {
-    storage.setItem('mk.admin', JSON.stringify({ entryId: session.entryId, vk: session.vk, github: session.github }));
+    storage.setItem('mk.admin', JSON.stringify({ entryId: session.entryId, vk: session.vk, ok: session.ok, github: session.github }));
     storage.setItem('mk.vault', session.vk);
     storage.setItem('mk.kek', session.kek);
     return true;

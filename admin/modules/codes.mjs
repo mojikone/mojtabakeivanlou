@@ -4,6 +4,10 @@
 // every revoked entry dropped. So a revoked code and a replaced admin code stop working at the next publish, and
 // the old admin entry goes in the same rotation that makes the new one current (Task 14).
 //
+// Two keys come with the session (spec 12): the vault key `vk`, which every code opens and which wraps the file keys, and
+// the owner key `ok`, which only the admin payload holds and which seals the labels and codes (the metas). So the
+// listing and every new entry need `ok`; a payload of a download entry never carries it.
+//
 // Browser-safe: relative imports only, no DOM, no Node APIs. Nothing here logs, and no error message carries a
 // code, a key or a token.
 
@@ -18,7 +22,7 @@ const ADMIN_LABEL = 'Me';                   // the meta label of an admin entry 
 const BLOB = /^vault\/files\/([0-9a-f]{32})\.bin$/;
 const MK = /^mk-/i;
 
-const STALE_VK = "This session's vault key does not open the draft's access codes. Sign out and sign in again.";
+const STALE_VK = "This session's keys do not match the draft's access codes. Sign out and sign in again.";
 const IN_USE = 'This code is already in use. Choose another one.';
 const WEAK_ADMIN = 'The new admin code needs at least 12 characters, from at least three of: lower case, upper case, digits, symbols.';
 const CHANGED = 'The access codes changed while this was being prepared. Nothing was changed; try again.';
@@ -28,7 +32,7 @@ const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
 const trimmed = (x) => (typeof x === 'string' ? x.trim() : '');
 const text = (x) => (typeof x === 'string' ? x : '');
 const filled = (x) => typeof x === 'string' && x !== '';
-const asKey = async (vk) => (typeof vk === 'string' ? importKey(vk) : vk);
+const asKey = async (key) => (typeof key === 'string' ? importKey(key) : key);
 const sealJson = (key, value) => seal(key, new TextEncoder().encode(JSON.stringify(value)));
 const openJson = async (key, sealed) => JSON.parse(new TextDecoder().decode(await open(key, sealed)));
 
@@ -56,14 +60,37 @@ function commitAccess(store, from, next) {
   store.set(['access'], next);
 }
 
+/* ─── THE SESSION'S KEYS ─── */
+
+/**
+ * The payload of the session's admin entry in `access` ({ vk, ok, github }), opened with the session's KEK (base64), or
+ * null when the session names no admin entry of `access` or its KEK does not open it.
+ */
+export async function openSessionEntry(access, session) {
+  const id = session?.entryId;
+  const entry = filled(id) ? asList(access?.entries).find((e) => e.id === id && e.kind === 'admin') : null;
+  if (!entry || !filled(session?.kek)) return null;
+  try {
+    return await openJson(await importKey(session.kek), { iv: entry.iv, data: entry.data });
+  } catch {
+    return null;
+  }
+}
+
+/** True when the session's vault key and owner key are the ones its admin entry in `access` holds. */
+export async function sessionKeysMatch(access, session) {
+  const payload = await openSessionEntry(access, session);
+  return Boolean(payload) && filled(payload.vk) && payload.vk === session.vk && filled(payload.ok) && payload.ok === session.ok;
+}
+
 /* ─── LIST ─── */
 
 /**
  * One row per access entry: { id, kind, label, created, code? (download entries only), revoked }, plus
- * unreadable: true when `vk` does not open the entry's meta. `vk` is the vault key, a CryptoKey or base64.
+ * unreadable: true when `ok` does not open the entry's meta. `ok` is the owner key, a CryptoKey or base64.
  */
-export async function listCodes(draft, vk) {
-  const key = await asKey(vk);
+export async function listCodes(draft, ok) {
+  const key = await asKey(ok);
   const revoked = new Set(asList(draft?.revoked));
   return Promise.all(asList(draft?.access?.entries).map(async (entry) => {
     const row = { id: entry.id, kind: entry.kind, label: '', created: '' };
@@ -85,20 +112,22 @@ export async function listCodes(draft, vk) {
 /**
  * Adds a download entry to the draft and returns its code: a generated MK-XXXX-XXXX, or `code` when given (trimmed,
  * upper-cased when it looks like MK-..., at least 8 characters, not a code already in use in any case). The payload is
- * exactly { vk } (the vault key, base64); the meta is { label, created, code }.
+ * exactly { vk } (the vault key, base64); the meta is { label, created, code }, sealed under the owner key.
+ * `session` is { entryId, kek, vk, ok }: its keys must be the ones its admin entry in the draft holds (else nothing
+ * changes and it says to sign in again).
  */
-export async function createDownloadCode(store, vk, { label, code } = {}) {
+export async function createDownloadCode(store, session, { label, code } = {}) {
   const name = trimmed(label);
   if (!name) throw new Error('Give the code a label, for example the name of the person it is for.');
   let value = trimmed(code);
   if (value && MK.test(value)) value = value.toUpperCase();
   if (value && codeStrength(value).length < MIN_CUSTOM) throw new Error(`A custom code needs at least ${MIN_CUSTOM} characters.`);
 
-  const key = await asKey(vk);
   const draft = store.get();
   const { access } = draft;
-  const rows = await listCodes(draft, key);
-  if (rows.length > 0 && rows.every((r) => r.unreadable)) throw new Error(STALE_VK);
+  if (!(await sessionKeysMatch(access, session))) throw new Error(STALE_VK);
+  const ok = await importKey(session.ok);
+  const rows = await listCodes(draft, ok);
   const taken = new Set(rows.filter((r) => typeof r.code === 'string').map((r) => r.code.toUpperCase()));
   if (value && taken.has(value.toUpperCase())) throw new Error(IN_USE);
   if (!value) do value = generateDownloadCode(); while (taken.has(value));
@@ -108,9 +137,9 @@ export async function createDownloadCode(store, vk, { label, code } = {}) {
     next = await addEntry(access, {
       kind: 'download',
       code: value,
-      payload: { vk: await exportKey(key) },
+      payload: { vk: session.vk },
       meta: { label: name, created: today(), code: value },
-    }, key);
+    }, ok);
   } catch (err) {
     throw /already in use/.test(err?.message) ? new Error(IN_USE) : err; // the admin code, typed exactly
   }
@@ -151,22 +180,22 @@ export function unrevoke(store, entryId) {
 
 /**
  * Spec 12 "Change admin code". Checks `currentCode` against the draft's live admin entry and the strength of `newCode`
- * (codeStrength), then adds a new admin entry under the new code with the payload { vk, github } (the GitHub details
- * of the current entry, the token replaced by `newToken` when given) and the meta { label: 'Me', created }. The old
- * admin entry goes into `revoked` and `rotate` is set, so the publish that makes the new code current also drops the
- * old one under a new vault key (the old code could otherwise still open the old key from history).
+ * (codeStrength), then adds a new admin entry under the new code with the payload { vk, ok, github } (the vault key
+ * and owner key of the current entry, its GitHub details with the token replaced by `newToken` when given) and the
+ * meta { label: 'Me', created }. The old admin entry goes into `revoked` and `rotate` is set, so the publish that
+ * makes the new code current also drops the old one under a new vault key and owner key (the old code could
+ * otherwise still open the old keys from history). `session` ({ vk, ok }) must hold the keys of the current entry.
  * Resolves { kekB64, entryId }: the new code's KEK (base64) and the new entry's id, for the session.
  */
-export async function changeAdminCode(store, { currentCode, newCode, newToken } = {}, vk) {
+export async function changeAdminCode(store, { currentCode, newCode, newToken } = {}, session) {
   const code = trimmed(newCode);
   if (!codeStrength(code).ok) throw new Error(WEAK_ADMIN);
-  const key = await asKey(vk);
   const draft = store.get();
   const { access } = draft;
   const current = await openAdmin(draft, currentCode);
   if (!current) throw new Error('The current admin code is not right.');
-  const vkB64 = await exportKey(key);
-  if (current.payload?.vk !== vkB64) throw new Error(STALE_VK);
+  const { vk, ok } = current.payload ?? {};
+  if (!filled(vk) || !filled(ok) || vk !== session?.vk || ok !== session?.ok) throw new Error(STALE_VK);
 
   const github = { ...current.payload.github, token: trimmed(newToken) || current.payload.github?.token };
   let next;
@@ -174,9 +203,9 @@ export async function changeAdminCode(store, { currentCode, newCode, newToken } 
     next = await addEntry(access, {
       kind: 'admin',
       code,
-      payload: { vk: vkB64, github },
+      payload: { vk, ok, github },
       meta: { label: ADMIN_LABEL, created: today() },
-    }, key);
+    }, await importKey(ok));
   } catch (err) {
     if (/already in use/.test(err?.message)) throw new Error('The new admin code is already in use: choose one that is neither the current code nor an access code.');
     throw err;
@@ -269,8 +298,8 @@ export async function validateNewToken(createClient, session, token) {
 
 /**
  * Spec 13.7 "Replace GitHub token": re-seals the payload of the admin entry that `kekB64` (the session's KEK) opens,
- * with github.token replaced, and sets `rotate` so the publish re-seals everything consistently. The entry keeps its
- * id and meta.
+ * with github.token replaced (its vault key and owner key stay), and sets `rotate` so the publish re-seals everything
+ * consistently. The entry keeps its id and meta.
  */
 export async function replaceToken(store, kekB64, token) {
   const value = trimmed(token);
@@ -301,7 +330,7 @@ export async function replaceToken(store, kekB64, token) {
 // the admin code or of the token, the sections call sessionChanged(change); the shell's handler applies it.
 const handlers = new Set();
 
-/** Registers fn(change), change = { kekB64?, entryId?, token? }; returns the unsubscribe function. */
+/** Registers fn(change), change = { kekB64?, entryId?, token?, vk?, ok? }; returns the unsubscribe function. */
 export function onSessionChanged(fn) {
   const entry = { fn };
   handlers.add(entry);
@@ -313,12 +342,17 @@ export function sessionChanged(change) {
   for (const { fn } of [...handlers]) fn(change);
 }
 
-/** A new session object with `change` applied (kek, entryId, github.token); `session` itself is left as it is. */
-export function applySessionChange(session, { kekB64, entryId, token } = {}) {
+/**
+ * A new session object with `change` applied (kek, entryId, github.token, and after a rotation the new vault key `vk`
+ * and owner key `ok`, base64); `session` itself is left as it is.
+ */
+export function applySessionChange(session, { kekB64, entryId, token, vk, ok } = {}) {
   const next = { ...session, github: { ...session?.github } };
   if (filled(kekB64)) next.kek = kekB64;
   if (filled(entryId)) next.entryId = entryId;
   if (filled(token)) next.github.token = token;
+  if (filled(vk)) next.vk = vk;
+  if (filled(ok)) next.ok = ok;
   return next;
 }
 

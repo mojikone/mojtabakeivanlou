@@ -2,10 +2,11 @@
 //
 // sessionStorage (one tab; closing it ends the session):
 //   mk.vault  base64 raw vault key: the download icons are shown and files decrypt
-//   mk.admin  JSON { entryId, vk, github }: the pill shows "Dashboard"
+//   mk.admin  JSON { entryId, vk, ok, github } (the admin payload): the pill shows "Dashboard"
 //   mk.kek    base64 raw KEK of the admin code (the dashboard re-seals the admin entry with it)
 //
 // Nothing secret is ever logged: warnings name the step and the error type only.
+// It never reads an entry's meta: the labels and codes are sealed under the owner key, which only the admin payload holds.
 
 import { mountAccessPill } from './access-pill.mjs';
 import { unlock, importKey, exportKey, unwrapFileKey, decryptFile } from './vault.mjs';

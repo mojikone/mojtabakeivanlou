@@ -173,11 +173,11 @@ function applySession(change) {
   renderMain();
 }
 
-// A publish rotated the vault key (wirePublish's onSessionVk, Task 22b): the session takes it at once, in memory (the
-// sections' ctx.session is this object) and in mk.vault / mk.admin. The section is mounted again: it was repainted when
-// publish rebased the draft, still with the old key (Access codes then read "(cannot be read)").
-function takeVaultKey(vk) {
-  session.vk = vk;
+// A publish rotated the vault key and the owner key (wirePublish's onSessionVk, Task 22b): the session takes them at
+// once, in memory (the sections' ctx.session is this object) and in mk.vault / mk.admin. The section is mounted again:
+// it was repainted when publish rebased the draft, still with the old keys (Access codes then read "(cannot be read)").
+function takeVaultKey(vk, ok) {
+  Object.assign(session, applySessionChange(session, { vk, ok }));
   writeSession(sessionStorageOrNull, session);
   renderMain();
 }

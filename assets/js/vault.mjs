@@ -196,11 +196,15 @@ export function formatSize(bytes) {
 // vault/access.json  { v: 1, kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations, salt }, entries: [entry] }
 //   entry            { id (8 hex), kind: 'admin' | 'download', iv, data, meta: { iv, data } }
 //   iv, data         seal(KEK of the entry's code, JSON payload)
-//                      admin payload    { vk: <b64 VK>, github: { token, owner, repo, branch } }
-//                      download payload { vk: <b64 VK> }
-//   meta             seal(VK, JSON { label, created, code? }); the admin meta never holds the admin code
+//                      admin payload    { vk: <b64 VK>, ok: <b64 OK>, github: { token, owner, repo, branch } }
+//                      download payload { vk: <b64 VK> }  (exactly that: never the owner key)
+//   meta             seal(OK, JSON { label, created, code? }); the admin meta never holds the admin code
 // vault/keys.json    { v: 1, vk: <8-hex id of the current VK>, files: { <file id>: { iv, key } } }
 //   iv, key          seal(VK, raw 32-byte file key)
+//
+// OK is the owner key: a 256-bit AES-GCM key held only in the admin payload. Every download code yields the vault key,
+// so the labels and codes in the metas are sealed under OK, never under VK: a hirer's code opens the files and nothing
+// about the other codes (spec 12).
 //
 // Every function here returns new objects and never mutates its arguments. Error messages never
 // contain a code, a key or a token.
@@ -263,31 +267,47 @@ export async function unlock(access, code) {
   return null;
 }
 
-// A copy of `access` with one more entry (appended last, so it is `.entries.at(-1)`). `payload.vk`
-// must be the base64 of `vk`. Refuses a code that already opens an entry: two entries behind one
-// code would make unlock ambiguous (and a download code equal to the admin code would open admin).
-export async function addEntry(access, { kind, code, payload, meta }, vk) {
+// A payload's vault key: a 256-bit key as base64 (the caller makes sure it is the current one).
+async function isKeyB64(value) {
+  if (typeof value !== 'string') return false;
+  try {
+    await importKey(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// A copy of `access` with one more entry (appended last, so it is `.entries.at(-1)`). The meta is
+// sealed under `ok`, the owner key. An admin payload must carry `ok` itself (payload.ok is its
+// base64); a download payload is exactly { vk }, so a download code can never yield the owner key.
+// Refuses a code that already opens an entry: two entries behind one code would make unlock
+// ambiguous (and a download code equal to the admin code would open admin).
+export async function addEntry(access, { kind, code, payload, meta }, ok) {
   checkAccess(access);
   if (!KINDS.includes(kind)) throw new TypeError('addEntry: kind must be "admin" or "download"');
   const c = normCode(code);
   if (!c) throw new TypeError('addEntry: code must be a non-empty string');
   if (!meta || typeof meta !== 'object') throw new TypeError('addEntry: meta must be an object');
   if (kind === 'admin' && 'code' in meta) throw new TypeError('addEntry: the admin entry meta must not hold the admin code');
-  if (!payload || typeof payload !== 'object' || payload.vk !== await exportKey(vk)) {
-    throw new Error('addEntry: payload.vk must be the vault key');
+  if (!payload || typeof payload !== 'object' || !(await isKeyB64(payload.vk))) {
+    throw new Error('addEntry: payload.vk must be a vault key');
   }
+  const okB64 = await exportKey(ok);
+  if (kind === 'admin' && payload.ok !== okB64) throw new Error('addEntry: an admin payload must carry the owner key its meta is sealed under');
+  if (kind === 'download' && Object.keys(payload).join() !== 'vk') throw new Error('addEntry: a download payload must be exactly { vk }');
   const kek = await deriveFor(access, c);
   if (await openAny(access.entries, kek)) throw new Error('addEntry: this code is already in use');
   const taken = new Set(access.entries.map((e) => e.id));
   let id;
   do id = shortId(); while (taken.has(id));
-  const entry = { id, kind, ...(await sealJson(kek, payload)), meta: await sealJson(vk, meta) };
+  const entry = { id, kind, ...(await sealJson(kek, payload)), meta: await sealJson(ok, meta) };
   return { ...access, kdf: { ...access.kdf }, entries: [...access.entries, entry] };
 }
 
-// An entry's plaintext meta { label, created, code? }; rejects ('decrypt failed') without the right VK.
-export async function readMeta(entry, vk) {
-  return openJson(vk, entry?.meta);
+// An entry's plaintext meta { label, created, code? }; rejects ('decrypt failed') without the owner key `ok`.
+export async function readMeta(entry, ok) {
+  return openJson(ok, entry?.meta);
 }
 
 export async function wrapFileKey(vk, fk) {
@@ -300,14 +320,15 @@ export async function unwrapFileKey(vk, wrapped) {
   return importKey(toB64(raw));
 }
 
-// Revoke / rotate: a new VK with a new keys.vk id; every file key rewrapped under it; every kept
-// entry's payload (with `vk` replaced by the new VK) re-sealed under its own KEK and its meta
-// re-sealed under the new VK; entries in `dropIds` removed. The admin entry `adminEntryId` uses
-// `kek`; every other kept entry needs its code in `codesById`. Everything is checked before
-// anything is built, so it throws (never silently drops access) when a code is missing or does
-// not open its entry, when `vk` does not open a meta or a file key, or when asked to drop the
-// admin entry in use.
-export async function rotateVault({ access, keys, vk, kek, adminEntryId, codesById = {}, dropIds = [] }) {
+// Revoke / rotate: a new VK with a new keys.vk id and a new owner key OK; every file key rewrapped
+// under the new VK; every kept entry's payload (with `vk` replaced by the new VK, and in an admin
+// payload `ok` by the new OK) re-sealed under its own KEK and its meta re-sealed under the new OK;
+// entries in `dropIds` removed. The admin entry `adminEntryId` uses `kek`, and its payload must hold
+// exactly `vk` and `ok`; every other kept entry needs its code in `codesById`. Everything is checked
+// before anything is built, so it throws (never silently drops access) when a code is missing or
+// does not open its entry, when `ok` does not open a meta or `vk` a file key, or when asked to drop
+// the admin entry in use. Resolves { access, keys, vk, ok } (the new keys as CryptoKeys).
+export async function rotateVault({ access, keys, vk, ok, kek, adminEntryId, codesById = {}, dropIds = [] }) {
   checkAccess(access);
   if (keys?.v !== 1 || !keys.files || typeof keys.files !== 'object') throw new TypeError('rotateVault: unsupported keys file');
   const admin = access.entries.find((e) => e.id === adminEntryId);
@@ -318,6 +339,8 @@ export async function rotateVault({ access, keys, vk, kek, adminEntryId, codesBy
     if (!access.entries.some((e) => e.id === id)) throw new Error(`rotateVault: no entry ${id} to drop`);
   }
   const kept = access.entries.filter((e) => !drop.has(e.id));
+  const vkB64 = await exportKey(vk);
+  const okB64 = await exportKey(ok);
 
   // Open everything with the current keys first.
   const opened = await Promise.all(kept.map(async (e) => {
@@ -333,10 +356,13 @@ export async function rotateVault({ access, keys, vk, kek, adminEntryId, codesBy
     } catch {
       throw new Error(`rotateVault: the key for entry ${e.id} does not open it`);
     }
+    if (e.id === adminEntryId && (payload?.vk !== vkB64 || payload?.ok !== okB64)) {
+      throw new Error('rotateVault: the vault key or the owner key is not the one in the admin entry');
+    }
     try {
-      meta = await readMeta(e, vk);
+      meta = await readMeta(e, ok);
     } catch {
-      throw new Error(`rotateVault: the vault key does not open the meta of entry ${e.id}`);
+      throw new Error(`rotateVault: the owner key does not open the meta of entry ${e.id}`);
     }
     return { e, entryKek, payload, meta };
   }));
@@ -348,14 +374,18 @@ export async function rotateVault({ access, keys, vk, kek, adminEntryId, codesBy
     }
   }));
 
-  // Then seal everything again under a new vault key.
+  // Then seal everything again under a new vault key and a new owner key. Only an admin payload
+  // carries the owner key; a download payload is { vk } and nothing else.
   const newVk = await generateKey();
   const newVkB64 = await exportKey(newVk);
+  const newOk = await generateKey();
+  const newOkB64 = await exportKey(newOk);
+  const resealed = (kind, payload) => (kind === 'admin' ? { ...payload, vk: newVkB64, ok: newOkB64 } : { vk: newVkB64 });
   const entries = await Promise.all(opened.map(async ({ e, entryKek, payload, meta }) => ({
     id: e.id,
     kind: e.kind,
-    ...(await sealJson(entryKek, { ...payload, vk: newVkB64 })),
-    meta: await sealJson(newVk, meta),
+    ...(await sealJson(entryKek, resealed(e.kind, payload))),
+    meta: await sealJson(newOk, meta),
   })));
   const files = {};
   for (const [id, fk] of fileKeys) files[id] = await wrapFileKey(newVk, fk);
@@ -365,5 +395,6 @@ export async function rotateVault({ access, keys, vk, kek, adminEntryId, codesBy
     access: { ...access, kdf: { ...access.kdf }, entries },
     keys: { ...keys, vk: vkId, files },
     vk: newVk,
+    ok: newOk,
   };
 }

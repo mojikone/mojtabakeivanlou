@@ -349,10 +349,10 @@ const wired = new WeakMap();                // root -> handle (admin.mjs's loadD
  * Wires the top bar's Publish button (#publishButton inside `root`) once the draft is loaded. Owns the button's state,
  * the read-only mode while publishing, the progress card and the modals.
  *   store, fileStore, icons   as publish() takes them
- *   getSession(), getGh()     the session ({ vk, kek, entryId, github }) and the GitHub client as they are now: read at
+ *   getSession(), getGh()     the session ({ vk, ok, kek, entryId, github }) and the GitHub client as they are now: read at
  *                             every click, because a change of the admin code or the token replaces both after wiring
  *                             (admin.mjs's session hook). `session` and `gh` instead fix them for good.
- *   onSessionVk(vkB64)   a publish rotated the vault key: the session must take it at once
+ *   onSessionVk(vk, ok)  a publish rotated the vault key and the owner key (base64): the session must take them at once
  *   onPublished()        a publish went live: refresh "published N min ago"
  *   publishFn            publish.mjs's publish(), replaceable in tests
  * Every way into a publish (the button, Retry, Overwrite, Reload and reapply) first checks that the session still
@@ -375,7 +375,7 @@ export function wirePublish({
   const areas = [find('#main'), find('.adm-nav')].filter(Boolean);
   const secrets = () => {
     const now = getSession();
-    return [now?.vk, now?.kek, now?.github?.token];
+    return [now?.vk, now?.ok, now?.kek, now?.github?.token];
   };
   const safe = (message) => clean(message?.message ?? message, secrets());
   let busy = false;
@@ -490,7 +490,7 @@ export function wirePublish({
     }
 
     if (result.vk) {
-      try { onSessionVk?.(result.vk); } catch { /* the committed vault is under the new key whatever happens here */ }
+      try { onSessionVk?.(result.vk, result.ok); } catch { /* the committed vault is under the new key whatever happens here */ }
     }
 
     if (result.conflict) {

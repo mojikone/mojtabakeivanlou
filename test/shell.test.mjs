@@ -11,7 +11,7 @@ import { FILE_MAX, FILE_NOTE, TOTAL_AMBER, TOTAL_RED } from '../admin/modules/li
 import { GitHubError } from '../admin/modules/github.mjs';
 
 const GITHUB = { token: 'ghp_FAKE', owner: 'octo', repo: 'site', branch: 'main' };
-const SESSION = { entryId: 'ab12cd34', vk: 'dmF1bHQta2V5', kek: 'a2VrLWtleQ==', github: GITHUB };
+const SESSION = { entryId: 'ab12cd34', vk: 'dmF1bHQta2V5', ok: 'b3duZXIta2V5', kek: 'a2VrLWtleQ==', github: GITHUB };
 
 function memStorage(initial = {}, { failOn } = {}) {
   const data = new Map(Object.entries(initial));
@@ -26,7 +26,7 @@ function memStorage(initial = {}, { failOn } = {}) {
   };
 }
 
-const stored = (s = SESSION) => ({ 'mk.admin': JSON.stringify({ entryId: s.entryId, vk: s.vk, github: s.github }), 'mk.vault': s.vk, 'mk.kek': s.kek });
+const stored = (s = SESSION) => ({ 'mk.admin': JSON.stringify({ entryId: s.entryId, vk: s.vk, ok: s.ok, github: s.github }), 'mk.vault': s.vk, 'mk.kek': s.kek });
 
 /* ─── session ─── */
 
@@ -43,6 +43,8 @@ test('readSession is null when any of the three keys is missing or malformed', (
   assert.equal(readSession(memStorage({ ...stored(), 'mk.admin': '{not json' })), null);
   assert.equal(readSession(memStorage({ ...stored(), 'mk.admin': JSON.stringify({ vk: 'x', github: { ...GITHUB, token: '' } }) })), null);
   assert.equal(readSession(memStorage({ ...stored(), 'mk.admin': 'null' })), null);
+  const { ok: _owner, ...withoutOwnerKey } = SESSION;
+  assert.equal(readSession(memStorage({ ...stored(), 'mk.admin': JSON.stringify(withoutOwnerKey) })), null, 'an admin payload without the owner key');
   assert.equal(readSession(null), null);
   assert.equal(readSession({ getItem() { throw new Error('SecurityError'); } }), null);
 });
@@ -51,7 +53,7 @@ test('writeSession stores all three keys, or none of them when storage fails', (
   const ok = memStorage();
   assert.equal(writeSession(ok, SESSION), true);
   assert.deepEqual(readSession(ok), SESSION);
-  assert.deepEqual(JSON.parse(ok.data.get('mk.admin')), { entryId: SESSION.entryId, vk: SESSION.vk, github: GITHUB });
+  assert.deepEqual(JSON.parse(ok.data.get('mk.admin')), { entryId: SESSION.entryId, vk: SESSION.vk, ok: SESSION.ok, github: GITHUB });
 
   const full = memStorage({}, { failOn: 'mk.kek' });
   assert.equal(writeSession(full, SESSION), false);
@@ -69,12 +71,13 @@ test('a session change round-trips through sessionStorage: new entry, KEK and to
   assert.equal(storage.data.get('mk.kek'), 'a2VrLW5ldw==');
   assert.equal(JSON.parse(storage.data.get('mk.admin')).entryId, 'ef56ab78');
 
-  // the publish UI's onSessionVk: a rotation gives the session a new vault key, in mk.vault and in mk.admin
-  changed.vk = 'bmV3LXZhdWx0LWtleQ==';
-  writeSession(storage, changed);
+  // the publish UI's onSessionVk: a rotation gives the session a new vault key and owner key, in mk.vault and mk.admin
+  const rotated = applySessionChange(changed, { vk: 'bmV3LXZhdWx0LWtleQ==', ok: 'bmV3LW93bmVyLWtleQ==' });
+  writeSession(storage, rotated);
   assert.equal(storage.data.get('mk.vault'), 'bmV3LXZhdWx0LWtleQ==');
   assert.equal(JSON.parse(storage.data.get('mk.admin')).vk, 'bmV3LXZhdWx0LWtleQ==');
-  assert.deepEqual(readSession(storage), changed);
+  assert.equal(JSON.parse(storage.data.get('mk.admin')).ok, 'bmV3LW93bmVyLWtleQ==');
+  assert.deepEqual(readSession(storage), rotated);
 });
 
 /* ─── the token expiry note (spec 13.7) ─── */
@@ -134,6 +137,8 @@ test('clearSession removes exactly the three session keys (the draft stays)', ()
 test('toSession keeps only the known fields and refuses an incomplete one', () => {
   assert.deepEqual(toSession({ ...SESSION, extra: 1, github: { ...GITHUB, extra: 2 } }), SESSION);
   assert.equal(toSession({ ...SESSION, kek: '' }), null);
+  assert.equal(toSession({ ...SESSION, ok: '' }), null);
+  assert.equal(toSession({ ...SESSION, ok: undefined }), null);
   assert.equal(toSession({ ...SESSION, github: undefined }), null);
   assert.equal(toSession(), null);
 });

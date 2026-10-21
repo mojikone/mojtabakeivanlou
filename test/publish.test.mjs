@@ -120,7 +120,7 @@ function setup({ access = createAccessFile(ITER), keys = createKeysFile('abcdef0
   const fileStore = createMemoryFileStore();
   const steps = [];
   const onProgress = (step, info) => { steps.push([step, info]); };
-  const sess = session ?? { vk: 'A'.repeat(43) + '=', kek: 'B'.repeat(43) + '=', entryId: 'abcdef01' };
+  const sess = session ?? { vk: 'A'.repeat(43) + '=', ok: 'C'.repeat(43) + '=', kek: 'B'.repeat(43) + '=', entryId: 'abcdef01' };
   const run = (over = {}) => publish({ store, gh, fileStore, session: sess, icons, onProgress, pollMs: 1, ...over });
   return { storage, store, base, gh, fileStore, steps, run, session: sess };
 }
@@ -145,23 +145,25 @@ function siteWithFiles(...ids) {
 }
 
 // An admin entry plus two download codes, one to keep and one to revoke, and one existing file key (its record on
-// the first bullet of `site`).
+// the first bullet of `site`). The metas are sealed under the owner key `ok`, which only the admin payload holds.
 async function makeVault() {
   const vk = await generateKey();
   const vkB64 = await exportKey(vk);
+  const ok = await generateKey();
+  const okB64 = await exportKey(ok);
   const kept = generateDownloadCode();
   let gone = generateDownloadCode();
   while (gone === kept) gone = generateDownloadCode();
   let access = createAccessFile(ITER);
-  access = await addEntry(access, { kind: 'admin', code: ADMIN_CODE, payload: { vk: vkB64, github: GITHUB }, meta: { label: 'Admin', created: DAY } }, vk);
-  access = await addEntry(access, { kind: 'download', code: kept, payload: { vk: vkB64 }, meta: { label: 'Kept hirer', created: DAY, code: kept } }, vk);
-  access = await addEntry(access, { kind: 'download', code: gone, payload: { vk: vkB64 }, meta: { label: 'Revoked hirer', created: DAY, code: gone } }, vk);
+  access = await addEntry(access, { kind: 'admin', code: ADMIN_CODE, payload: { vk: vkB64, ok: okB64, github: GITHUB }, meta: { label: 'Admin', created: DAY } }, ok);
+  access = await addEntry(access, { kind: 'download', code: kept, payload: { vk: vkB64 }, meta: { label: 'Kept hirer', created: DAY, code: kept } }, ok);
+  access = await addEntry(access, { kind: 'download', code: gone, payload: { vk: vkB64 }, meta: { label: 'Revoked hirer', created: DAY, code: gone } }, ok);
   const fileId = randomId();
   const fk = await generateKey();
   const keys = { ...createKeysFile(shortId()), files: { [fileId]: await wrapFileKey(vk, fk) } };
   const admin = await unlock(access, ADMIN_CODE);
-  const session = { vk: vkB64, kek: await exportKey(admin.kek), entryId: admin.entry.id };
-  return { vk, vkB64, kept, gone, access, keys, fileId, fk, session, site: siteWithFiles(fileId), ids: access.entries.map((e) => e.id) };
+  const session = { vk: vkB64, ok: okB64, kek: await exportKey(admin.kek), entryId: admin.entry.id };
+  return { vk, vkB64, ok, okB64, kept, gone, access, keys, fileId, fk, session, site: siteWithFiles(fileId), ids: access.entries.map((e) => e.id) };
 }
 
 /* ─── SECTION_LABELS and buildCommit ─── */
@@ -211,7 +213,7 @@ test('buildCommit: access.json and keys.json when they differ from the base (or 
   const draft = plainDraft();
   const base = { access: clone(draft.access), keys: clone(draft.keys) };
   const vk = await generateKey();
-  draft.access = await addEntry(draft.access, { kind: 'download', code: 'MK-TEST-2345', payload: { vk: await exportKey(vk) }, meta: { label: 'x', created: DAY, code: 'MK-TEST-2345' } }, vk);
+  draft.access = await addEntry(draft.access, { kind: 'download', code: 'MK-TEST-2345', payload: { vk: await exportKey(vk) }, meta: { label: 'x', created: DAY, code: 'MK-TEST-2345' } }, await generateKey());
   assert.deepEqual(buildCommit(draft, {}, [], base).files.map((f) => f.path), ['content/site.json', 'vault/access.json']);
   draft.keys = { ...draft.keys, files: { [randomId()]: { iv: 'aXY=', key: 'a2V5' } } };
   assert.deepEqual(buildCommit(draft, {}, [], base).files.map((f) => f.path), ['content/site.json', 'vault/access.json', 'vault/keys.json']);
@@ -399,7 +401,7 @@ test('publish: an AuthError before the commit rejects; any other failure resolve
   assert.deepEqual(v.steps.at(-1), ['failed', { error: result.error }]);
 });
 
-test('publish: rotation drops the revoked code, keeps the other, rewraps the file keys and returns the new vk', async () => {
+test('publish: rotation drops the revoked code, keeps the other, rewraps the file keys and returns the new vk and ok', async () => {
   const vault = await makeVault();
   const w = setup({ access: vault.access, keys: vault.keys, session: vault.session, site: vault.site });
   w.store.set(['revoked'], [vault.ids[2]]);
@@ -408,9 +410,10 @@ test('publish: rotation drops the revoked code, keeps the other, rewraps the fil
   const result = await w.run();
 
   assert.deepEqual(names(w.steps), ['validating', 'checking', 'committing', 'building', 'live']);
-  assert.deepEqual(Object.keys(result).sort(), ['sha', 'vk']);
+  assert.deepEqual(Object.keys(result).sort(), ['ok', 'sha', 'vk']);
   assert.equal(result.sha, 'commit1');
   assert.notEqual(result.vk, vault.vkB64);
+  assert.notEqual(result.ok, vault.okB64);
 
   const [commit] = commitCalls(w.gh);
   assert.deepEqual(commit.files.map((f) => f.path), ['content/site.json', 'vault/access.json', 'vault/keys.json']);
@@ -420,16 +423,22 @@ test('publish: rotation drops the revoked code, keeps the other, rewraps the fil
 
   const kept = await unlock(newAccess, vault.kept);
   assert.equal(kept.kind, 'download');
-  assert.equal(kept.payload.vk, result.vk);
+  assert.deepEqual(kept.payload, { vk: result.vk });
   assert.equal(await unlock(newAccess, vault.gone), null);
   const admin = await unlock(newAccess, ADMIN_CODE);
   assert.equal(admin.payload.vk, result.vk);
+  assert.equal(admin.payload.ok, result.ok);
   assert.deepEqual(admin.payload.github, GITHUB);
   assert.deepEqual(newAccess.entries.map((e) => e.id), [vault.ids[0], vault.ids[1]]);
 
   assert.notEqual(newKeys.vk, vault.keys.vk);
   const newVk = await importKey(result.vk);
-  assert.equal((await readMeta(newAccess.entries[1], newVk)).code, vault.kept);
+  const newOk = await importKey(result.ok);
+  assert.equal((await readMeta(newAccess.entries[1], newOk)).code, vault.kept);
+  for (const entry of newAccess.entries) {
+    await assert.rejects(readMeta(entry, newVk), { message: 'decrypt failed' }, 'the new vault key a hirer gets opens no meta');
+    await assert.rejects(readMeta(entry, vault.ok), { message: 'decrypt failed' }, 'neither does the old owner key');
+  }
   assert.equal(await exportKey(await unwrapFileKey(newVk, newKeys.files[vault.fileId])), await exportKey(vault.fk));
 
   const d = w.store.get();
@@ -440,7 +449,7 @@ test('publish: rotation drops the revoked code, keeps the other, rewraps the fil
   assert.equal(w.store.dirty().total, 0);
 });
 
-test('publish: a kept download entry whose meta the current vk cannot read fails before anything is committed', async () => {
+test('publish: a kept download entry whose meta the current owner key cannot read fails before anything is committed', async () => {
   const vault = await makeVault();
   const access = clone(vault.access);
   access.entries[1].meta = await seal(await generateKey(), enc(JSON.stringify({ label: 'x', created: DAY, code: vault.kept })));
@@ -455,7 +464,8 @@ test('publish: a kept download entry whose meta the current vk cannot read fails
   assert.deepEqual(Object.keys(result).sort(), ['error', 'failed']);
   assert.equal(result.failed, true);
   assert.match(result.error, new RegExp(vault.ids[1]));
-  for (const secret of [vault.kept, vault.gone, vault.session.vk, vault.session.kek]) assert.ok(!result.error.includes(secret));
+  assert.match(result.error, /owner key/);
+  for (const secret of [vault.kept, vault.gone, vault.session.vk, vault.session.ok, vault.session.kek]) assert.ok(!result.error.includes(secret));
   assert.equal(commitCalls(w.gh).length, 0);
   assert.equal(w.store.get(), before);
 });
@@ -470,7 +480,7 @@ test('publish: a committed rotation reports the new vk even when the build fails
 
   const result = await w.run();
 
-  assert.deepEqual(Object.keys(result).sort(), ['failed', 'runUrl', 'sha', 'vk']);
+  assert.deepEqual(Object.keys(result).sort(), ['failed', 'ok', 'runUrl', 'sha', 'vk']);
   assert.equal(result.sha, 'commit1');
   const committed = JSON.parse(dec(commitCalls(w.gh)[0].files[1].bytes));
   assert.equal((await unlock(committed, vault.kept)).payload.vk, result.vk);
@@ -510,7 +520,7 @@ test('publish: a non-empty revoked rotates even when rotate is false', async () 
 
   const result = await w.run();
 
-  assert.deepEqual(Object.keys(result).sort(), ['sha', 'vk']);
+  assert.deepEqual(Object.keys(result).sort(), ['ok', 'sha', 'vk']);
   assert.notEqual(result.vk, vault.vkB64);
   const [commit] = commitCalls(w.gh);
   assert.deepEqual(commit.files.map((f) => f.path), ['content/site.json', 'vault/access.json', 'vault/keys.json']);
@@ -532,7 +542,7 @@ test('publish: an AuthError while polling, after the commit, resolves failed wit
 
   const result = await w.run();
 
-  assert.deepEqual(Object.keys(result).sort(), ['error', 'failed', 'sha', 'vk']);
+  assert.deepEqual(Object.keys(result).sort(), ['error', 'failed', 'ok', 'sha', 'vk']);
   assert.equal(result.failed, true);
   assert.equal(result.sha, 'commit1');
   assert.equal(result.error, 'GitHub answered 401 to GET /repos/o/r/actions/runs: Bad credentials');

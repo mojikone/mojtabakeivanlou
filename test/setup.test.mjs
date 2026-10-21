@@ -44,6 +44,9 @@ test('buildInitialVault: the admin entry unlocks with the code and seals the vau
   assert.deepEqual(hit.payload.github, GH);
   assert.equal(typeof hit.payload.vk, 'string');
   assert.equal((await importKey(hit.payload.vk)) instanceof CryptoKey, true);
+  assert.equal((await importKey(hit.payload.ok)) instanceof CryptoKey, true, 'the owner key is in the admin payload');
+  assert.notEqual(hit.payload.ok, hit.payload.vk);
+  assert.deepEqual(Object.keys(hit.payload).sort(), ['github', 'ok', 'vk']);
   assert.equal(await unlock(access, 'Some-Other-Code-99'), null);
   assert.deepEqual(keys, { v: 1, vk: keys.vk, files: {} });
 });
@@ -51,7 +54,8 @@ test('buildInitialVault: the admin entry unlocks with the code and seals the vau
 test('buildInitialVault: the meta holds the label and the date and never the code; the keys file has an 8-hex vk', async () => {
   const { access, keys } = await build();
   const { payload } = await unlock(access, CODE);
-  const meta = await readMeta(access.entries[0], await importKey(payload.vk));
+  await assert.rejects(readMeta(access.entries[0], await importKey(payload.vk)), { message: 'decrypt failed' }, 'not under the vault key');
+  const meta = await readMeta(access.entries[0], await importKey(payload.ok));
   assert.equal(meta.label, 'Me');
   assert.match(meta.created, /^\d{4}-\d{2}-\d{2}$/);
   assert.equal('code' in meta, false);
@@ -67,7 +71,7 @@ test('buildInitialVault: the date comes from `created` when given; the code is t
   const { access } = await build({ created: '2026-10-21', code: `  ${CODE}  ` });
   const hit = await unlock(access, CODE);
   assert.ok(hit);
-  assert.equal((await readMeta(access.entries[0], await importKey(hit.payload.vk))).created, '2026-10-21');
+  assert.equal((await readMeta(access.entries[0], await importKey(hit.payload.ok))).created, '2026-10-21');
 });
 
 test('buildInitialVault: every run has its own salt, entry and vault key', async () => {
@@ -75,6 +79,7 @@ test('buildInitialVault: every run has its own salt, entry and vault key', async
   const b = await build();
   assert.notEqual(a.access.kdf.salt, b.access.kdf.salt);
   assert.notEqual((await unlock(a.access, CODE)).payload.vk, (await unlock(b.access, CODE)).payload.vk);
+  assert.notEqual((await unlock(a.access, CODE)).payload.ok, (await unlock(b.access, CODE)).payload.ok);
 });
 
 test('buildInitialVault: refuses a weak code, a missing token and a missing owner, repo or branch', async () => {
@@ -182,7 +187,7 @@ test('commitInitialVault: a file with download entries only is overwritten (rule
   const vk = await generateKey();
   const withDownload = await addEntry(createAccessFile(ITER), {
     kind: 'download', code: 'MK-AAAA-BBBB', payload: { vk: await exportKey(vk) }, meta: { label: 'Hirer', created: '2026-10-01', code: 'MK-AAAA-BBBB' },
-  }, vk);
+  }, await generateKey());
   const gh = fakeGh({ file: fileOf(withDownload) });
   await commitInitialVault({ gh, ...GH, code: CODE, iterations: ITER });
   assert.deepEqual(names(gh), ['getFile', 'getHead', 'commitFiles']);
@@ -213,7 +218,7 @@ test('commitInitialVault: `now` dates the admin entry', async () => {
   await commitInitialVault({ gh, ...GH, code: CODE, iterations: ITER, now: () => new Date('2027-03-04T23:30:00Z') });
   const access = JSON.parse(dec(gh.calls[2][1].files[0].bytes));
   const { payload } = await unlock(access, CODE);
-  assert.equal((await readMeta(access.entries[0], await importKey(payload.vk))).created, '2027-03-04');
+  assert.equal((await readMeta(access.entries[0], await importKey(payload.ok))).created, '2027-03-04');
 });
 
 test('commitInitialVault: GitHub errors pass through unchanged (the wizard shows them and lets the owner retry)', async () => {

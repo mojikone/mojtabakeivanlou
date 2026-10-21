@@ -22,16 +22,19 @@ const TOKEN = 'test-token-not-real';
 const GITHUB = { token: TOKEN, owner: 'mojikone', repo: 'mojtabakeivanlou', branch: 'redesign3_admin' };
 const DAY = '2026-10-21';
 
-// A vault with one admin entry and the given download codes, at test iterations.
+// A vault with one admin entry and the given download codes, at test iterations. `vk` is the vault key (in every
+// payload), `ok` the owner key (in the admin payload only; it seals every meta).
 async function makeVault(downloadCodes = []) {
   const vk = await generateKey();
   const vkB64 = await exportKey(vk);
+  const ok = await generateKey();
+  const okB64 = await exportKey(ok);
   let access = createAccessFile(ITER);
-  access = await addEntry(access, { kind: 'admin', code: ADMIN_CODE, payload: { vk: vkB64, github: GITHUB }, meta: { label: 'Admin', created: DAY } }, vk);
+  access = await addEntry(access, { kind: 'admin', code: ADMIN_CODE, payload: { vk: vkB64, ok: okB64, github: GITHUB }, meta: { label: 'Admin', created: DAY } }, ok);
   for (const [i, code] of downloadCodes.entries()) {
-    access = await addEntry(access, { kind: 'download', code, payload: { vk: vkB64 }, meta: { label: `Hirer ${i + 1}`, created: DAY, code } }, vk);
+    access = await addEntry(access, { kind: 'download', code, payload: { vk: vkB64 }, meta: { label: `Hirer ${i + 1}`, created: DAY, code } }, ok);
   }
-  return { access, vk, vkB64, keys: createKeysFile(shortId()) };
+  return { access, vk, vkB64, ok, okB64, keys: createKeysFile(shortId()) };
 }
 
 // -- file shapes ----------------------------------------------------------
@@ -66,7 +69,7 @@ test('createKeysFile and shortId', () => {
 
 test('entries have an 8-hex id, kind, iv, data and meta { iv, data }; admin meta holds no code', async () => {
   const code = generateDownloadCode();
-  const { access, vk } = await makeVault([code]);
+  const { access, ok } = await makeVault([code]);
   assert.equal(access.entries.length, 2);
   for (const e of access.entries) {
     assert.deepEqual(Object.keys(e).sort(), ['data', 'id', 'iv', 'kind', 'meta']);
@@ -76,7 +79,7 @@ test('entries have an 8-hex id, kind, iv, data and meta { iv, data }; admin meta
   }
   assert.notEqual(access.entries[0].id, access.entries[1].id);
   assert.deepEqual(access.entries.map((e) => e.kind), ['admin', 'download']);
-  assert.deepEqual(await readMeta(access.entries[0], vk), { label: 'Admin', created: DAY });
+  assert.deepEqual(await readMeta(access.entries[0], ok), { label: 'Admin', created: DAY });
   // nothing readable in the public file
   const json = JSON.stringify(access);
   for (const secret of [ADMIN_CODE, TOKEN, code, 'Hirer', 'Admin']) assert.ok(!json.includes(secret), secret);
@@ -86,12 +89,12 @@ test('entries have an 8-hex id, kind, iv, data and meta { iv, data }; admin meta
 
 test('full flow: admin + generated download code; trimmed lower-case code unlocks the download entry', async () => {
   const code = generateDownloadCode();
-  const { access, vk, vkB64 } = await makeVault([code]);
+  const { access, ok, vkB64, okB64 } = await makeVault([code]);
 
   const admin = await unlock(access, ADMIN_CODE);
   assert.equal(admin.kind, 'admin');
   assert.equal(admin.entry.id, access.entries[0].id);
-  assert.deepEqual(admin.payload, { vk: vkB64, github: GITHUB });
+  assert.deepEqual(admin.payload, { vk: vkB64, ok: okB64, github: GITHUB });
   assert.equal(admin.kek.algorithm.name, 'AES-GCM');
 
   const dl = await unlock(access, '  ' + code.toLowerCase() + ' ');
@@ -104,14 +107,32 @@ test('full flow: admin + generated download code; trimmed lower-case code unlock
   assert.equal(await unlock(access, ''), null);
   assert.equal(await unlock(access, '   '), null);
   assert.equal(await unlock(access, undefined), null);
-  assert.equal((await readMeta(access.entries[1], vk)).code, code);
+  assert.equal((await readMeta(access.entries[1], ok)).code, code);
+});
+
+test('a download code opens no meta: its payload is the vault key alone, and the vault key opens no label or code', async () => {
+  const codes = [generateDownloadCode(), generateDownloadCode(), generateDownloadCode()];
+  const { access, vk, ok } = await makeVault(codes);
+  for (const code of codes) {
+    const hit = await unlock(access, code);
+    assert.deepEqual(Object.keys(hit.payload), ['vk']);
+    const hirerKey = await importKey(hit.payload.vk);
+    for (const entry of access.entries) await assert.rejects(readMeta(entry, hirerKey), { message: 'decrypt failed' });
+  }
+  for (const entry of access.entries) await assert.rejects(readMeta(entry, vk), { message: 'decrypt failed' });
+  // the owner key, from the admin payload, opens every one of them
+  const admin = await unlock(access, ADMIN_CODE);
+  const owner = await importKey(admin.payload.ok);
+  assert.deepEqual((await Promise.all(access.entries.map((e) => readMeta(e, owner)))).map((m) => m.code ?? null), [null, ...codes]);
+  assert.equal(await exportKey(owner), await exportKey(ok));
 });
 
 test('unlock tries the code as typed before upper-casing it (a lower-case admin code still works)', async () => {
   const vk = await generateKey();
+  const ok = await generateKey();
   const lower = 'lower-case-admin-code-42';
   let access = createAccessFile(ITER);
-  access = await addEntry(access, { kind: 'admin', code: lower, payload: { vk: await exportKey(vk), github: GITHUB }, meta: { label: 'Admin', created: DAY } }, vk);
+  access = await addEntry(access, { kind: 'admin', code: lower, payload: { vk: await exportKey(vk), ok: await exportKey(ok), github: GITHUB }, meta: { label: 'Admin', created: DAY } }, ok);
   assert.equal((await unlock(access, lower)).kind, 'admin');
   assert.equal(await unlock(access, lower.toUpperCase()), null);
 });
@@ -140,9 +161,10 @@ test('unlock tries admin entries first, wherever they sit in the file', async ()
   // that share a salt): the admin entry must win even though it is listed last.
   const vk = await generateKey();
   const vkB64 = await exportKey(vk);
+  const ok = await generateKey();
   const base = createAccessFile(ITER);
-  const withDl = await addEntry(base, { kind: 'download', code: 'MK-SAME-CODE', payload: { vk: vkB64 }, meta: { label: 'x', created: DAY, code: 'MK-SAME-CODE' } }, vk);
-  const withAdmin = await addEntry(base, { kind: 'admin', code: 'MK-SAME-CODE', payload: { vk: vkB64, github: GITHUB }, meta: { label: 'Admin', created: DAY } }, vk);
+  const withDl = await addEntry(base, { kind: 'download', code: 'MK-SAME-CODE', payload: { vk: vkB64 }, meta: { label: 'x', created: DAY, code: 'MK-SAME-CODE' } }, ok);
+  const withAdmin = await addEntry(base, { kind: 'admin', code: 'MK-SAME-CODE', payload: { vk: vkB64, ok: await exportKey(ok), github: GITHUB }, meta: { label: 'Admin', created: DAY } }, ok);
   const both = { ...base, entries: [withDl.entries[0], withAdmin.entries[0]] };
   const r = await unlock(both, 'MK-SAME-CODE');
   assert.equal(r.kind, 'admin');
@@ -156,10 +178,10 @@ test('unlock on a file with no entries returns null', async () => {
 // -- addEntry -------------------------------------------------------------
 
 test('addEntry returns a new access file and does not mutate its input', async () => {
-  const { access, vk, vkB64 } = await makeVault();
+  const { access, ok, vkB64 } = await makeVault();
   const before = clone(access);
   const code = generateDownloadCode();
-  const next = await addEntry(access, { kind: 'download', code, payload: { vk: vkB64 }, meta: { label: 'New', created: DAY, code } }, vk);
+  const next = await addEntry(access, { kind: 'download', code, payload: { vk: vkB64 }, meta: { label: 'New', created: DAY, code } }, ok);
   assert.deepEqual(access, before);
   assert.notEqual(next, access);
   assert.notEqual(next.entries, access.entries);
@@ -170,22 +192,38 @@ test('addEntry returns a new access file and does not mutate its input', async (
 });
 
 test('addEntry trims the code, so the code unlock trims still matches', async () => {
-  const { access, vk, vkB64 } = await makeVault();
-  const next = await addEntry(access, { kind: 'download', code: '  MK-PADD-CODE \n', payload: { vk: vkB64 }, meta: { label: 'x', created: DAY, code: 'MK-PADD-CODE' } }, vk);
+  const { access, ok, vkB64 } = await makeVault();
+  const next = await addEntry(access, { kind: 'download', code: '  MK-PADD-CODE \n', payload: { vk: vkB64 }, meta: { label: 'x', created: DAY, code: 'MK-PADD-CODE' } }, ok);
   assert.equal((await unlock(next, 'MK-PADD-CODE')).kind, 'download');
 });
 
-test('addEntry refuses a bad kind, an empty code, a code already in use, an admin meta with a code, and a payload for another vault key', async () => {
+test('addEntry refuses a bad kind, an empty code, a code already in use, an admin meta with a code, and a payload without a vault key', async () => {
   const code = generateDownloadCode();
-  const { access, vk, vkB64 } = await makeVault([code]);
-  const ok = { kind: 'download', code: 'MK-FRSH-CODE', payload: { vk: vkB64 }, meta: { label: 'x', created: DAY, code: 'MK-FRSH-CODE' } };
-  await addEntry(access, ok, vk); // the baseline is valid
-  await assert.rejects(addEntry(access, { ...ok, kind: 'owner' }, vk));
-  await assert.rejects(addEntry(access, { ...ok, code: '   ' }, vk));
-  await assert.rejects(addEntry(access, { ...ok, code }, vk), /already in use/);
-  await assert.rejects(addEntry(access, { ...ok, code: ADMIN_CODE }, vk), /already in use/);
-  await assert.rejects(addEntry(access, { kind: 'admin', code: 'Another-Admin-1', payload: { vk: vkB64, github: GITHUB }, meta: { label: 'A', created: DAY, code: 'Another-Admin-1' } }, vk));
-  await assert.rejects(addEntry(access, { ...ok, payload: { vk: await exportKey(await generateKey()) } }, vk));
+  const { access, ok, vkB64, okB64 } = await makeVault([code]);
+  const good = { kind: 'download', code: 'MK-FRSH-CODE', payload: { vk: vkB64 }, meta: { label: 'x', created: DAY, code: 'MK-FRSH-CODE' } };
+  await addEntry(access, good, ok); // the baseline is valid
+  await assert.rejects(addEntry(access, { ...good, kind: 'owner' }, ok));
+  await assert.rejects(addEntry(access, { ...good, code: '   ' }, ok));
+  await assert.rejects(addEntry(access, { ...good, code }, ok), /already in use/);
+  await assert.rejects(addEntry(access, { ...good, code: ADMIN_CODE }, ok), /already in use/);
+  await assert.rejects(addEntry(access, { kind: 'admin', code: 'Another-Admin-1', payload: { vk: vkB64, ok: okB64, github: GITHUB }, meta: { label: 'A', created: DAY, code: 'Another-Admin-1' } }, ok));
+  for (const payload of [{}, { vk: 'not-a-key' }, { vk: okB64.slice(4) }, null]) {
+    await assert.rejects(addEntry(access, { ...good, payload }, ok), /payload\.vk must be a vault key/);
+  }
+});
+
+test('addEntry: an admin payload must carry the owner key its meta is sealed under; a download payload is exactly { vk }', async () => {
+  const { access, ok, vkB64, okB64 } = await makeVault();
+  const admin = { kind: 'admin', code: 'Another-Admin-1', payload: { vk: vkB64, ok: okB64, github: GITHUB }, meta: { label: 'A', created: DAY } };
+  await addEntry(access, admin, ok); // the baseline is valid
+  await assert.rejects(addEntry(access, { ...admin, payload: { vk: vkB64, github: GITHUB } }, ok), /owner key/);
+  await assert.rejects(addEntry(access, { ...admin, payload: { ...admin.payload, ok: await exportKey(await generateKey()) } }, ok), /owner key/);
+  await assert.rejects(addEntry(access, admin, await generateKey()), /owner key/);
+  const download = { kind: 'download', code: 'MK-FRSH-CODE', meta: { label: 'x', created: DAY, code: 'MK-FRSH-CODE' } };
+  for (const payload of [{ vk: vkB64, ok: okB64 }, { vk: vkB64, github: GITHUB }, { ok: okB64, vk: vkB64 }]) {
+    await assert.rejects(addEntry(access, { ...download, payload }, ok), /exactly \{ vk \}/);
+  }
+  await assert.rejects(addEntry(access, { ...download, payload: { vk: vkB64 } }, undefined)); // no owner key, no meta
 });
 
 // -- file keys ------------------------------------------------------------
@@ -223,7 +261,7 @@ async function vaultWithFiles() {
 }
 
 const rotateArgs = (v, extra = {}) => ({
-  access: v.access, keys: v.keys, vk: v.vk, kek: v.admin.kek, adminEntryId: v.admin.entry.id,
+  access: v.access, keys: v.keys, vk: v.vk, ok: v.ok, kek: v.admin.kek, adminEntryId: v.admin.entry.id,
   codesById: { [v.keepEntry.id]: v.keep }, dropIds: [v.dropEntry.id], ...extra,
 });
 
@@ -231,7 +269,10 @@ test('rotateVault: kept code still unlocks, dropped code does not, every file st
   const v = await vaultWithFiles();
   const r = await rotateVault(rotateArgs(v));
   const newVkB64 = await exportKey(r.vk);
+  const newOkB64 = await exportKey(r.ok);
   assert.notEqual(newVkB64, v.vkB64);
+  assert.notEqual(newOkB64, v.okB64);
+  assert.notEqual(newOkB64, newVkB64);
   assert.match(r.keys.vk, /^[0-9a-f]{8}$/);
   assert.notEqual(r.keys.vk, v.keys.vk);
   assert.equal(r.keys.v, 1);
@@ -241,12 +282,12 @@ test('rotateVault: kept code still unlocks, dropped code does not, every file st
 
   const kept = await unlock(r.access, v.keep.toLowerCase());
   assert.equal(kept.kind, 'download');
-  assert.equal(kept.payload.vk, newVkB64);
+  assert.deepEqual(kept.payload, { vk: newVkB64 }, 'a download payload never gains the owner key');
   assert.equal(await unlock(r.access, v.drop), null);
 
   const admin = await unlock(r.access, ADMIN_CODE);
   assert.equal(admin.kind, 'admin');
-  assert.deepEqual(admin.payload, { vk: newVkB64, github: GITHUB });
+  assert.deepEqual(admin.payload, { vk: newVkB64, ok: newOkB64, github: GITHUB });
 
   assert.deepEqual(Object.keys(r.keys.files).sort(), Object.keys(v.keys.files).sort());
   for (const [id, { blob, text }] of Object.entries(v.blobs)) {
@@ -255,13 +296,17 @@ test('rotateVault: kept code still unlocks, dropped code does not, every file st
   }
 });
 
-test('rotateVault leaves nothing under the old vault key and keeps every label and code', async () => {
+test('rotateVault leaves nothing under the old keys and keeps every label and code, under the new owner key only', async () => {
   const v = await vaultWithFiles();
   const r = await rotateVault(rotateArgs(v));
   for (const wrapped of Object.values(r.keys.files)) await assert.rejects(unwrapFileKey(v.vk, wrapped));
-  for (const e of r.access.entries) await assert.rejects(readMeta(e, v.vk));
-  assert.deepEqual(await readMeta(r.access.entries[0], r.vk), { label: 'Admin', created: DAY });
-  assert.deepEqual(await readMeta(r.access.entries[1], r.vk), { label: 'Hirer 1', created: DAY, code: v.keep });
+  for (const e of r.access.entries) {
+    await assert.rejects(readMeta(e, v.ok), { message: 'decrypt failed' }, 'not under the old owner key');
+    await assert.rejects(readMeta(e, v.vk), { message: 'decrypt failed' });
+    await assert.rejects(readMeta(e, r.vk), { message: 'decrypt failed' }, 'not under the new vault key a hirer gets');
+  }
+  assert.deepEqual(await readMeta(r.access.entries[0], r.ok), { label: 'Admin', created: DAY });
+  assert.deepEqual(await readMeta(r.access.entries[1], r.ok), { label: 'Hirer 1', created: DAY, code: v.keep });
   // every kept entry was re-sealed (fresh iv), not copied
   for (const [i, e] of r.access.entries.entries()) {
     assert.notEqual(e.iv, v.access.entries[i].iv);
@@ -283,6 +328,7 @@ test('rotateVault with nothing dropped keeps every entry working', async () => {
   assert.equal(r.access.entries.length, 3);
   assert.equal((await unlock(r.access, v.keep)).payload.vk, await exportKey(r.vk));
   assert.equal((await unlock(r.access, v.drop)).payload.vk, await exportKey(r.vk));
+  for (const e of r.access.entries) await readMeta(e, r.ok); // every meta opens under the new owner key
 });
 
 test('rotateVault throws, rather than silently dropping access, when a kept download entry has no code or a wrong one', async () => {
@@ -298,6 +344,10 @@ test('rotateVault refuses to drop the admin entry, an unknown admin id, a wrong 
   await assert.rejects(rotateVault(rotateArgs(v, { adminEntryId: v.keepEntry.id })));
   await assert.rejects(rotateVault(rotateArgs(v, { kek: (await unlock(v.access, v.keep)).kek })));
   await assert.rejects(rotateVault(rotateArgs(v, { vk: await generateKey() })));
+  await assert.rejects(rotateVault(rotateArgs(v, { ok: await generateKey() })), /owner key/);
+  await assert.rejects(rotateVault(rotateArgs(v, { ok: v.vk })), /owner key/);
+  // without a file key to try it on, a wrong vault key is still caught by the admin payload
+  await assert.rejects(rotateVault(rotateArgs(v, { keys: createKeysFile(shortId()), vk: await generateKey() })), /vault key or the owner key/);
 });
 
 // -- committed initial files ------------------------------------------------
@@ -396,6 +446,11 @@ test('CLI: init, add-code, encrypt, list, revoke end to end; secrets never print
     const admin = await unlock(access, ADMIN_CODE);
     assert.equal(admin.kind, 'admin');
     assert.deepEqual(admin.payload.github, { token: TOKEN, owner: 'mojikone', repo: 'mojtabakeivanlou', branch: 'test-branch' });
+    assert.deepEqual(Object.keys(admin.payload).sort(), ['github', 'ok', 'vk']);
+    assert.notEqual(admin.payload.ok, admin.payload.vk);
+    const adminMeta = await readMeta(access.entries[0], await importKey(admin.payload.ok));
+    assert.deepEqual(Object.keys(adminMeta).sort(), ['created', 'label']);
+    assert.equal(adminMeta.label, 'Admin');
 
     // add-code with a generated code: stdout is only the code
     const add = run('add-code', '--admin-code', ADMIN_CODE, '--label', 'Hirer A');
@@ -407,7 +462,7 @@ test('CLI: init, add-code, encrypt, list, revoke end to end; secrets never print
     assert.equal(access.entries.length, 2);
     const dl = await unlock(access, code.toLowerCase());
     assert.equal(dl.kind, 'download');
-    assert.equal(dl.payload.vk, admin.payload.vk);
+    assert.deepEqual(dl.payload, { vk: admin.payload.vk });
     const dlId = dl.entry.id;
 
     // add-code with a chosen code; a wrong admin code and a download code are refused
@@ -419,6 +474,9 @@ test('CLI: init, add-code, encrypt, list, revoke end to end; secrets never print
     assert.equal(run('add-code', '--admin-code', ADMIN_CODE, '--label', 'dup', '--code', code).status, 1);
     access = await readJson(dir, 'access.json');
     assert.equal(access.entries.length, 3);
+    // a hirer's code opens no label and no code: every meta is sealed under the owner key
+    const hirerKey = await importKey(dl.payload.vk);
+    for (const e of access.entries) await assert.rejects(readMeta(e, hirerKey), { message: 'decrypt failed' });
 
     // encrypt a small file
     const plain = enc('pretend this is a PDF report');
@@ -453,11 +511,23 @@ test('CLI: init, add-code, encrypt, list, revoke end to end; secrets never print
     assert.equal(admin2.kind, 'admin');
     assert.notEqual(admin2.payload.vk, admin.payload.vk);
     assert.equal(admin2.payload.github.token, TOKEN);
+    assert.notEqual(admin2.payload.ok, admin.payload.ok, 'the owner key is rotated with the vault key');
     assert.equal((await unlock(access2, 'mk-chsn-code')).payload.vk, admin2.payload.vk);
+    const kept = await unlock(access2, 'MK-CHSN-CODE');
+    for (const e of access2.entries) {
+      await assert.rejects(readMeta(e, await importKey(kept.payload.vk)), { message: 'decrypt failed' });
+      await assert.rejects(readMeta(e, await importKey(admin.payload.ok)), { message: 'decrypt failed' });
+    }
     assert.notEqual(keys2.vk, keys.vk);
     const fk1 = await unwrapFileKey(await importKey(admin2.payload.vk), keys2.files[record.id]);
     assert.deepEqual(await decryptFile(fk1, await readFile(binPath)), plain);
     assert.deepEqual((await readdir(join(dir, 'vault'))).sort(), ['access.json', 'files', 'keys.json']); // no .tmp/.bak left
+
+    // list after the revoke: the labels and codes are still there, read with the new owner key
+    const list2 = run('list', '--admin-code', ADMIN_CODE);
+    assert.equal(list2.status, 0, list2.stderr);
+    for (const s of ['Hirer B', 'MK-CHSN-CODE', admin2.entry.id]) assert.ok(list2.stdout.includes(s), s);
+    assert.ok(!list2.stdout.includes('Hirer A'));
 
     // revoking the admin entry or an unknown id is refused and changes nothing
     assert.equal(run('revoke', '--admin-code', ADMIN_CODE, admin2.entry.id).status, 1);

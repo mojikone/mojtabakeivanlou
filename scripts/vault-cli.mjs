@@ -34,8 +34,8 @@ Commands:
       file record to paste into content/site.json.
 
   revoke --admin-code <code> <entryId>
-      Remove an entry and rotate the vault key: every file key and every remaining entry is
-      rewrapped under a new key. No file is re-encrypted.
+      Remove an entry and rotate the vault key and the owner key: every file key and every
+      remaining entry is rewrapped under the new keys. No file is re-encrypted.
 
   list --admin-code <code>
       List the entries: id, kind, label, created date and, for download entries, the code.
@@ -251,13 +251,16 @@ async function rollBack(items, replaced, failed, error) {
   throw new CliError(`${reason}${restored} nothing was changed. Close any program that holds the file and run the command again.`);
 }
 
-// Unlocks with the admin code and returns the files and keys every admin command needs.
+// Unlocks with the admin code and returns the files and keys every admin command needs: the vault key `vk` (it wraps
+// the file keys) and the owner key `ok` (it seals every entry's meta), both from the admin payload.
 async function openAsAdmin(code) {
   const access = readJson(ACCESS, 'vault/access.json');
   const keys = readJson(KEYS, 'vault/keys.json');
   const admin = await unlock(access, code);
   if (!admin || admin.kind !== 'admin') throw new CliError('The admin code was not accepted.');
+  if (typeof admin.payload.ok !== 'string') throw new CliError('The admin entry holds no owner key; this vault was made by an older version. Run init --force.');
   const vk = await importKey(admin.payload.vk);
+  const ok = await importKey(admin.payload.ok);
   if (!keys.vk || !keys.files) throw new CliError('vault/keys.json has no vault key; run init first.');
   const sample = Object.values(keys.files)[0];
   if (sample) {
@@ -267,7 +270,7 @@ async function openAsAdmin(code) {
       throw new CliError('vault/keys.json is not wrapped under the vault key in vault/access.json.');
     }
   }
-  return { access, keys, admin, vk };
+  return { access, keys, admin, vk, ok };
 }
 
 async function init(opts) {
@@ -293,6 +296,7 @@ async function init(opts) {
   }
 
   const vk = await generateKey();
+  const ok = await generateKey();
   const github = {
     token: opts.token.trim(),
     owner: opts.owner ?? DEFAULTS.owner,
@@ -301,8 +305,8 @@ async function init(opts) {
   };
   const access = await addEntry(
     createAccessFile(iterations),
-    { kind: 'admin', code, payload: { vk: await exportKey(vk), github }, meta: { label: 'Admin', created: today() } },
-    vk,
+    { kind: 'admin', code, payload: { vk: await exportKey(vk), ok: await exportKey(ok), github }, meta: { label: 'Admin', created: today() } },
+    ok,
   );
   const keys = createKeysFile(shortId());
   await writeJsonFiles([[KEYS, keys], [ACCESS, access]]);
@@ -310,12 +314,12 @@ async function init(opts) {
 }
 
 async function addCode(opts) {
-  const { access, admin, vk } = await openAsAdmin(opts['admin-code']);
+  const { access, admin, ok } = await openAsAdmin(opts['admin-code']);
   const code = (opts.code ?? generateDownloadCode()).trim();
   const label = opts.label.trim();
   let next;
   try {
-    next = await addEntry(access, { kind: 'download', code, payload: { vk: admin.payload.vk }, meta: { label, created: today(), code } }, vk);
+    next = await addEntry(access, { kind: 'download', code, payload: { vk: admin.payload.vk }, meta: { label, created: today(), code } }, ok);
   } catch (e) {
     if (/already in use/.test(e.message)) throw new CliError('That code is already in use.');
     throw e;
@@ -347,7 +351,7 @@ async function encrypt(opts, [file]) {
 
 async function revoke(opts, [entryId]) {
   if (!/^[0-9a-f]{8}$/.test(entryId)) throw new CliError('<entryId> must be an 8-character hex entry id, as shown by list.');
-  const { access, keys, admin, vk } = await openAsAdmin(opts['admin-code']);
+  const { access, keys, admin, vk, ok } = await openAsAdmin(opts['admin-code']);
   const target = access.entries.find((e) => e.id === entryId);
   if (!target) throw new CliError(`No entry ${entryId} in vault/access.json.`);
   if (target.id === admin.entry.id) throw new CliError('Refusing to revoke the admin entry.');
@@ -355,20 +359,20 @@ async function revoke(opts, [entryId]) {
   const codesById = {};
   for (const e of access.entries) {
     if (e.id === admin.entry.id || e.id === entryId) continue;
-    const { code } = await readMeta(e, vk);
+    const { code } = await readMeta(e, ok);
     if (code) codesById[e.id] = code;
   }
-  const { label } = await readMeta(target, vk);
-  const rotated = await rotateVault({ access, keys, vk, kek: admin.kek, adminEntryId: admin.entry.id, codesById, dropIds: [entryId] });
+  const { label } = await readMeta(target, ok);
+  const rotated = await rotateVault({ access, keys, vk, ok, kek: admin.kek, adminEntryId: admin.entry.id, codesById, dropIds: [entryId] });
   await writeJsonFiles([[KEYS, rotated.keys], [ACCESS, rotated.access]]);
   note(`Revoked ${entryId} (${label}). New vault key ${rotated.keys.vk}: ${Object.keys(rotated.keys.files).length} file key(s) rewrapped, ${rotated.access.entries.length} entry(ies) re-sealed.`);
 }
 
 async function list(opts) {
-  const { access, vk } = await openAsAdmin(opts['admin-code']);
+  const { access, ok } = await openAsAdmin(opts['admin-code']);
   const rows = [['ID', 'KIND', 'LABEL', 'CREATED', 'CODE']];
   for (const e of access.entries) {
-    const meta = await readMeta(e, vk);
+    const meta = await readMeta(e, ok);
     rows.push([e.id, e.kind, meta.label ?? '', meta.created ?? '', e.kind === 'download' ? meta.code ?? '' : '-']);
   }
   const widths = rows[0].map((_, col) => Math.max(...rows.map((r) => String(r[col]).length)));

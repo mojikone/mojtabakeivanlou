@@ -65,8 +65,9 @@ export function canInitialise(access) {
 
 /**
  * The first vault: a fresh access file (random salt) with one admin entry for `code`, and an empty keys file.
- * Sealed in the admin entry: the new vault key and { token, owner, repo, branch }. Its meta is { label: 'Me', created }
- * and never holds the code. Returns { access, keys, entryId }; nothing is written anywhere.
+ * Sealed in the admin entry: the new vault key, the new owner key (it seals every meta, spec 12) and { token, owner,
+ * repo, branch }. Its meta is { label: 'Me', created } and never holds the code. Returns { access, keys, entryId };
+ * nothing is written anywhere.
  * `created` is a YYYY-MM-DD date (today, UTC, by default). `iterations` is the PBKDF2 cost (tests pass fewer).
  */
 export async function buildInitialVault({
@@ -81,12 +82,13 @@ export async function buildInitialVault({
   if (!codeStrength(adminCode).ok) throw new SetupError(CODE_RULE);
 
   const vk = await generateKey();
+  const ok = await generateKey();
   const access = await addEntry(createAccessFile(iterations), {
     kind: 'admin',
     code: adminCode,
-    payload: { vk: await exportKey(vk), github },
+    payload: { vk: await exportKey(vk), ok: await exportKey(ok), github },
     meta: { label: 'Me', created: created ?? isoDay(new Date()) },
-  }, vk);
+  }, ok);
   return { access, keys: createKeysFile(shortId()), entryId: access.entries[access.entries.length - 1].id };
 }
 

@@ -74,7 +74,7 @@ What still guards the live content in CI is `test/content.test.mjs` (`validateSi
 
 `vault/` holds **ciphertext only**, so it is safe in git:
 
-- `vault/access.json` — one entry per access code: the vault key wrapped under that code (the admin entry also seals the GitHub token).
+- `vault/access.json` — one entry per access code: the vault key wrapped under that code (the admin entry also seals the owner key and the GitHub token). Each entry's label and code (its meta) are sealed under the owner key, so a download code reveals nothing about the other codes.
 - `vault/keys.json` — one entry per attached file: the file's own key wrapped under the vault key.
 - `vault/files/<id>.bin` — the encrypted attachments; `<id>` is 32 hex characters.
 
@@ -86,7 +86,7 @@ The two JSON files in the repo today are an empty skeleton; first-run setup in t
 node scripts/vault-cli.mjs init --admin-code <code> --token <token> [--owner mojikone] [--repo mojtabakeivanlou] [--branch redesign3_admin] [--force]
 node scripts/vault-cli.mjs add-code --admin-code <code> --label <label> [--code <code>]   # prints the new download code (MK-XXXX-XXXX)
 node scripts/vault-cli.mjs encrypt --admin-code <code> <file>     # writes vault/files/<id>.bin + the key; prints the file record to paste into site.json
-node scripts/vault-cli.mjs revoke --admin-code <code> <entryId>   # removes an entry and rotates the vault key (no file is re-encrypted)
+node scripts/vault-cli.mjs revoke --admin-code <code> <entryId>   # removes an entry and rotates the vault key and the owner key (no file is re-encrypted)
 node scripts/vault-cli.mjs list --admin-code <code>               # id, kind, label, created date, and the code for download entries
 ```
 
