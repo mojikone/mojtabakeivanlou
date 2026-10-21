@@ -1,5 +1,13 @@
 import { test } from 'node:test'; import assert from 'node:assert/strict';
-import { esc, Raw, raw, html, frag, fill, plainText, inlineText, richText } from '../assets/js/render/html.mjs';
+import { esc, Raw, raw, html, frag, fill, plainText, inlineText, richText, httpUrl, HTTP_URL } from '../assets/js/render/html.mjs';
+
+test('httpUrl: an http(s) URL as it is, anything else "#": no other scheme reaches an href', () => {
+  for (const url of ['https://linkedin.com/in/x', 'http://example.com/?a=1&b="2"']) assert.equal(httpUrl(url), url);
+  for (const url of ['javascript:alert(1)', 'JAVASCRIPT:alert(1)', ' https://x', '\u0001javascript:alert(1)', 'java\tscript:x', 'data:text/html,x', '//x', '', null, undefined, 42]) {
+    assert.equal(httpUrl(url), '#', JSON.stringify(url));
+  }
+  assert.equal(HTTP_URL.source, '^https?:\\/\\/');
+});
 
 const ctx = { years: 17, year: 2026, name: 'Mojtaba Keivanlou', roleTitle: 'Senior', domain: 'x.com' };
 test('html tag escapes values and passes raw through', () => {

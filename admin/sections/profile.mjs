@@ -43,7 +43,7 @@ export function render(container, store) {
       card('Contact', [
         bound(view, at('email'), { label: 'Email', type: 'email' }),
         phone(view),
-        bound(view, at('linkedin'), { label: 'LinkedIn', type: 'url', placeholder: 'https://linkedin.com/in/…' }),
+        bound(view, at('linkedin'), { label: 'LinkedIn', type: 'url', placeholder: 'https://linkedin.com/in/…', hint: 'The full address, starting with https://…' }),
       ]),
       card('Location', [
         grid([

@@ -159,6 +159,41 @@ test('validateSite: the future check follows the injected today, defaulting to t
   assert.ok(validateSite(farFuture).includes('site.experienceStart is in the future'));
 });
 
+test('validateSite: profile.linkedin must start with http:// or https:// (it becomes an href: never javascript:)', () => {
+  const message = 'profile.linkedin must start with http:// or https://';
+  for (const bad of [
+    'javascript:alert(1)', 'JavaScript:alert(1)', ' javascript:alert(1)', '\u0001javascript:alert(1)', 'data:text/html,<b>x</b>',
+    'vbscript:x', 'mailto:me@example.com', 'linkedin.com/in/x', '//linkedin.com/in/x', 'HTTPS://linkedin.com/in/x', 'https:/x',
+  ]) {
+    assert.ok(errorsOf(withValue('profile.linkedin', bad)).includes(message), JSON.stringify(bad));
+  }
+  for (const good of ['https://linkedin.com/in/MojtabaKeivanlou', 'http://example.com/x']) {
+    assert.deepEqual(errorsOf(withValue('profile.linkedin', good)), [], good);
+  }
+  assert.deepEqual(errorsOf(withValue('profile.linkedin', ' ')), ['profile.linkedin is empty'], 'one message per problem');
+});
+
+test('validateSite: site.cvPdfFilename must be a plain file name (no folder, no parent step)', () => {
+  const message = 'site.cvPdfFilename must be a plain file name';
+  for (const bad of ['pdf/cv.pdf', '../cv.pdf', '..\\cv.pdf', 'a\\b.pdf', '/etc/cv.pdf', 'cv..pdf', '..']) {
+    assert.ok(errorsOf(withValue('site.cvPdfFilename', bad)).includes(message), bad);
+  }
+  assert.deepEqual(errorsOf(withValue('site.cvPdfFilename', 'CV_Mojtaba_Keivanlou_2026.pdf')), []);
+  assert.deepEqual(errorsOf(withValue('site.cvPdfFilename', 'cv.v2.pdf')), []);
+  assert.deepEqual(errorsOf(withValue('site.cvPdfFilename', '../cv.txt')).sort(), [message, 'site.cvPdfFilename must end in .pdf'].sort());
+});
+
+test('validateSite: site.domain must match ^[a-z0-9.-]+$', () => {
+  const message = 'site.domain must be a host name: lower-case letters, digits, dots and hyphens only';
+  for (const bad of ['Example.com', 'example.com/path', 'https://example.com', 'example.com:8080', 'ex ample.com', 'évil.com', 'x.com"><b>', 'user@example.com']) {
+    assert.ok(errorsOf(withValue('site.domain', bad)).includes(message), bad);
+  }
+  for (const good of ['mojtabakeivanlou.com', 'sub-domain.example.co.uk', 'localhost', '127.0.0.1']) {
+    assert.deepEqual(errorsOf(withValue('site.domain', good)), [], good);
+  }
+  assert.deepEqual(errorsOf(withValue('site.domain', '')), ['site.domain is empty'], 'one message per problem');
+});
+
 test('validateSite: cvPdfFilename must end in .pdf', () => {
   assert.ok(errorsOf(withValue('site.cvPdfFilename', 'cv.docx')).includes('site.cvPdfFilename must end in .pdf'));
   assert.ok(errorsOf(withValue('site.cvPdfFilename', 'cv.pdf.txt')).includes('site.cvPdfFilename must end in .pdf'));

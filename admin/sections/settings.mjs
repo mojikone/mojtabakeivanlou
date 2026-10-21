@@ -42,9 +42,9 @@ function siteCard(view) {
       bound(view, s('experienceStart'), { label: 'Experience start', type: 'date', hint: '{{years}} counts full years since this date.' }),
       years.node,
     ]),
-    bound(view, s('cvPdfFilename'), { label: 'CV PDF file name', hint: 'Every "Download CV" button uses it; it must end in .pdf.' }),
+    bound(view, s('cvPdfFilename'), { label: 'CV PDF file name', hint: 'Every "Download CV" button uses it; a plain file name (no folder) that ends in .pdf.' }),
     grid([
-      bound(view, s('domain'), { label: 'Domain', hint: '{{domain}}, links and the canonical URLs.' }),
+      bound(view, s('domain'), { label: 'Domain', hint: '{{domain}}, links and the canonical URLs. The host name only (lower case), e.g. example.com.' }),
       bound(view, s('gaId'), { label: 'Google Analytics ID', placeholder: 'G-…' }),
     ]),
     bound(view, s('web3formsKey'), { label: 'Web3Forms key', hint: 'The access key the contact form sends with each message.' }),

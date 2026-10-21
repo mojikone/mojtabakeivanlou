@@ -111,6 +111,18 @@ function withFile(file = FILE) {
   return copy;
 }
 
+test('a javascript: LinkedIn URL never reaches an href, even unvalidated (the preview renders invalid drafts)', () => {
+  for (const evil of ['javascript:alert(document.domain)', 'data:text/html,<script>alert(1)</script>', '\u0001javascript:alert(1)']) {
+    const bad = normalizeSite({ ...site, profile: { ...site.profile, linkedin: evil } });
+    const badCtx = renderContext(bad, { today: new Date('2026-06-01T00:00:00Z') });
+    for (const page of [renderIndex(bad, badCtx), renderContact(bad, badCtx)]) {
+      const hrefs = [...page.matchAll(/<a\b[^>]*\shref="([^"]*)"/g)].map((m) => m[1]);   // links (the favicon is a data: <link>)
+      assert.ok(hrefs.every((h) => !/^\s*(javascript|data|vbscript):/i.test(h.replace(/[\u0000-\u001f]/g, ''))), evil);
+      assert.ok(hrefs.includes('#'), 'the LinkedIn link points nowhere instead');
+    }
+  }
+});
+
 test('a bullet with files renders the hidden proj-files span inside its <li>', () => {
   const out = renderIndex(withFile(), ctx);
   const li = /<li>Techno-Economic and Flood-Hazard Assessment of the Wadi Majlas Scheme(<span[^]*?<\/span>)<\/li>/.exec(out);

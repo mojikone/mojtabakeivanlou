@@ -10,6 +10,18 @@ export function esc(value) {
   return String(value).replace(/[&<>"']/g, (c) => ESCAPES[c]);
 }
 
+/** The only scheme a free-form link of the content (profile.linkedin) may have; the validator requires it too. */
+export const HTTP_URL = /^https?:\/\//;
+
+/**
+ * `url` when it starts with http:// or https://, else '#'. Escaping keeps a value inside its attribute but not out of
+ * a dangerous scheme, so a javascript: (or data:, or any other) URL never reaches an href, not even from a draft the
+ * validator would reject (the dashboard's preview renders those).
+ */
+export function httpUrl(url) {
+  return typeof url === 'string' && HTTP_URL.test(url) ? url : '#';
+}
+
 // Marks a string as trusted HTML so that `html` and friends insert it verbatim.
 export class Raw {
   constructor(html) { this.html = html; }

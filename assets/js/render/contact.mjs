@@ -4,7 +4,7 @@
 // redirect come from `site.site`, the options and the heading from `contactPage`, the details from `profile`.
 // What stays here is page furniture (the field labels and placeholders, the button text, the page's own CSS and script).
 
-import { html, raw, frag, fill, plainText } from './html.mjs';
+import { html, raw, frag, fill, plainText, httpUrl } from './html.mjs';
 import { icon } from './icons.mjs';
 import { renderHead } from './head.mjs';
 import { businessCard, downloadCvOnclick, heading } from './index.mjs';
@@ -231,7 +231,7 @@ function sidebar(site, ctx) {
     item('mail', link(`mailto:${p.email}`, t(p.email))),
     item('phone', link(`tel:${p.phone.e164}`, t(p.phone.display))),
     item('whatsapp', link(`https://wa.me/${p.whatsapp}`, 'WhatsApp', true)),
-    item('linkedin', link(p.linkedin, 'LinkedIn', true)),
+    item('linkedin', link(httpUrl(p.linkedin), 'LinkedIn', true)),
     item('pinFilled', frag`${t(p.location.city)}, ${t(p.location.country)}`),
   ];
   return frag`<!-- SIDEBAR -->

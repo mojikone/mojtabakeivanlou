@@ -3,7 +3,7 @@
 // The home page. Every text comes from site.json; what stays here is page furniture (section titles, button and
 // pill labels, image paths, the QR codes) that the content model deliberately does not cover.
 
-import { html, raw, frag, fill, plainText, inlineText, richText } from './html.mjs';
+import { html, raw, frag, fill, plainText, inlineText, richText, httpUrl } from './html.mjs';
 import { icon } from './icons.mjs';
 import { sortedTags } from './model.mjs';
 import { renderHead, indexJsonLd, jsString, OG_IMAGE } from './head.mjs';
@@ -356,7 +356,7 @@ function cta(site, ctx) {
           ${icon('mail', { width: '13', height: '13' })}
           ${t(p.email)}
         </a>
-        <a class="cta-contact-item" href="${p.linkedin}" target="_blank" rel="noopener">
+        <a class="cta-contact-item" href="${httpUrl(p.linkedin)}" target="_blank" rel="noopener">
           ${icon('linkedin')}
           LinkedIn
         </a>

@@ -4,13 +4,15 @@
 // and derives the render context from it. Intended order: normalizeSite -> validateSite -> renderContext.
 
 import { yearsOfExperience } from './years.mjs';
-import { fill } from './html.mjs';
+import { fill, HTTP_URL } from './html.mjs';
 
 const ID = /^[a-z0-9-]+$/;
 const FILE_ID = /^[0-9a-f]{32}$/;
 const E164 = /^\+\d+$/;
 const DIGITS = /^\d+$/;
 const LEVELS = ['expert', 'familiar'];
+const HOST = /^[a-z0-9.-]+$/;
+const PATH_PART = /[/\\]|\.\./;              // a folder separator or a parent step: not a plain file name
 
 // Only used to find unknown placeholders: the values are never rendered.
 const DUMMY_CTX = { years: 0, year: 0, name: '', roleTitle: '', domain: '' };
@@ -93,19 +95,28 @@ export function validateSite(site, { icons, today = new Date() } = {}) {
   if (object(site.site, 'site')) {
     const s = site.site;
     strings(s, 'site', ['domain', 'gaId', 'web3formsKey', 'formSubject']);
+    if (typeof s.domain === 'string' && s.domain.trim() !== '' && !HOST.test(s.domain)) {
+      fail('site.domain', 'must be a host name: lower-case letters, digits, dots and hyphens only');
+    }
     if (string(s.experienceStart, 'site.experienceStart')) {
       let real = true;
       try { yearsOfExperience(s.experienceStart, today); } catch { real = false; }
       if (!real) fail('site.experienceStart', 'must be a real date in YYYY-MM-DD format');
       else if (s.experienceStart > today.toISOString().slice(0, 10)) fail('site.experienceStart', 'is in the future');
     }
-    if (string(s.cvPdfFilename, 'site.cvPdfFilename') && !s.cvPdfFilename.endsWith('.pdf')) fail('site.cvPdfFilename', 'must end in .pdf');
+    if (string(s.cvPdfFilename, 'site.cvPdfFilename')) {
+      if (PATH_PART.test(s.cvPdfFilename)) fail('site.cvPdfFilename', 'must be a plain file name');
+      if (!s.cvPdfFilename.endsWith('.pdf')) fail('site.cvPdfFilename', 'must end in .pdf');
+    }
   }
 
   // profile
   if (object(site.profile, 'profile')) {
     const p = site.profile;
     strings(p, 'profile', ['firstName', 'lastName', 'roleTitle', 'roleTitleLong', 'roleSubtitle', 'quote', 'bio', 'cvSummary', 'email', 'linkedin']);
+    if (typeof p.linkedin === 'string' && p.linkedin.trim() !== '' && !HTTP_URL.test(p.linkedin)) {
+      fail('profile.linkedin', 'must start with http:// or https://');   // it becomes an href: never javascript:
+    }
     heading(p.heroHeadline, 'profile.heroHeadline');
 
     if (object(p.phone, 'profile.phone') && string(p.phone.display, 'profile.phone.display') && !/\d/.test(p.phone.display)) {
