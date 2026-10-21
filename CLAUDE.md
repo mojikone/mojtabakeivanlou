@@ -31,7 +31,7 @@ Node 22 or newer, ES modules, no bundler. The only dependency is `puppeteer` (a 
 |---|---|
 | `npm test` | `node --test "test/**/*.test.mjs"` |
 | `npm run build` | `node src/build.mjs`: read and validate `content/site.json`, render the four pages, hash the assets, write `dist/`. Exits 1 on invalid content (one error per line on stderr). Warnings (`warning: …` on stderr) for a missing vault blob, asset or static file; they do not fail the build. |
-| `npm run pdf` | `node src/pdf.mjs`: renders `dist/cv.html` with puppeteer to `dist/pdf/<site.cvPdfFilename>`. **Run it after `npm run build`**, because the build empties `dist/`. Firebase requests are blocked while rendering (the PDF uses the palette's built-in default colours). Poppins comes from Google Fonts, so it needs network; offline the PDF falls back to Arial. |
+| `npm run pdf` | `node src/pdf.mjs`: renders `dist/cv.html` with puppeteer to `dist/pdf/<site.cvPdfFilename>`. **Run it after `npm run build`**, because the build empties `dist/`. Firebase and Google Analytics requests are blocked while rendering (the PDF uses the palette's built-in default colours, and CI renders count no page views); a missing `dist/cv.html` fails instead of printing a "Not found" page. Poppins comes from Google Fonts, so it needs network; offline the PDF falls back to Arial. |
 | `npm run dev` | Builds, serves `dist/` at http://127.0.0.1:3004 and rebuilds when something under `content/`, `assets/`, `admin/`, `src/` or `vault/` changes. A failed rebuild keeps serving the last good build and logs the errors. It does not render the PDF, so the Download CV link has no file locally. |
 
 Preview server: `.claude/launch.json` in this repo has the entry `website` (`npm run dev`, port 3004). The parent folder (`D:\Personal\Website Mojtaba\.claude\launch.json`) has `website-admin`, which runs the same thing as `npm --prefix redesign3_admin run dev`; the other entry there, `website-fb`, serves the old Firebase branch on port 3003.
@@ -116,13 +116,18 @@ The build also copies `assets/`, `vault/`, `admin/`, `CNAME`, `.nojekyll` and `r
 ## Cutover (spec §16)
 
 1. Develop and test on `redesign3_admin`; pushes run only the build job.
-2. First-run setup from the locally served build (§13.2) creates `vault/access.json` on the branch. The owner creates the fine-grained token and pastes it into the wizard himself.
+2. First run (§13.2), done once by the owner:
+   - On GitHub: Settings (of the account) → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token. Repository access: only `mojikone/mojtabakeivanlou`. Repository permissions: **Contents: Read and write**, **Actions: Read-only**, **Metadata: Read-only** (GitHub adds it by itself). Note the expiry date; the dashboard's Settings has a field for it.
+   - Open the setup wizard. Before the cutover: `http://localhost:3004/admin/#setup` from `npm run dev`, with `redesign3_admin` pulled. `https://mojtabakeivanlou.com/admin/#setup` only after the cutover (until then the domain serves the old branch, which has no dashboard). Setup runs once; a second run refuses because an admin code exists.
+   - Paste the token and Validate, choose the admin code (12 or more characters, three of lower case, upper case, digits, symbols; it seals the token and cannot be recovered), then Create vault. The wizard commits `vault/access.json` and `vault/keys.json` to the branch. Then `git pull` before signing in on the local preview (the gate reads the vault the site serves); on the live site, wait for the Actions run.
 3. The owner checks the local preview and the dashboard end to end (edit, attach, publish; optionally to the scratch branch `redesign3_admin_test`, which the wizard's branch field allows).
 4. The owner does the cutover in the GitHub web UI (about two minutes):
+   - Settings → General → Default branch → `redesign3_admin` (needed for the yearly scheduled rebuild). Do this **before** the Pages source: switching the source to GitHub Actions limits the `github-pages` environment to the default branch of that moment.
    - Settings → Pages → Build and deployment → Source: **GitHub Actions**.
    - Settings → Secrets and variables → Actions → Variables → `DEPLOY_FROM_ACTIONS` = `true`.
-   - Settings → General → Default branch → `redesign3_admin` (needed for the yearly scheduled rebuild).
+   - Check Settings → Environments → `github-pages` → Deployment branches and tags: `redesign3_admin` must be allowed (add it if only another branch is listed), or the deploy job is rejected.
    - Re-run the latest workflow, or push. The first Actions deployment replaces the branch deployment; the custom domain and HTTPS settings are untouched.
+   - GitHub disables scheduled workflows after 60 days without activity in the repository. Every dashboard publish is a commit and counts as activity; if the Actions tab ever shows the `site` workflow's schedule disabled, re-enable it there, or the yearly rebuild of the years of experience does not run.
 5. Rollback: Settings → Pages → Source back to "Deploy from a branch", branch `redesign3_colors_firebase`. Nothing else to undo.
 6. After a week of normal use the owner may create the usual `V<n>_` backup branch of `redesign3_admin` and delete the obsolete `CV/cv.html` master in the parent folder.
 

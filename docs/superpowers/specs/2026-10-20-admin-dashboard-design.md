@@ -2,7 +2,7 @@
 
 Date: 2026-10-20
 Branch: `redesign3_admin` (cloned from `origin/redesign3_colors_firebase` at commit `1de3ce8`)
-Status: draft for owner approval
+Status: implemented on branch redesign3_admin; awaiting cutover (owner actions in §16 step 4)
 
 ---
 
