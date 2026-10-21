@@ -59,7 +59,9 @@ export function createFileStore({ idb = globalThis.indexedDB } = {}) {
   }
 
   // Runs `use(objectStore)` in one transaction; resolves with the request's result once the
-  // transaction has committed (so a resolved put is durable), rejects if it errors or aborts.
+  // transaction has committed (so a resolved put is durable), rejects when it aborts. A failed request aborts its
+  // transaction, and only then does tx.error hold the real error (e.g. QuotaExceededError): the request's error event
+  // reaches the transaction first, while tx.error is still null, so it is deliberately not listened to.
   async function run(mode, use) {
     const db = await connect();
     return new Promise((resolve, reject) => {
@@ -67,7 +69,6 @@ export function createFileStore({ idb = globalThis.indexedDB } = {}) {
       try {
         const tx = db.transaction(STORE, mode);
         tx.oncomplete = () => resolve(result);
-        tx.onerror = () => reject(tx.error ?? new Error('IndexedDB request failed'));
         tx.onabort = () => reject(tx.error ?? new Error('IndexedDB transaction aborted'));
         const req = use(tx.objectStore(STORE));
         req.onsuccess = () => { result = req.result; };

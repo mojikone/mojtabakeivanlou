@@ -130,3 +130,100 @@ test('createFileStore without IndexedDB rejects every method with IndexedDB unav
   await assert.rejects(s.list(), gone);
   await assert.rejects(s.clear(), gone);
 });
+
+/* --- createFileStore over a fake IndexedDB --- */
+
+// A minimal IndexedDB that follows the browser's event order. Requests run one tick after the transaction is
+// created (so the caller can attach handlers first); each fires success or error before the transaction's complete
+// or abort. A request error bubbles to the transaction's onerror while tx.error is still null and, unless a handler
+// calls preventDefault(), aborts the transaction: its writes are dropped and onabort fires with tx.error set to the
+// request's error. `fail(op)` returns an error to throw for that request (or nothing).
+function fakeIndexedDB({ fail = () => null } = {}) {
+  const rows = new Map();
+  let hasStore = false;
+  const db = {
+    objectStoreNames: { contains: (name) => hasStore && name === 'pending' },
+    createObjectStore: () => { hasStore = true; },
+    close() {},
+    transaction() {
+      const staged = new Map(rows);
+      const queue = [];
+      const tx = { error: null, oncomplete: null, onerror: null, onabort: null };
+      const request = (op, run) => {
+        const req = { result: undefined, error: null, onsuccess: null, onerror: null };
+        queue.push({ req, op, run });
+        return req;
+      };
+      tx.objectStore = () => ({
+        put: (value, key) => request('put', () => { staged.set(key, value); return key; }),
+        get: (key) => request('get', () => staged.get(key)),
+        delete: (key) => request('delete', () => { staged.delete(key); }),
+        getAllKeys: () => request('getAllKeys', () => [...staged.keys()]),
+        clear: () => request('clear', () => { staged.clear(); }),
+      });
+      setTimeout(() => {
+        for (const { req, op, run } of queue) {
+          const error = fail(op);
+          if (error) {
+            req.error = error;
+            const event = { target: req, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } };
+            req.onerror?.(event);
+            tx.onerror?.(event);
+            if (event.defaultPrevented) continue;
+            tx.error = error;
+            tx.onabort?.({ target: tx });
+            return;
+          }
+          req.result = run();
+          req.onsuccess?.({ target: req });
+        }
+        rows.clear();
+        for (const [key, value] of staged) rows.set(key, value);
+        tx.oncomplete?.({ target: tx });
+      }, 0);
+      return tx;
+    },
+  };
+  const idb = {
+    opens: 0,
+    open() {
+      idb.opens += 1;
+      const req = { result: null, error: null, onsuccess: null, onerror: null, onupgradeneeded: null, onblocked: null };
+      setTimeout(() => {
+        req.result = db;
+        if (!hasStore) req.onupgradeneeded?.({ target: req });
+        req.onsuccess?.({ target: req });
+      }, 0);
+      return req;
+    },
+  };
+  return idb;
+}
+
+test('createFileStore over IndexedDB: put, get, list, delete and clear, on one reused connection', async () => {
+  const idb = fakeIndexedDB();
+  const s = createFileStore({ idb });
+  assert.deepEqual(await s.list(), []);
+  assert.equal(await s.get('missing'), null);
+
+  await s.put('a', new Uint8Array([1, 2, 3]));
+  await s.put('b', new Uint8Array([4]));
+  assert.deepEqual(await s.get('a'), new Uint8Array([1, 2, 3]));
+  assert.deepEqual((await s.list()).sort(), ['a', 'b']);
+
+  await s.delete('a');
+  assert.equal(await s.get('a'), null);
+  assert.deepEqual(await s.list(), ['b']);
+  await assert.doesNotReject(s.delete('never-there'));
+
+  await s.clear();
+  assert.deepEqual(await s.list(), []);
+  assert.equal(idb.opens, 1);
+});
+
+test('createFileStore: a failed request rejects with its own error name and stores nothing', async () => {
+  const quota = () => new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+  const s = createFileStore({ idb: fakeIndexedDB({ fail: (op) => (op === 'put' ? quota() : null) }) });
+  await assert.rejects(s.put('big', new Uint8Array(8)), (err) => err.name === 'QuotaExceededError');
+  assert.deepEqual(await s.list(), []);
+});
