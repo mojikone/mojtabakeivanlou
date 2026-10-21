@@ -170,14 +170,14 @@ test('the nav lists the ten sections of spec 13.3 in order, content first, then 
   for (const s of [...sections, setupSection]) assert.equal(typeof s.render, 'function', s.id);
 });
 
-test('a placeholder section writes its escaped "coming soon" heading; setup names Task 24', () => {
-  const container = { innerHTML: '' };
-  // Points at a section that is still a placeholder (experience, access and files at the time of writing; skills was
-  // built in Task 20). Whoever builds this one moves the test to another placeholder, or drops it when none are left.
-  sections.find((s) => s.id === 'files').render(container, null, {});
-  assert.equal(container.innerHTML, '<div class="adm-card"><h1 class="adm-title">Files — coming soon</h1></div>');
-  setupSection.render(container, null, { github: null, session: null });
-  assert.match(container.innerHTML, /Setup wizard — Task 24/);
+test('no "coming soon" placeholder is left: every nav entry renders through its own module', async () => {
+  // Task 23 built the last placeholders (access, files): each entry's render is the one of admin/sections/<id>.mjs.
+  for (const s of sections) {
+    const mod = await import(`../admin/sections/${s.id}.mjs`);
+    assert.equal(s.render, mod.render, s.id);
+  }
+  // The setup route renders the real wizard (Task 24), which needs a DOM; only its shape is checked here.
+  assert.equal(typeof setupSection.render, 'function');
 });
 
 test('routeOf maps the hash to a section id, #setup to setup, and anything else to the first section', () => {

@@ -4,7 +4,7 @@
 // Views, chosen by the session and location.hash (render() below):
 //   no session, #setup   the setup view (spec 13.2), on its own
 //   no session           the gate: the site name and the Access pill, nothing else (spec 13.1)
-//   session              the shell; #<section id> picks the section, #setup shows the setup view in the main area
+//   session              the shell; #<section id> picks the section (#setup is for the first run: it goes to #profile)
 //
 // The session (mk.admin, mk.vault, mk.kek in sessionStorage) is never logged, rendered or put in a URL.
 
@@ -58,6 +58,11 @@ function render() {
     else showGate();
     return;
   }
+  if (next === 'setup') {                   // setup is for the first run only (spec 13.2): signed in, go to the dashboard
+    history.replaceState(null, '', '#profile');
+    toast('Already signed in');
+    return showShell('profile');
+  }
   showShell(next);
 }
 
@@ -74,6 +79,7 @@ const PILL = html`<div class="hero-contact-link access-pill" id="accessPill" dat
 
 function showGate() {
   show('gate');
+  leaveSection();                           // leaving #setup empties the wizard's token and code fields
   if (pillMounted) return;
   pillMounted = true;
   $('gatePill').innerHTML = PILL;
@@ -258,7 +264,6 @@ function mountSection(section, host, sectionStore) {
 function renderMain() {
   const main = $('main');
   leaveSection();
-  if (route === 'setup') return mountSection(setupSection, main, null);
   if (load.state === 'ready') return mountSection(sections.find((s) => s.id === route), main, store);
 
   if (load.state === 'error' && load.auth) {
