@@ -23,6 +23,7 @@ import * as languages from './languages.mjs';
 import * as services from './services.mjs';
 import * as experience from './experience.mjs';
 import * as contact from './contact.mjs';
+import * as skills from './skills.mjs';
 import * as settings from './settings.mjs';
 
 // A section that is not built yet: its heading and nothing else.
@@ -43,7 +44,7 @@ export const sections = [
   { id: 'languages', label: 'Languages', group: 'content', render: languages.render },
   { id: 'services', label: 'Engineering services', group: 'content', render: services.render },
   { id: 'experience', label: 'Experience', group: 'content', render: experience.render },
-  comingSoon('skills', 'Skills & software', 'content'),
+  { id: 'skills', label: 'Skills & software', group: 'content', render: skills.render },
   { id: 'contact', label: 'Contact page', group: 'content', render: contact.render },
   comingSoon('access', 'Access codes', 'admin'),
   comingSoon('files', 'Files', 'admin'),

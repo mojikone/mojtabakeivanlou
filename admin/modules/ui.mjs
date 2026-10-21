@@ -330,7 +330,8 @@ export function listEditor({
     onMove?.(from, to);
     render();
     if (focusAct) {
-      const buttons = rows.children[to]?.querySelectorAll('[data-act="up"], [data-act="down"]') ?? [];
+      // the row's own tools only: a row that holds a nested list also contains that list's buttons
+      const buttons = rows.children[to]?.querySelectorAll(':scope > .adm-row-tools [data-act="up"], :scope > .adm-row-tools [data-act="down"]') ?? [];
       const target = [...buttons].find((b) => b.dataset.act === focusAct && !b.disabled) ?? [...buttons].find((b) => !b.disabled);
       target?.focus();
     }
@@ -346,7 +347,7 @@ export function listEditor({
     onRemove?.(index);
     render();
     const next = rows.children[Math.min(index, rows.children.length - 1)];
-    (next?.querySelector('[data-act="remove"]') ?? add)?.focus();
+    (next?.querySelector(':scope > .adm-row-tools [data-act="remove"]') ?? add)?.focus();
     toast(`Removed ${label}`, {
       actionLabel: 'Undo',
       onAction: () => {
