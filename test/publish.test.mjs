@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { SECTION_LABELS, buildCommit, publish, PublishValidationError } from '../admin/modules/publish.mjs';
+import { SECTION_LABELS, buildCommit, publish, finalizePublished, clean, PublishValidationError } from '../admin/modules/publish.mjs';
 import { createStore } from '../admin/modules/state.mjs';
 import { createMemoryFileStore } from '../admin/modules/files.mjs';
 import { AuthError, ConflictError, GitHubError } from '../admin/modules/github.mjs';
@@ -55,6 +55,7 @@ function plainDraft(over = {}) {
 
 // A fake GitHub client: the methods publish uses, recording every call. `runs[sha]` is a queue of answers for
 // latestRun(sha) (a function is called); the last answer repeats. Commits are named commit1, commit2, ...
+// commitFiles behaves like the real ref update (force: false): it refuses a parent that is no longer the head.
 function fakeGitHub(base) {
   const calls = [];
   const files = {
@@ -84,6 +85,7 @@ function fakeGitHub(base) {
     async commitFiles(args) {
       calls.push(['commitFiles', args]);
       if (gh.commitError) throw gh.commitError;
+      if (args.parent !== head) throw new ConflictError(422, `GitHub answered 422 to PATCH /repos/o/r/git/refs/heads/b: Update is not a fast forward (${args.parent} is not ${head})`);
       commits += 1;
       const sha = `commit${commits}`;
       for (const f of args.files) files[f.path] = { sha: `${f.path}@${sha}`, bytes: f.bytes };
@@ -102,13 +104,13 @@ function fakeGitHub(base) {
 }
 
 // A store initialised from a base that matches the fake GitHub, a memory file store and a recording onProgress.
-function setup({ access = createAccessFile(ITER), keys = createKeysFile('abcdef01'), session } = {}) {
+function setup({ access = createAccessFile(ITER), keys = createKeysFile('abcdef01'), session, site = SITE } = {}) {
   const storage = memStorage();
   const store = createStore({ storage });
   const base = {
     commit: 'head0',
     shas: { site: 'sha-site-0', access: 'sha-access-0', keys: 'sha-keys-0' },
-    site: clone(SITE),
+    site: clone(site),
     access,
     keys,
   };
@@ -119,7 +121,7 @@ function setup({ access = createAccessFile(ITER), keys = createKeysFile('abcdef0
   const steps = [];
   const onProgress = (step, info) => { steps.push([step, info]); };
   const sess = session ?? { vk: 'A'.repeat(43) + '=', kek: 'B'.repeat(43) + '=', entryId: 'abcdef01' };
-  const run = (over = {}) => publish({ store, gh, fileStore, session: sess, icons, onProgress, pollMs: 1, storage, ...over });
+  const run = (over = {}) => publish({ store, gh, fileStore, session: sess, icons, onProgress, pollMs: 1, ...over });
   return { storage, store, base, gh, fileStore, steps, run, session: sess };
 }
 
@@ -135,7 +137,15 @@ async function attach(w) {
   return { id, blob };
 }
 
-// An admin entry plus two download codes, one to keep and one to revoke, and one existing file key.
+// The fixture site with these file records on the first bullet.
+function siteWithFiles(...ids) {
+  const site = clone(SITE);
+  site.experience.companies[0].projects[0].bullets[0].files = ids.map((id) => ({ id, name: `${id.slice(0, 4)}.pdf`, size: 3, type: 'application/pdf', enc: true }));
+  return site;
+}
+
+// An admin entry plus two download codes, one to keep and one to revoke, and one existing file key (its record on
+// the first bullet of `site`).
 async function makeVault() {
   const vk = await generateKey();
   const vkB64 = await exportKey(vk);
@@ -151,7 +161,7 @@ async function makeVault() {
   const keys = { ...createKeysFile(shortId()), files: { [fileId]: await wrapFileKey(vk, fk) } };
   const admin = await unlock(access, ADMIN_CODE);
   const session = { vk: vkB64, kek: await exportKey(admin.kek), entryId: admin.entry.id };
-  return { vk, vkB64, kept, gone, access, keys, fileId, fk, session, ids: access.entries.map((e) => e.id) };
+  return { vk, vkB64, kept, gone, access, keys, fileId, fk, session, site: siteWithFiles(fileId), ids: access.entries.map((e) => e.id) };
 }
 
 /* ─── SECTION_LABELS and buildCommit ─── */
@@ -217,6 +227,14 @@ test('buildCommit: a pending file without its blob throws; so does a malformed f
   const draft = plainDraft({ pending: [{ id, name: 'a.pdf', size: 1, type: 'application/pdf', enc: true }] });
   assert.throws(() => buildCommit(draft, {}, ['files']), { message: `missing blob ${id}` });
   assert.throws(() => buildCommit(plainDraft({ deleted: ['../../content/site'] }), {}, []), /invalid file id/);
+});
+
+test('buildCommit: a file id both pending and deleted throws instead of uploading and deleting the same path', () => {
+  const id = randomId();
+  const record = { id, name: 'a.pdf', size: 1, type: 'application/pdf', enc: true };
+  const draft = plainDraft({ pending: [record], deleted: [randomId(), id] });
+  assert.throws(() => buildCommit(draft, { [id]: randomBytes(8) }, ['files']), { message: `file both pending and deleted: ${id}` });
+  assert.throws(() => buildCommit(plainDraft({ pending: [id], deleted: [id] }), { [id]: randomBytes(8) }, []), { message: `file both pending and deleted: ${id}` });
 });
 
 /* ─── publish ─── */
@@ -294,7 +312,7 @@ test('publish: a ConflictError from commitFiles (the branch moved) is a conflict
   assert.equal(w.store.get(), before);
 });
 
-test('publish: a failed run reports its URL; the draft and the pending blob stay', async () => {
+test('publish: a failed run reports its URL and the commit sha; the draft and the pending blob stay', async () => {
   const w = setup();
   w.store.set([...BULLET, 'text'], 'changed');
   const { id } = await attach(w);
@@ -305,7 +323,7 @@ test('publish: a failed run reports its URL; the draft and the pending blob stay
 
   assert.deepEqual(names(w.steps), ['validating', 'checking', 'committing', 'building', 'failed']);
   assert.deepEqual(w.steps[4][1], { sha: 'commit1', runUrl: 'https://x/run/9' });
-  assert.deepEqual(result, { failed: true, runUrl: 'https://x/run/9' });
+  assert.deepEqual(result, { failed: true, runUrl: 'https://x/run/9', sha: 'commit1' });
   assert.equal(w.store.get(), before);
   assert.ok(await w.fileStore.get(id));
 });
@@ -327,7 +345,7 @@ test('publish: a run cancelled with nothing newer on the branch is a failure', a
   const w = setup();
   w.store.set([...BULLET, 'text'], 'changed');
   w.gh.runs.commit1 = [CANCELLED];
-  assert.deepEqual(await w.run(), { failed: true, runUrl: CANCELLED.html_url });
+  assert.deepEqual(await w.run(), { failed: true, runUrl: CANCELLED.html_url, sha: 'commit1' });
   assert.deepEqual(w.steps.at(-1), ['failed', { sha: 'commit1', runUrl: CANCELLED.html_url }]);
 });
 
@@ -336,10 +354,17 @@ test('publish: no completed run within maxPolls is a timeout; transient GitHub e
   w.store.set([...BULLET, 'text'], 'changed');
   const before = w.store.get();
   w.gh.runs.commit1 = [null];
-  assert.deepEqual(await w.run({ maxPolls: 3 }), { failed: true, reason: 'timeout' });
+  assert.deepEqual(await w.run({ maxPolls: 3 }), { failed: true, reason: 'timeout', sha: 'commit1' });
   assert.deepEqual(w.steps.at(-1), ['failed', { sha: 'commit1', reason: 'timeout' }]);
   assert.equal(w.gh.calls.filter(([m]) => m === 'latestRun').length, 3);
   assert.equal(w.store.get(), before);
+
+  // a run that was seen but never completed: its URL comes with the timeout, for the "check the run" link
+  const u = setup();
+  u.store.set([...BULLET, 'text'], 'changed');
+  u.gh.runs.commit1 = [{ status: 'in_progress', conclusion: null, html_url: 'https://x/run/5', id: 5 }];
+  assert.deepEqual(await u.run({ maxPolls: 2 }), { failed: true, reason: 'timeout', runUrl: 'https://x/run/5', sha: 'commit1' });
+  assert.deepEqual(u.steps.at(-1), ['failed', { sha: 'commit1', reason: 'timeout', runUrl: 'https://x/run/5' }]);
 
   const v = setup();
   v.store.set([...BULLET, 'text'], 'changed');
@@ -376,7 +401,7 @@ test('publish: an AuthError before the commit rejects; any other failure resolve
 
 test('publish: rotation drops the revoked code, keeps the other, rewraps the file keys and returns the new vk', async () => {
   const vault = await makeVault();
-  const w = setup({ access: vault.access, keys: vault.keys, session: vault.session });
+  const w = setup({ access: vault.access, keys: vault.keys, session: vault.session, site: vault.site });
   w.store.set(['revoked'], [vault.ids[2]]);
   w.store.set(['rotate'], true);
 
@@ -445,9 +470,167 @@ test('publish: a committed rotation reports the new vk even when the build fails
 
   const result = await w.run();
 
-  assert.deepEqual(Object.keys(result).sort(), ['failed', 'runUrl', 'vk']);
+  assert.deepEqual(Object.keys(result).sort(), ['failed', 'runUrl', 'sha', 'vk']);
+  assert.equal(result.sha, 'commit1');
   const committed = JSON.parse(dec(commitCalls(w.gh)[0].files[1].bytes));
   assert.equal((await unlock(committed, vault.kept)).payload.vk, result.vk);
   assert.equal(w.store.get(), before);
   assert.deepEqual(w.steps.at(-1), ['failed', { sha: 'commit1', runUrl: FAILURE.html_url }]);
+});
+
+/* ─── carried from the 22a review ─── */
+
+test('publish: a push between the check and the ref update (the parent race) is a ref conflict; nothing lands', async () => {
+  const w = setup();
+  w.store.set([...BULLET, 'text'], 'changed');
+  const before = w.store.get();
+  // someone pushes right after the conflict check passed
+  const onProgress = (step, info) => {
+    w.steps.push([step, info]);
+    if (step === 'committing') w.gh.setHead('pushed-meanwhile');
+  };
+
+  const result = await w.run({ onProgress });
+
+  assert.deepEqual(result, { conflict: true, paths: ['ref'] });
+  assert.deepEqual(names(w.steps), ['validating', 'checking', 'committing', 'conflict']);
+  const [commit] = commitCalls(w.gh);
+  assert.equal(commit.parent, 'head0');                     // the head read at the check, not the moved one
+  assert.equal(w.gh.files[PATHS.site].sha, 'sha-site-0');   // the fake refused it: nothing was written
+  assert.equal((await w.gh.getHead()).sha, 'pushed-meanwhile');
+  assert.equal(w.store.get(), before);
+  assert.equal(w.gh.calls.filter(([m]) => m === 'latestRun').length, 0);
+});
+
+test('publish: a non-empty revoked rotates even when rotate is false', async () => {
+  const vault = await makeVault();
+  const w = setup({ access: vault.access, keys: vault.keys, session: vault.session });
+  w.store.set(['revoked'], [vault.ids[2]]);
+  assert.equal(w.store.get().rotate, false);
+
+  const result = await w.run();
+
+  assert.deepEqual(Object.keys(result).sort(), ['sha', 'vk']);
+  assert.notEqual(result.vk, vault.vkB64);
+  const [commit] = commitCalls(w.gh);
+  assert.deepEqual(commit.files.map((f) => f.path), ['content/site.json', 'vault/access.json', 'vault/keys.json']);
+  const newAccess = JSON.parse(dec(commit.files[1].bytes));
+  assert.equal(await unlock(newAccess, vault.gone), null);
+  assert.equal((await unlock(newAccess, vault.kept)).payload.vk, result.vk);
+  assert.notEqual(JSON.parse(dec(commit.files[2].bytes)).vk, vault.keys.vk);
+  assert.deepEqual(w.store.get().revoked, []);
+  assert.equal(w.store.dirty().total, 0);
+});
+
+test('publish: an AuthError while polling, after the commit, resolves failed with the error, the sha and the new vk', async () => {
+  const vault = await makeVault();
+  const w = setup({ access: vault.access, keys: vault.keys, session: vault.session });
+  w.store.set(['revoked'], [vault.ids[2]]);
+  w.store.set(['rotate'], true);
+  w.gh.runs.commit1 = [() => { throw new AuthError(401, 'GitHub answered 401 to GET /repos/o/r/actions/runs: Bad credentials'); }];
+  const before = w.store.get();
+
+  const result = await w.run();
+
+  assert.deepEqual(Object.keys(result).sort(), ['error', 'failed', 'sha', 'vk']);
+  assert.equal(result.failed, true);
+  assert.equal(result.sha, 'commit1');
+  assert.equal(result.error, 'GitHub answered 401 to GET /repos/o/r/actions/runs: Bad credentials');
+  assert.deepEqual(w.steps.at(-1), ['failed', { sha: 'commit1', error: result.error }]);
+  const committed = JSON.parse(dec(commitCalls(w.gh)[0].files[1].bytes));
+  assert.equal((await unlock(committed, vault.kept)).payload.vk, result.vk);
+  assert.equal(w.store.get(), before);                      // the UI finalizes; publish leaves the draft alone
+});
+
+test('publish: live carries the run id of the run that went live (for the deploy check)', async () => {
+  const w = setup();
+  w.store.set([...BULLET, 'text'], 'changed');
+  w.gh.runs.commit1 = [{ ...SUCCESS, id: 77 }];
+  assert.deepEqual(await w.run(), { sha: 'commit1' });
+  assert.deepEqual(w.steps.at(-1), ['live', { sha: 'commit1', url: 'https://mojtabakeivanlou.com/', runId: 77 }]);
+});
+
+test('finalizePublished: refetches the three files, rebases the draft (badge 0, no stored draft), THEN deletes the blobs', async () => {
+  const w = setup();
+  w.store.set([...BULLET, 'text'], 'changed');
+  const { id } = await attach(w);
+  w.gh.runs.commit1 = [FAILURE];
+  const draft = w.store.get();
+  const result = await w.run();
+  assert.equal(result.sha, 'commit1');
+  assert.ok(await w.fileStore.get(id));                     // publish itself leaves them after a failed build
+  assert.notEqual(w.storage.getItem('mk.draft'), null);
+
+  const log = [];
+  const gh = { ...w.gh, getFile: async (path) => { log.push(['getFile', path]); return w.gh.getFile(path); } };
+  const store = { ...w.store, reset: (b) => { log.push(['reset', b.commit]); return w.store.reset(b); } };
+  const fileStore = { ...w.fileStore, delete: async (x) => { log.push(['delete', x, w.store.get().baseCommit]); return w.fileStore.delete(x); } };
+
+  await finalizePublished({ store, gh, fileStore, draft, sha: result.sha });
+
+  assert.deepEqual(log.map(([what]) => what), ['getFile', 'getFile', 'getFile', 'reset', 'delete']);
+  assert.deepEqual(log.at(-1), ['delete', id, 'commit1']);
+  assert.equal(await w.fileStore.get(id), null);
+  const d = w.store.get();
+  assert.equal(d.baseCommit, 'commit1');
+  assert.deepEqual(d.baseShas, { site: 'content/site.json@commit1', access: 'sha-access-0', keys: 'vault/keys.json@commit1' });
+  assert.equal(d.site.experience.companies[0].projects[0].bullets[0].text, 'changed');
+  assert.deepEqual(d.pending, []);
+  assert.equal(w.store.dirty().total, 0);
+  assert.equal(w.storage.getItem('mk.draft'), null);
+});
+
+test('finalizePublished: a failing rebase rejects and keeps the draft and the blobs', async () => {
+  const w = setup();
+  const { id } = await attach(w);
+  const before = w.store.get();
+  const store = { ...w.store, reset: () => { throw new Error('storage exploded'); } };
+  await assert.rejects(finalizePublished({ store, gh: w.gh, fileStore: w.fileStore, draft: before, sha: 'commit9' }), /storage exploded/);
+  assert.ok(await w.fileStore.get(id));
+  assert.equal(w.store.get(), before);
+});
+
+test('publish: keys.json drops the keys of deleted files and of files no bullet references; a referenced pending file keeps its key', async () => {
+  const committedId = randomId();
+  const strayId = randomId();
+  const keptId = randomId();
+  const keys = {
+    ...createKeysFile('abcdef01'),
+    files: { [committedId]: { iv: 'aXY=', key: 'Y29tbWl0dGVk' }, [strayId]: { iv: 'aXY=', key: 'c3RyYXk=' }, [keptId]: { iv: 'aXY=', key: 'a2VwdA==' } },
+  };
+  const w = setup({ keys, site: siteWithFiles(committedId, keptId) });
+  w.store.removeFile(BULLET, committedId);
+  assert.deepEqual(w.store.get().deleted, [committedId]);
+  const { id: pendingId } = await attach(w);
+  w.store.set(['keys', 'files', pendingId], { iv: 'cGVu', key: 'ZGluZw==' });
+  assert.ok(w.store.get().keys.files[committedId] && w.store.get().keys.files[strayId]); // the draft keeps them (Undo)
+
+  const result = await w.run();
+
+  assert.deepEqual(result, { sha: 'commit1' });
+  const [commit] = commitCalls(w.gh);
+  const committed = JSON.parse(dec(commit.files.find((f) => f.path === 'vault/keys.json').bytes));
+  assert.deepEqual(Object.keys(committed.files).sort(), [keptId, pendingId].sort());
+  assert.deepEqual(committed.files[pendingId], { iv: 'cGVu', key: 'ZGluZw==' });
+  assert.deepEqual(commit.deletes, [`vault/files/${committedId}.bin`]);
+});
+
+test('publish: a rotation rewraps only the keys that survive the prune', async () => {
+  const vault = await makeVault();
+  const strayId = randomId();
+  const keys = { ...vault.keys, files: { ...vault.keys.files, [strayId]: await wrapFileKey(vault.vk, await generateKey()) } };
+  const w = setup({ access: vault.access, keys, session: vault.session, site: vault.site });
+  w.store.set(['revoked'], [vault.ids[2]]);
+
+  const result = await w.run();
+
+  const newKeys = JSON.parse(dec(commitCalls(w.gh)[0].files[2].bytes));
+  assert.deepEqual(Object.keys(newKeys.files), [vault.fileId]);
+  const newVk = await importKey(result.vk);
+  assert.equal(await exportKey(await unwrapFileKey(newVk, newKeys.files[vault.fileId])), await exportKey(vault.fk));
+});
+
+test('clean: GitHub tokens and the given secrets are stripped from a message', () => {
+  assert.equal(clean('a ghp_AbC123 b github_pat_11AB_cd c Secret-Value-1 d', ['Secret-Value-1', 'abc']), 'a [token] b [token] c [secret] d');
+  assert.equal(clean(undefined, []), 'Unknown error');
 });

@@ -18,6 +18,37 @@ const DRAFT_SECTIONS = { access: 'access', revoked: 'access', rotate: 'access', 
 const SITE_FIELD_SECTIONS = { formSubject: 'contact' };
 const SECTIONS = ['profile', 'education', 'languages', 'services', 'experience', 'skills', 'contact', 'access', 'files', 'settings'];
 
+/**
+ * The dashboard section that edits the content key `key` (a top-level key of draft.site), or null for a key no
+ * section edits. For the `site` key, `field` (one of its fields) can name a section of its own (formSubject: contact).
+ */
+export function contentSection(key, field) {
+  if (key === 'site' && typeof field === 'string' && Object.hasOwn(SITE_FIELD_SECTIONS, field)) return SITE_FIELD_SECTIONS[field];
+  return Object.hasOwn(CONTENT_SECTIONS, key) ? CONTENT_SECTIONS[key] : null;
+}
+
+/** The content fields of the `site` key that belong to another section than Settings (see contentSection). */
+export const SITE_FIELDS = Object.freeze(Object.keys(SITE_FIELD_SECTIONS));
+
+/**
+ * The content sections (in nav order) whose part of `site` differs from `baseSite`: the map dirty() uses, so a draft
+ * can also be compared with the content it started from (publish-ui.mjs, Reload and reapply).
+ */
+export function changedSections(site, baseSite) {
+  const changed = new Set();
+  for (const [key, id] of Object.entries(CONTENT_SECTIONS)) {
+    if (key === 'site') continue;
+    if (!same(site?.[key], baseSite?.[key])) changed.add(id);
+  }
+  // content `site`: Settings, except the fields listed in SITE_FIELD_SECTIONS
+  const own = (s) => (isObj(s) ? Object.fromEntries(Object.entries(s).filter(([k]) => !(k in SITE_FIELD_SECTIONS))) : s);
+  if (!same(own(site?.site), own(baseSite?.site))) changed.add(CONTENT_SECTIONS.site);
+  for (const [field, id] of Object.entries(SITE_FIELD_SECTIONS)) {
+    if (!same(site?.site?.[field], baseSite?.site?.[field])) changed.add(id);
+  }
+  return SECTIONS.filter((id) => changed.has(id));
+}
+
 // ---- pure helpers -------------------------------------------------------------------------
 
 const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
@@ -183,16 +214,7 @@ export function createStore({ storage = browserStorage() } = {}) {
   function dirty() {
     const bySection = Object.fromEntries(SECTIONS.map((id) => [id, 0]));
     if (draft && base) {
-      for (const [key, id] of Object.entries(CONTENT_SECTIONS)) {
-        if (key === 'site') continue;
-        if (!same(draft.site[key], base.site?.[key])) bySection[id] = 1;
-      }
-      // content `site`: Settings, except the fields listed in SITE_FIELD_SECTIONS
-      const own = (s) => (isObj(s) ? Object.fromEntries(Object.entries(s).filter(([k]) => !(k in SITE_FIELD_SECTIONS))) : s);
-      if (!same(own(draft.site.site), own(base.site?.site))) bySection[CONTENT_SECTIONS.site] = 1;
-      for (const [field, id] of Object.entries(SITE_FIELD_SECTIONS)) {
-        if (!same(draft.site.site?.[field], base.site?.site?.[field])) bySection[id] = 1;
-      }
+      for (const id of changedSections(draft.site, base.site)) bySection[id] = 1;
       const pristine = { access: base.access, revoked: [], rotate: false, pending: [], deleted: [] };
       for (const [key, id] of Object.entries(DRAFT_SECTIONS)) {
         if (!same(draft[key], pristine[key])) bySection[id] = 1;

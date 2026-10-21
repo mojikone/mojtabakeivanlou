@@ -42,11 +42,12 @@ const encodePath = (path) => String(path).split('/').map(encodeURIComponent).joi
  * createGitHub({ token, owner, repo, branch, fetch }) -> the client below. All methods return promises.
  *   validate()            { ok, status } of GET /repos/{owner}/{repo}; never throws (status 0: unreachable)
  *   getHead()             { sha, tree } of the branch head
- *   getFile(path)         { sha, bytes } of the file on the branch, or null when it does not exist
+ *   getFile(path, ref?)   { sha, bytes } of the file on the branch (or at commit `ref`), or null when it does not exist
  *   listTree()            the paths of every file (blob) in the head commit, recursively
  *   commitFiles({ message, files: [{ path, bytes }], deletes: [path], parent })  -> { sha } of the new commit
- *   latestRun(headSha)    { status, conclusion, html_url } of the push run for that commit, or null
+ *   latestRun(headSha)    { id, status, conclusion, html_url } of the push run for that commit, or null
  *   latestSuccessfulRun() { updated_at } of the newest successful run on the branch, or null
+ *   runJobs(runId)        [{ name, status, conclusion }] of the jobs of that run
  */
 export function createGitHub({ token, owner, repo, branch, fetch: fetchImpl = globalThis.fetch } = {}) {
   const repoPath = `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
@@ -116,8 +117,10 @@ export function createGitHub({ token, owner, repo, branch, fetch: fetchImpl = gl
     return { sha, tree: await commitTree(sha) };
   }
 
-  async function getFile(path) {
-    const file = await get(`/contents/${encodePath(path)}?ref=${branchQuery}`, { notFound: null });
+  // `ref` (a commit sha, say) reads the file as it was there; the default is the branch head.
+  async function getFile(path, ref) {
+    const at = ref === undefined || ref === null ? branchQuery : encodeURIComponent(ref);
+    const file = await get(`/contents/${encodePath(path)}?ref=${at}`, { notFound: null });
     if (file === null) return null;
     if (Array.isArray(file) || typeof file.sha !== 'string') throw new GitHubError(200, `${path} is not a file`);
     if (file.encoding === 'base64') return { sha: file.sha, bytes: decode(file.content) };
@@ -165,7 +168,13 @@ export function createGitHub({ token, owner, repo, branch, fetch: fetchImpl = gl
   async function latestRun(headSha) {
     const data = await get(`/actions/runs?branch=${branchQuery}&event=push&per_page=5`);
     const run = (data.workflow_runs ?? []).find((r) => r.head_sha === headSha);
-    return run ? { status: run.status, conclusion: run.conclusion, html_url: run.html_url } : null;
+    return run ? { id: run.id, status: run.status, conclusion: run.conclusion, html_url: run.html_url } : null;
+  }
+
+  // The jobs of one run (the publish UI reads whether `deploy` was skipped: DEPLOY_FROM_ACTIONS is off).
+  async function runJobs(runId) {
+    const data = await get(`/actions/runs/${encodeURIComponent(String(runId))}/jobs`);
+    return (data.jobs ?? []).map((job) => ({ name: job.name, status: job.status, conclusion: job.conclusion }));
   }
 
   // `status=success` is how the runs API filters on a conclusion (it has no `conclusion` parameter).
@@ -175,5 +184,5 @@ export function createGitHub({ token, owner, repo, branch, fetch: fetchImpl = gl
     return run ? { updated_at: run.updated_at } : null;
   }
 
-  return { validate, getHead, getFile, listTree, commitFiles, latestRun, latestSuccessfulRun };
+  return { validate, getHead, getFile, listTree, commitFiles, latestRun, latestSuccessfulRun, runJobs };
 }

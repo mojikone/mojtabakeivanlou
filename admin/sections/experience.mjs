@@ -14,6 +14,7 @@
 
 import { field, listEditor, toast, card, el, svg } from '../modules/ui.mjs';
 import { prepareUpload, isLarge } from '../modules/files.mjs';
+import { inflight } from '../modules/inflight.mjs';
 import { FILE_MAX, FILE_NOTE } from '../modules/limits.mjs';
 import { importKey, formatSize } from '../../assets/js/vault.mjs';
 import { slugify } from '../../assets/js/render/model.mjs';
@@ -492,9 +493,20 @@ function bulletRow(ctx, bullet, base) {
     });
   }
 
-  // Encrypts the files one after the other (one file's bytes in memory at a time) with the session's vault key.
+  // The whole batch counts as in flight (inflight.mjs): Publish waits until its last file is placed, so no late file
+  // is dropped by the rebase after a publish or wrapped under a vault key the publish rotated away.
   async function attach(picked, replaced) {
     if (picked.length === 0) return;
+    const done = inflight.begin('attachments');
+    try {
+      await encryptAll(picked, replaced);
+    } finally {
+      done();
+    }
+  }
+
+  // Encrypts the files one after the other (one file's bytes in memory at a time) with the session's vault key.
+  async function encryptAll(picked, replaced) {
     toggle(true);
     const token = tokenOf(now());
     const rows = picked.map((file) => progress(file));

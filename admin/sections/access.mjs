@@ -10,6 +10,7 @@
 import { el, card, section, modal, toast } from '../modules/ui.mjs';
 import { codeStrength } from '../../assets/js/vault.mjs';
 import { createGitHub } from '../modules/github.mjs';
+import { inflight } from '../modules/inflight.mjs';
 import {
   listCodes, createDownloadCode, revoke, unrevoke, changeAdminCode, isStaleSession, resumeAdminSession,
   cancelAdminChange, applySessionChange, sessionChanged, validateNewToken,
@@ -196,6 +197,7 @@ function newCodeCard(store, getSession) {
     error.hidden = true;
     create.disabled = true;
     create.textContent = 'Creating…';
+    const done = inflight.begin('codes');   // Publish waits for the new entry (inflight.mjs)
     try {
       const name = label.control.value.trim();
       const code = await createDownloadCode(store, getSession().vk, { label: name, code: custom.control.value });
@@ -205,6 +207,7 @@ function newCodeCard(store, getSession) {
     } catch (err) {
       showError(error, err);
     } finally {
+      done();
       create.disabled = false;
       create.textContent = 'Create code';
     }
@@ -264,6 +267,7 @@ function changeAdminForm(store, getSession, update) {
     }
     submit.disabled = true;
     submit.textContent = 'Changing…';
+    const done = inflight.begin('codes');   // Publish waits for the rewrapped admin entry (inflight.mjs)
     try {
       // A new token is checked with GitHub first, as Replace GitHub token does: the dashboard switches to it at once,
       // so a mistyped or under-scoped token would lock the owner out. A refusal changes nothing.
@@ -280,6 +284,7 @@ function changeAdminForm(store, getSession, update) {
     } catch (err) {
       showError(error, err);
     } finally {
+      done();
       submit.disabled = false;
       submit.textContent = 'Change admin code';
     }
