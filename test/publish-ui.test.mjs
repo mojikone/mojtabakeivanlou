@@ -9,6 +9,7 @@ import {
   wirePublish, SESSION_MISMATCH_TEXT,
 } from '../admin/modules/publish-ui.mjs';
 import { SESSION_KEY_MISMATCH } from '../admin/modules/publish.mjs';
+import { AuthError } from '../admin/modules/github.mjs';
 import { changedSections } from '../admin/modules/state.mjs';
 import { createInflight } from '../admin/modules/inflight.mjs';
 import { FakeNode, installFakeDom } from './helpers/fake-dom.mjs';
@@ -513,6 +514,55 @@ test('wirePublish: a rotation hands the new keys to the session when the commit 
     await run;
     assert.deepEqual(taken, [['bmV3LXZr', 'bmV3LW9r']], 'not taken twice');
     assert.equal(handle.busy(), false);
+  } finally {
+    restore();
+  }
+});
+
+test('wirePublish: GitHub refusing the token opens the shared token modal; with a new token in, the publish runs again (T5)', async () => {
+  const restore = installFakeDom();
+  try {
+    const { root } = shellRoot();
+    const draft = changedDraft();
+    const store = { get: () => draft, dirty: () => ({ total: 1, bySection: { profile: 1 } }), subscribe: () => () => {} };
+    const state = { session: asSession('new'), gh: { name: 'old-client', getHead: async () => ({ sha: draft.baseCommit, tree: 't' }) } };
+    const runs = [];
+    const modals = [];
+    const applied = [];
+    const handle = wirePublish({
+      root, store, fileStore: {}, getSession: () => state.session, getGh: () => state.gh,
+      publishFn: async ({ gh }) => {
+        runs.push(gh.name);
+        if (runs.length === 1) throw new AuthError(401, 'GitHub answered 401 to GET /repos/o/r/git/ref/heads/main: Bad credentials');
+        return { failed: true, error: 'stop here' };
+      },
+      tokenModal: (options) => { modals.push(options); },
+      applyToken: async (token) => {
+        applied.push(token);
+        state.gh = { ...state.gh, name: 'new-client' };       // what admin.mjs's session hook does
+      },
+    });
+    await tick();
+    await handle.start();
+
+    assert.deepEqual(runs, ['old-client']);
+    assert.equal(modals.length, 1, 'the shared token modal opened by itself');
+    assert.equal(modals[0].session, state.session, 'checked against the session repository');
+    const card = document.body.findAll((n) => n.className === 'adm-pub')[0];
+    assert.ok(card.textContent.includes('GitHub rejected the token (HTTP 401). Nothing was published.'));
+    assert.ok(!card.textContent.includes('Settings'), 'no detour through Settings');
+    assert.equal(buttonsNamed('Retry', card).length, 0);
+
+    // Cancel, then the card's "Replace token" opens the same modal again
+    buttonsNamed('Replace token', card)[0].click();
+    assert.equal(modals.length, 2);
+
+    await modals[1].apply('ghp_FAKE_T5_NEW');                 // GitHub accepted the new token (the modal checked it)
+    await new Promise((resolve) => { setTimeout(resolve, 10); });   // the publish starts again on a later turn
+    await tick();
+    assert.deepEqual(applied, ['ghp_FAKE_T5_NEW']);
+    assert.deepEqual(runs, ['old-client', 'new-client'], 'published again, with the new client');
+    assert.equal(modals.length, 2, 'no modal for a failure that is not the token');
   } finally {
     restore();
   }

@@ -13,7 +13,8 @@ import { AuthError } from './github.mjs';
 import { contentSection, changedSections, SITE_FIELDS } from './state.mjs';
 import { loadBase, PATHS } from './shell.mjs';
 import { inflight } from './inflight.mjs';
-import { sessionMatchesDraft } from './codes.mjs';
+import { sessionMatchesDraft, replaceToken, sessionChanged } from './codes.mjs';
+import { openTokenModal } from './token-modal.mjs';
 import { el, modal, toast, flushPending } from './ui.mjs';
 
 /** What Publish says instead of publishing when the sign-in does not match the draft's access codes (Task 23b). */
@@ -328,8 +329,9 @@ function openCard(title) {
       titleNode.textContent = text;
       closeButton.hidden = false;
     },
-    // The end of a publish that did not go live: the title, the message (strings and links) and an optional Retry.
-    fail(text, parts, { retry, extra = [] } = {}) {
+    // The end of a publish that did not go live: the title, the message (strings and links) and an optional Retry
+    // (or another action, named by retryLabel).
+    fail(text, parts, { retry, retryLabel = 'Retry', extra = [] } = {}) {
       card.finish(text);
       message.hidden = false;
       const nodes = [
@@ -339,7 +341,7 @@ function openCard(title) {
       if (retry) {
         nodes.push(el('div', { class: 'adm-pub-actions' }, el('button', {
           type: 'button', class: 'adm-btn adm-btn-dark', onclick: () => { card.close(); retry(); },
-        }, 'Retry')));
+        }, retryLabel)));
       }
       message.replaceChildren(...nodes);           // (replaceChildren would print a null or an array as text)
     },
@@ -365,6 +367,10 @@ const wired = new WeakMap();                // root -> handle (admin.mjs's loadD
  *                        once, as soon as the commit is on the branch (publish's onCommitted), not after the build
  *   onPublished()        a publish went live: refresh "published N min ago"
  *   publishFn            publish.mjs's publish(), replaceable in tests
+ *   tokenModal, applyToken(token)   GitHub refused the token before anything was committed (spec 13.7): the shared
+ *                        "Replace GitHub token" modal (token-modal.mjs) opens, applyToken seals the new token into
+ *                        the draft and switches the session and the client to it (codes.mjs replaceToken and
+ *                        sessionChanged), and the publish runs again. Both replaceable in tests.
  * Every way into a publish (the button, Retry, Overwrite, Reload and reapply) first checks that the session still
  * matches the draft's access codes (codes.mjs sessionMatchesDraft); if not, nothing starts and a modal sends the owner
  * to Access codes.
@@ -372,7 +378,11 @@ const wired = new WeakMap();                // root -> handle (admin.mjs's loadD
  */
 export function wirePublish({
   root = document, store, gh, fileStore, session, getSession = () => session, getGh = () => gh, icons, onSessionVk,
-  onPublished, publishFn = publish,
+  onPublished, publishFn = publish, tokenModal = openTokenModal,
+  applyToken = async (token) => {
+    await replaceToken(store, getSession()?.kek, token);  // a refusal keeps the modal open with its message
+    sessionChanged({ token });                             // admin.mjs: the session and the GitHub client switch to it
+  },
 } = {}) {
   if (wired.has(root)) {
     wired.get(root).refresh();
@@ -502,9 +512,15 @@ export function wirePublish({
         return;
       }
       if (card.state('save') === 'active') card.line('save', null, 'failed');
-      card.fail('Not published', [err instanceof AuthError
-        ? `GitHub rejected the token (HTTP ${err.status}). Nothing was published. Replace it in Settings (Replace GitHub token), then publish again.`
-        : `Nothing was published: ${safe(err)}`], { retry: start });
+      if (err instanceof AuthError) {
+        // Spec 13.7: a 401 or 403 opens "Replace GitHub token"; once a new token is in, the publish runs again.
+        card.fail('Not published', [`GitHub rejected the token (HTTP ${err.status}). Nothing was published. Paste a new token, and the publish runs again.`], {
+          retry: askForToken, retryLabel: 'Replace token',
+        });
+        askForToken();
+        return;
+      }
+      card.fail('Not published', [`Nothing was published: ${safe(err)}`], { retry: start });
       return;
     }
 
@@ -550,6 +566,20 @@ export function wirePublish({
     hideNote();
     setBusy(false);
     try { onPublished?.(); } catch { /* the status line refreshes itself on its next tick */ }
+  }
+
+  // The shared token modal, then the publish again with the new token (the session hook has switched the session and
+  // the client by then; start() reads both at the click).
+  function askForToken() {
+    tokenModal({
+      session: getSession(),
+      apply: async (token) => {
+        await applyToken(token);
+        currentCard?.close();
+        toast('GitHub token replaced. Publishing again…');
+        setTimeout(() => { start(); }, 0);
+      },
+    });
   }
 
   /* validation */

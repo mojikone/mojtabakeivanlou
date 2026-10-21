@@ -152,6 +152,16 @@ test('listTree lists the file paths of the head commit, recursively', async () =
   assert.equal(calls.at(-1).url, `${R}/git/trees/head-tree?recursive=1`);
 });
 
+test('listTree(treeSha) lists that tree, without asking for the head', async () => {
+  const { gh, calls } = client({
+    [`GET ${R}/git/trees/parent%2Ftree?recursive=1`]: { body: { sha: 'parent/tree', truncated: false, tree: [
+      { path: 'vault/files/0123.bin', type: 'blob', sha: 'b2' },
+    ] } },
+  });
+  assert.deepEqual(await gh.listTree('parent/tree'), ['vault/files/0123.bin']);
+  assert.deepEqual(calls.map((c) => c.url), [`${R}/git/trees/parent%2Ftree?recursive=1`], 'one request, the tree id encoded');
+});
+
 test('listTree refuses a truncated tree instead of returning part of it', async () => {
   const { gh } = client({
     ...HEAD_ROUTES,

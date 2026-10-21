@@ -62,10 +62,13 @@ function blobPath(id) {
  *   dirtySections  the section ids with changes (from store.dirty().bySection), for the message
  *   base           { access, keys } as they are on the branch at the draft's base shas; access.json and keys.json are
  *                  written when the draft's copy differs from it (JSON compare). Without it they are always written.
+ *   headPaths      the paths in the tree the commit goes on top of (github.mjs listTree): a deleted file that is not
+ *                  there is left out of `deletes` (GitHub refuses a tree that deletes a missing path). Without it,
+ *                  every deleted file is deleted.
  * Throws Error('missing blob <id>') when a pending file has no bytes in `blobs`, and
  * Error('file both pending and deleted: <id>') when the draft both uploads and deletes the same file.
  */
-export function buildCommit(draft, blobs = {}, dirtySections = [], base = null) {
+export function buildCommit(draft, blobs = {}, dirtySections = [], base = null, headPaths = null) {
   const rotate = draft.rotate === true;
   const pendingIds = (draft.pending ?? []).map(idOf);
   const both = (draft.deleted ?? []).find((id) => pendingIds.includes(id));
@@ -79,7 +82,8 @@ export function buildCommit(draft, blobs = {}, dirtySections = [], base = null) 
     if (!(bytes instanceof Uint8Array)) throw new Error(`missing blob ${id}`);
     files.push({ path, bytes });
   }
-  const deletes = (draft.deleted ?? []).map(blobPath);
+  const present = headPaths ? new Set(headPaths) : null;
+  const deletes = (draft.deleted ?? []).map(blobPath).filter((path) => !present || present.has(path));
   const labels = Object.keys(SECTION_LABELS).filter((id) => dirtySections.includes(id)).map((id) => SECTION_LABELS[id]);
   return { message: labels.length ? `${MESSAGE}: ${labels.join(', ')}` : MESSAGE, files, deletes };
 }
@@ -325,7 +329,10 @@ export async function publish({
     const { bySection = {} } = store.dirty();
     const dirtySections = Object.keys(bySection).filter((id) => bySection[id] > 0);
     const onBranch = (k) => (remote[k] ? parseFile(remote[k]) : undefined); // the base content: its sha matched
-    const commit = buildCommit(working, blobs, dirtySections, { access: onBranch('access'), keys: onBranch('keys') });
+    // Deletes only of files the parent tree holds (a blob already gone, or never uploaded, would make GitHub refuse
+    // the whole tree); the tree is listed only when there is something to delete.
+    const headPaths = (working.deleted ?? []).length > 0 ? await gh.listTree(head.tree) : null;
+    const commit = buildCommit(working, blobs, dirtySections, { access: onBranch('access'), keys: onBranch('keys') }, headPaths);
     try {
       ({ sha } = await gh.commitFiles({ ...commit, parent: head.sha }));
     } catch (err) {

@@ -84,6 +84,10 @@ function fakeGitHub(base) {
       const file = files[path];
       return file ? { sha: file.sha, bytes: file.bytes } : null;
     },
+    async listTree(tree) {
+      calls.push(['listTree', tree]);
+      return Object.keys(files);
+    },
     async commitFiles(args) {
       calls.push(['commitFiles', args]);
       if (gh.commitError) throw gh.commitError;
@@ -236,6 +240,18 @@ test('buildCommit: access.json and keys.json when they differ from the base (or 
   assert.deepEqual(buildCommit(same, {}, []).files.map((f) => f.path), ['content/site.json', 'vault/access.json', 'vault/keys.json']);
   const deletedOnly = plainDraft({ deleted: [randomId()] });
   assert.equal(buildCommit(deletedOnly, {}, [], { access: deletedOnly.access, keys: deletedOnly.keys }).message, 'Content update from dashboard');
+});
+
+test('buildCommit: with the head tree, a deleted file that is not in it is left out of deletes (T6)', () => {
+  const [here, gone] = [randomId(), randomId()];
+  const draft = plainDraft({ deleted: [here, gone] });
+  const base = { access: clone(draft.access), keys: clone(draft.keys) };
+  const headPaths = ['content/site.json', `vault/files/${here}.bin`, 'vault/access.json'];
+  assert.deepEqual(buildCommit(draft, {}, [], base, headPaths).deletes, [`vault/files/${here}.bin`]);
+  assert.deepEqual(buildCommit(draft, {}, [], base, new Set(headPaths)).deletes, [`vault/files/${here}.bin`], 'a Set works too');
+  assert.deepEqual(buildCommit(draft, {}, [], base, []).deletes, [], 'an empty tree: nothing to delete');
+  assert.deepEqual(buildCommit(draft, {}, [], base).deletes, [`vault/files/${here}.bin`, `vault/files/${gone}.bin`], 'no tree given: every deleted file');
+  assert.throws(() => buildCommit(plainDraft({ deleted: ['../x'] }), {}, [], base, ['../x']), /invalid file id/, 'ids are still checked');
 });
 
 test('buildCommit: a pending file without its blob throws; so does a malformed file id', () => {
@@ -680,6 +696,7 @@ test('publish: keys.json drops the keys of deleted files and of files no bullet 
     files: { [committedId]: { iv: 'aXY=', key: 'Y29tbWl0dGVk' }, [strayId]: { iv: 'aXY=', key: 'c3RyYXk=' }, [keptId]: { iv: 'aXY=', key: 'a2VwdA==' } },
   };
   const w = setup({ keys, site: siteWithFiles(committedId, keptId) });
+  w.gh.files[`vault/files/${committedId}.bin`] = { sha: 'blob-committed', bytes: randomBytes(8) };
   w.store.removeFile(BULLET, committedId);
   assert.deepEqual(w.store.get().deleted, [committedId]);
   const { id: pendingId } = await attach(w);
@@ -694,6 +711,26 @@ test('publish: keys.json drops the keys of deleted files and of files no bullet 
   assert.deepEqual(Object.keys(committed.files).sort(), [keptId, pendingId].sort());
   assert.deepEqual(committed.files[pendingId], { iv: 'cGVu', key: 'ZGluZw==' });
   assert.deepEqual(commit.deletes, [`vault/files/${committedId}.bin`]);
+});
+
+test('publish: a deleted file the head tree no longer holds is not deleted again; the tree is listed only for deletes (T6)', async () => {
+  const [here, gone] = [randomId(), randomId()];
+  const w = setup({ site: siteWithFiles(here, gone) });
+  w.gh.files[`vault/files/${here}.bin`] = { sha: 'blob-here', bytes: randomBytes(8) };   // `gone` was removed meanwhile
+  w.store.removeFile(BULLET, here);
+  w.store.removeFile(BULLET, gone);
+  assert.deepEqual(w.store.get().deleted, [here, gone]);
+
+  const result = await w.run();
+
+  assert.deepEqual(result, { sha: 'commit1' });
+  assert.deepEqual(w.gh.calls.filter(([m]) => m === 'listTree'), [['listTree', 'tree-head0']], 'the tree of the parent, once');
+  assert.deepEqual(commitCalls(w.gh)[0].deletes, [`vault/files/${here}.bin`]);
+
+  const plain = setup();
+  plain.store.set([...BULLET, 'text'], 'changed');
+  await plain.run();
+  assert.equal(plain.gh.calls.filter(([m]) => m === 'listTree').length, 0, 'nothing deleted: no tree listing');
 });
 
 test('publish: a rotation rewraps only the keys that survive the prune', async () => {

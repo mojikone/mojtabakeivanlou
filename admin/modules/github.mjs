@@ -61,7 +61,7 @@ const encodePath = (path) => String(path).split('/').map(encodeURIComponent).joi
  *                         never throws (status 0: unreachable)
  *   getHead()             { sha, tree } of the branch head
  *   getFile(path, ref?)   { sha, bytes } of the file on the branch (or at commit `ref`), or null when it does not exist
- *   listTree()            the paths of every file (blob) in the head commit, recursively
+ *   listTree(treeSha?)    the paths of every file (blob) in the head commit (or in the tree `treeSha`), recursively
  *   commitFiles({ message, files: [{ path, bytes }], deletes: [path], parent })  -> { sha } of the new commit
  *   latestRun(headSha)    { id, status, conclusion, html_url } of the push run for that commit, or null
  *   latestSuccessfulRun() { updated_at } of the newest successful run on the branch, or null
@@ -156,8 +156,8 @@ export function createGitHub({ token, owner, repo, branch, fetch: fetchImpl = gl
     return { sha: file.sha, bytes: decode(blob.content) };
   }
 
-  async function listTree() {
-    const { tree } = await getHead();
+  async function listTree(treeSha) {
+    const tree = typeof treeSha === 'string' && treeSha ? treeSha : (await getHead()).tree;
     const data = await get(`/git/trees/${encodeURIComponent(tree)}?recursive=1`);
     if (data.truncated) throw new GitHubError(200, 'The repository tree is too large to list in one request');
     return (data.tree ?? []).filter((entry) => entry.type === 'blob').map((entry) => entry.path);
