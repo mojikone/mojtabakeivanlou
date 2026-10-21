@@ -4,8 +4,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  buttonState, stepLine, sectionForPath, mergeDrafts, failureMessage, isDeploySkipped, actionsUrl,
+  buttonState, stepLine, sectionForPath, mergeDrafts, failureMessage, isDeploySkipped, actionsUrl, readDraftBase,
 } from '../admin/modules/publish-ui.mjs';
+import { changedSections } from '../admin/modules/state.mjs';
+import { createInflight } from '../admin/modules/inflight.mjs';
 
 const SITE = JSON.parse(readFileSync(new URL('./fixtures/site.min.json', import.meta.url), 'utf8'));
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -39,6 +41,38 @@ test('buttonState: enabled by dirty sections, pending, deleted or revoked files 
 
 test('buttonState: while a publish runs the button is disabled and reads "Publishing…"', () => {
   assert.deepEqual(buttonState(draftOf(), { dirty: 3, busy: true }), { enabled: false, reason: 'A publish is running', label: 'Publishing…' });
+});
+
+test('buttonState: disabled while attachments (or an access-code change) are still being encrypted', () => {
+  const pending = draftOf({ pending: [record(ID('a'))] });
+  assert.deepEqual(buttonState(pending, { dirty: 1, inflight: ['attachments'] }), { enabled: false, reason: 'Wait for attachments to finish', label: 'Publish' });
+  assert.deepEqual(buttonState(pending, { dirty: 1, inflight: ['codes'] }), { enabled: false, reason: 'Wait for the access-code change to finish', label: 'Publish' });
+  assert.deepEqual(buttonState(draftOf(), { inflight: ['codes', 'attachments'] }).reason, 'Wait for attachments to finish');
+  assert.equal(buttonState(pending, { dirty: 1, inflight: [] }).enabled, true);
+  assert.equal(buttonState(pending, { dirty: 1, busy: true, inflight: ['attachments'] }).label, 'Publishing…');
+});
+
+/* ─── the in-flight counter ─── */
+
+test('inflight: begin returns an idempotent end; count and kinds follow; subscribers hear every change', () => {
+  const flight = createInflight();
+  const heard = [];
+  const off = flight.subscribe(() => heard.push(flight.count()));
+  const a = flight.begin();
+  const b = flight.begin();
+  const c = flight.begin('codes');
+  assert.equal(flight.count(), 3);
+  assert.equal(flight.count('attachments'), 2);
+  assert.deepEqual(flight.kinds(), ['attachments', 'codes']);
+  a(); a();                                                // a second end of the same begin changes nothing
+  assert.equal(flight.count('attachments'), 1);
+  b(); c();
+  assert.equal(flight.count(), 0);
+  assert.deepEqual(flight.kinds(), []);
+  assert.deepEqual(heard, [1, 2, 3, 2, 1, 0]);
+  off();
+  flight.begin()();
+  assert.equal(heard.length, 6);
 });
 
 /* ─── stepLine ─── */
@@ -134,36 +168,160 @@ test('sectionForPath: the section owning a validator path, as state.mjs maps the
   assert.equal(sectionForPath('__proto__.x'), null);
 });
 
+/* ─── changedSections (state.mjs) ─── */
+
+test('changedSections: the sections whose content differs, mapped as dirty() maps them', () => {
+  const base = clone(SITE);
+  assert.deepEqual(changedSections(clone(SITE), base), []);
+  const site = clone(SITE);
+  site.profile.firstName = 'X';
+  site.education[0].year = '1999';
+  site.thankYou = { ...site.thankYou, text: 'changed' };
+  site.site.formSubject = 'changed';
+  assert.deepEqual(changedSections(site, base), ['profile', 'education', 'contact']);
+  site.site.gaId = 'G-OTHER';
+  site.seo = { ...site.seo, titleIndex: 'other' };
+  assert.deepEqual(changedSections(site, base), ['profile', 'education', 'contact', 'settings']);
+  assert.deepEqual(changedSections({ ...clone(SITE), schemaVersion: 9 }, base), []);   // a key no section edits
+});
+
+/* ─── readDraftBase ─── */
+
+function fakeFiles(files, { fail = false } = {}) {
+  const calls = [];
+  return {
+    calls,
+    async getFile(path, ref) {
+      calls.push([path, ref]);
+      if (fail) throw new Error('GitHub answered 500');
+      const value = files[`${ref}:${path}`];
+      return value === undefined ? null : { sha: 'x', bytes: new TextEncoder().encode(JSON.stringify(value)) };
+    },
+  };
+}
+
+test('readDraftBase: the remote copy when its sha is the draft base sha, else the file at the draft base commit', async () => {
+  const draft = draftOf();                                 // baseCommit head0, baseShas s0 / a0 / k0
+  const old = clone(SITE);
+  old.education[0].year = '1990';
+  const remote = { commit: 'head9', shas: { site: 's1', access: 'a0', keys: 'k0' }, site: clone(SITE), access: { v: 1, entries: [] }, keys: draft.keys };
+
+  const gh = fakeFiles({ 'head0:content/site.json': old });
+  const base = await readDraftBase(gh, draft, remote);
+  assert.deepEqual(base.site, old);
+  assert.equal(base.access, remote.access);                // same sha: no request
+  assert.deepEqual(gh.calls, [['content/site.json', 'head0']]);
+
+  const both = fakeFiles({ 'head0:content/site.json': old, 'head0:vault/access.json': { v: 1, entries: [{ id: 'base' }] } });
+  const moved = await readDraftBase(both, draft, { ...remote, shas: { site: 's1', access: 'a1', keys: 'k1' } });
+  assert.deepEqual(moved.access, { v: 1, entries: [{ id: 'base' }] });
+
+  const missing = await readDraftBase(fakeFiles({}), draft, { ...remote, shas: { site: 's1', access: 'a1', keys: 'k0' } });
+  assert.equal(missing.site, null);                        // not there at that commit
+  assert.equal(missing.access, null);
+});
+
+test('readDraftBase: unknown (undefined) when the fetch fails or the draft has no base commit; never throws', async () => {
+  const draft = draftOf();
+  const remote = { shas: { site: 's1', access: 'a1', keys: 'k0' }, site: clone(SITE), access: {}, keys: {} };
+  const failed = await readDraftBase(fakeFiles({}, { fail: true }), draft, remote);
+  assert.equal(failed.site, undefined);
+  assert.equal(failed.access, undefined);
+  const gh = fakeFiles({});
+  const none = await readDraftBase(gh, draftOf({ baseCommit: null }), remote);
+  assert.equal(none.site, undefined);
+  assert.deepEqual(gh.calls, []);
+});
+
 /* ─── mergeDrafts ─── */
 
-test('mergeDrafts: a dirty profile keeps the draft profile, education takes the remote; access and keys always remote', () => {
-  const draft = draftOf({ revoked: ['x1'], rotate: true });
-  draft.site.profile.firstName = 'Draft';
-  draft.access = { v: 1, entries: [{ id: 'mine' }, { id: 'new-code' }] };
-  const remote = { site: clone(SITE), access: { v: 1, entries: [{ id: 'theirs' }] }, keys: { v: 1, vk: 'vk1', files: { [ID('c')]: { k: 1 } } } };
-  remote.site.profile.firstName = 'Remote';
-  remote.site.education[0].degree = 'PhD — remote';
+const VAULT_MOVED = { site: 's1', access: 'a1', keys: 'k1' };     // the draft's baseShas are s0 / a0 / k0
+const VAULT_SAME = { site: 's1', access: 'a0', keys: 'k0' };
 
-  const m = mergeDrafts(draft, remote, ['profile', 'access']);
+test('mergeDrafts with the draft base: a three-way merge, so what the owner did not touch takes the newer values', () => {
+  const base = clone(SITE);
+  const draft = draftOf();
+  draft.site.profile.firstName = 'Draft';                  // the owner edited Profile only
+  draft.site.profile.quote = 'Both edited: the draft wins';
+  const remote = { shas: VAULT_SAME, site: clone(SITE), access: draft.access, keys: draft.keys };
+  remote.site.education[0].year = '2014 (GitHub)';         // an Education change on GitHub
+  remote.site.profile.email = 'new@example.com';           // a field of Profile the owner did not touch
+  remote.site.profile.quote = 'Both edited: GitHub';
+  remote.site.schemaVersion = 2;
+
+  // store.dirty() against a later base would name Education too; the draft's own base does not
+  const m = mergeDrafts(draft, remote, changedSections(draft.site, base), { baseSite: base });
 
   assert.equal(m.site.profile.firstName, 'Draft');
+  assert.equal(m.site.profile.email, 'new@example.com');
+  assert.equal(m.site.profile.quote, 'Both edited: the draft wins');
+  assert.equal(m.site.education[0].year, '2014 (GitHub)');
+  assert.equal(m.site.schemaVersion, 2);
+  assert.deepEqual(Object.keys(m.site), Object.keys(remote.site));
+
+  // a list both sides changed is taken whole from the draft; a list only GitHub changed comes from GitHub
+  const d2 = draftOf();
+  d2.site.languages = [...d2.site.languages, { name: 'Draft', level: 'B1' }];
+  const r2 = { shas: VAULT_SAME, site: clone(SITE), access: d2.access, keys: d2.keys };
+  r2.site.languages = [{ name: 'GitHub', level: 'C2' }];
+  r2.site.education = [];
+  const n = mergeDrafts(d2, r2, ['languages'], { baseSite: base });
+  assert.deepEqual(n.site.languages, d2.site.languages);
+  assert.deepEqual(n.site.education, []);
+});
+
+test('mergeDrafts without the draft base: by section (a dirty section keeps the draft value, the rest the remote)', () => {
+  const draft = draftOf();
+  draft.site.profile.firstName = 'Draft';
+  const remote = { shas: VAULT_SAME, site: clone(SITE), access: draft.access, keys: draft.keys };
+  remote.site.profile.firstName = 'Remote';
+  remote.site.education[0].degree = 'PhD — remote';
+  const m = mergeDrafts(draft, remote, ['profile']);
   assert.deepEqual(m.site.profile, draft.site.profile);
   assert.deepEqual(m.site.education, remote.site.education);
+  assert.deepEqual(Object.keys(m.site), Object.keys(remote.site));
+  assert.notEqual(m.site.profile, draft.site.profile);     // copies, not shared objects
+});
+
+test('mergeDrafts (vault changed on GitHub): remote access and keys, revoke and rotate cleared; the discard is reported for own access changes only', () => {
+  const draft = draftOf({ revoked: ['x1'], rotate: true });
+  draft.access = { v: 1, entries: [{ id: 'mine' }, { id: 'new-code' }] };
+  const remote = { shas: VAULT_MOVED, site: clone(SITE), access: { v: 1, entries: [{ id: 'theirs' }] }, keys: { v: 1, vk: 'vk1', files: { [ID('c')]: { k: 1 } } } };
+
+  const m = mergeDrafts(draft, remote, ['access']);
   assert.deepEqual(m.access, remote.access);
   assert.deepEqual(m.keys, remote.keys);
   assert.deepEqual(m.revoked, []);
   assert.equal(m.rotate, false);
+  assert.equal(m.vaultChanged, true);
   assert.equal(m.discardedAccess, true);
-  assert.deepEqual(Object.keys(m.site), Object.keys(remote.site));     // site.json keeps the remote key order
-  assert.notEqual(m.site.profile, draft.site.profile);                 // copies, not shared objects
-  assert.equal(mergeDrafts(draft, remote, ['profile']).discardedAccess, false);
+  assert.equal(mergeDrafts(draft, remote, []).discardedAccess, false);
+  // only keys.json moved counts as a vault change as well
+  assert.equal(mergeDrafts(draft, { ...remote, shas: { ...VAULT_SAME, keys: 'k1' } }, ['access']).vaultChanged, true);
+});
+
+test('mergeDrafts (vault unchanged on GitHub): the draft keeps its access, keys, revoked and rotate; nothing is discarded', () => {
+  const draft = draftOf({ revoked: ['x1'], rotate: true });
+  draft.access = { v: 1, entries: [{ id: 'mine' }, { id: 'new-code' }] };
+  draft.keys = { v: 1, vk: 'vk1', files: { [ID('c')]: { k: 1 } } };
+  const remote = { shas: VAULT_SAME, site: clone(SITE), access: { v: 1, entries: [{ id: 'mine' }] }, keys: { v: 1, vk: 'vk1', files: {} } };
+
+  for (const m of [mergeDrafts(draft, remote, ['access']), mergeDrafts(draft, remote, ['access'], { keepSite: true })]) {
+    assert.deepEqual(m.access, draft.access);
+    assert.deepEqual(m.keys, draft.keys);
+    assert.deepEqual(m.revoked, ['x1']);
+    assert.equal(m.rotate, true);
+    assert.equal(m.vaultChanged, false);
+    assert.equal(m.discardedAccess, false);
+    assert.notEqual(m.access, draft.access);
+  }
 });
 
 test('mergeDrafts: the site key splits like dirty(): formSubject follows Contact page, the rest Settings', () => {
   const draft = draftOf();
   draft.site.site.formSubject = 'Draft subject';
   draft.site.site.gaId = 'G-DRAFT';
-  const remote = { site: clone(SITE), access: draft.access, keys: draft.keys };
+  const remote = { shas: VAULT_SAME, site: clone(SITE), access: draft.access, keys: draft.keys };
   remote.site.site.domain = 'remote.example';
   remote.site.site.formSubject = 'Remote subject';
 
@@ -181,12 +339,12 @@ test('mergeDrafts: the site key splits like dirty(): formSubject follows Contact
 test('mergeDrafts: a key no section edits (schemaVersion) comes from the remote; keepSite keeps the whole draft site', () => {
   const draft = draftOf();
   draft.site.education[0].year = '1999';
-  const remote = { site: { ...clone(SITE), schemaVersion: 2, extra: { a: 1 } }, access: draft.access, keys: draft.keys };
+  const remote = { shas: VAULT_MOVED, site: { ...clone(SITE), schemaVersion: 2, extra: { a: 1 } }, access: { v: 1, entries: [] }, keys: draft.keys };
   const m = mergeDrafts(draft, remote, ['education']);
   assert.equal(m.site.schemaVersion, 2);
   assert.deepEqual(m.site.extra, { a: 1 });
   assert.equal(m.site.education[0].year, '1999');
-  const over = mergeDrafts(draft, remote, [], { keepSite: true });
+  const over = mergeDrafts(draft, remote, [], { keepSite: true, baseSite: clone(SITE) });
   assert.deepEqual(over.site, draft.site);
   assert.deepEqual(over.access, remote.access);
 });
@@ -197,7 +355,7 @@ test('mergeDrafts: pending files keep their wrapped keys on the same vault key; 
   const draft = draftOf({ pending: [record(pend)], deleted: [gone] });
   draft.site.experience.companies[0].projects[0].bullets[0].files = [record(pend)];
   draft.keys = { v: 1, vk: 'vk1', files: { [pend]: { wrapped: 'p' }, [gone]: { wrapped: 'g' } } };
-  const remote = { site: clone(SITE), access: draft.access, keys: { v: 1, vk: 'vk1', files: { [gone]: { wrapped: 'g' } } } };
+  const remote = { shas: VAULT_MOVED, site: clone(SITE), access: draft.access, keys: { v: 1, vk: 'vk1', files: { [gone]: { wrapped: 'g' } } } };
 
   const m = mergeDrafts(draft, remote, ['experience', 'files']);
 
@@ -205,6 +363,7 @@ test('mergeDrafts: pending files keep their wrapped keys on the same vault key; 
   assert.deepEqual(m.pending, [record(pend)]);
   assert.deepEqual(m.deleted, [gone]);
   assert.deepEqual(m.dropped, []);
+  assert.equal(m.keyChanged, false);
 
   // experience not dirty: the remote experience wins, so the pending record is gone and so is its pending entry;
   // a deleted id the remote still references is not deleted
@@ -213,9 +372,13 @@ test('mergeDrafts: pending files keep their wrapped keys on the same vault key; 
   const n = mergeDrafts(draft, remote2, []);
   assert.deepEqual(n.pending, []);
   assert.deepEqual(n.dropped, [pend]);
-  assert.equal(n.vaultChanged, false);
   assert.deepEqual(n.deleted, []);
   assert.deepEqual(n.keys, remote2.keys);
+
+  // vault unchanged: the draft's own keys, the pending one included
+  const same = mergeDrafts(draft, { ...remote, shas: VAULT_SAME }, ['experience', 'files']);
+  assert.deepEqual(same.keys, draft.keys);
+  assert.deepEqual(same.pending, [record(pend)]);
 });
 
 test('mergeDrafts: a vault key rotated on GitHub drops the new attachments (their keys are under the old key)', () => {
@@ -224,11 +387,11 @@ test('mergeDrafts: a vault key rotated on GitHub drops the new attachments (thei
   draft.site.experience.companies[0].projects[0].bullets[0].files = [record(pend)];
   draft.site.profile.firstName = 'Draft';
   draft.keys = { v: 1, vk: 'vk1', files: { [pend]: { wrapped: 'p' } } };
-  const remote = { site: clone(SITE), access: draft.access, keys: { v: 1, vk: 'vk2', files: {} } };
+  const remote = { shas: VAULT_MOVED, site: clone(SITE), access: draft.access, keys: { v: 1, vk: 'vk2', files: {} } };
 
   for (const m of [mergeDrafts(draft, remote, ['experience', 'files', 'profile']), mergeDrafts(draft, remote, [], { keepSite: true })]) {
     assert.deepEqual(m.dropped, [pend]);
-    assert.equal(m.vaultChanged, true);
+    assert.equal(m.keyChanged, true);
     assert.deepEqual(m.pending, []);
     assert.deepEqual(m.keys, remote.keys);
     assert.deepEqual(m.site.experience.companies[0].projects[0].bullets[0].files, []);

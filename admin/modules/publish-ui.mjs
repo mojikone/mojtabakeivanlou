@@ -8,8 +8,9 @@
 
 import { publish, finalizePublished, PublishValidationError, SECTION_LABELS, clean, referencedFileIds } from './publish.mjs';
 import { AuthError } from './github.mjs';
-import { contentSection, SITE_FIELDS } from './state.mjs';
-import { loadBase } from './shell.mjs';
+import { contentSection, changedSections, SITE_FIELDS } from './state.mjs';
+import { loadBase, PATHS } from './shell.mjs';
+import { inflight } from './inflight.mjs';
 import { el, modal, toast, flushPending } from './ui.mjs';
 
 /* ─── PURE HELPERS ─── */
@@ -40,16 +41,21 @@ export function stepLine(step, info = {}) {
 
 /**
  * The Publish button for a draft: { enabled, reason (its tooltip), label }.
- *   dirty  store.dirty().total     busy  a publish (or a reload for one) is running
+ *   dirty     store.dirty().total     busy  a publish (or a reload for one) is running
+ *   inflight  the kinds of work still to write to the draft (inflight.mjs): it waits for them
  * Enabled when a section is dirty or files or codes wait: pending, deleted, revoked, or a rotation asked for.
  */
-export function buttonState(draft, { dirty = 0, busy = false } = {}) {
+export function buttonState(draft, { dirty = 0, busy = false, inflight: unfinished = [] } = {}) {
   if (busy) return { enabled: false, reason: 'A publish is running', label: 'Publishing…' };
+  if (unfinished.length > 0) return { enabled: false, reason: waitText(unfinished), label: 'Publish' };
   const waiting = (list) => Array.isArray(list) && list.length > 0;
   const something = Boolean(draft) && (dirty > 0 || waiting(draft.pending) || waiting(draft.deleted)
     || waiting(draft.revoked) || draft.rotate === true);
   return something ? { enabled: true, reason: '', label: 'Publish' } : { enabled: false, reason: 'Nothing to publish', label: 'Publish' };
 }
+
+// The tooltip (and toast) while work is in flight: attachments first, they are the common case.
+const waitText = (kinds) => (kinds.includes('attachments') ? 'Wait for attachments to finish' : 'Wait for the access-code change to finish');
 
 /**
  * The section that owns a validator path ("experience.companies[0].name is empty" -> 'experience'), mapped as
@@ -122,6 +128,33 @@ function stripFiles(node, ids) {
   return out;
 }
 
+// Deep equality for JSON values; object key order does not matter (as state.mjs compares).
+function equal(a, b) {
+  if (a === b) return true;
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((k) => Object.hasOwn(b, k) && equal(a[k], b[k]));
+}
+
+// A three-way merge of JSON values. What the owner did not change (mine equals base) takes theirs; what GitHub did not
+// change keeps mine; an object changed on both sides merges key by key; anything else changed on both sides keeps
+// mine (a list counts as one value). Keys follow theirs, then keys only mine has.
+function merge3(base, mine, theirs) {
+  if (equal(mine, base)) return copy(theirs);
+  if (equal(theirs, base)) return copy(mine);
+  if (isObj(base) && isObj(mine) && isObj(theirs)) {
+    const out = {};
+    for (const key of [...Object.keys(theirs), ...Object.keys(mine).filter((k) => !Object.hasOwn(theirs, k))]) {
+      if (key === '__proto__') continue;
+      const value = merge3(base[key], mine[key], theirs[key]);
+      if (value !== undefined) out[key] = value;
+    }
+    return out;
+  }
+  return copy(mine);
+}
+
 // The content `site` key: Settings owns it except the fields of other sections (formSubject: Contact page).
 function mergeSiteKey(mine, theirs, dirty) {
   const out = copy(dirty.has(contentSection('site')) ? mine : theirs);
@@ -134,62 +167,98 @@ function mergeSiteKey(mine, theirs, dirty) {
   return out;
 }
 
+// Per top-level key of the content: a dirty section keeps the draft's value, any other key takes the remote's.
+function mergeBySection(mine, theirs, dirty) {
+  const site = {};
+  for (const key of [...Object.keys(theirs), ...Object.keys(mine).filter((k) => !Object.hasOwn(theirs, k))]) {
+    if (key === '__proto__') continue;
+    const value = key === 'site' ? mergeSiteKey(mine.site, theirs.site, dirty) : copy(dirty.has(contentSection(key)) ? mine[key] : theirs[key]);
+    if (value !== undefined) site[key] = value;
+  }
+  return site;
+}
+
+/**
+ * What a draft started from: { site, access } as they were at draft.baseCommit. A file whose sha on GitHub still
+ * equals the draft's base sha is taken from `remote` (a loadBase() result: { shas, site, access, … }) without a
+ * request; the others are read at the base commit (github.mjs getFile(path, ref)). Each is the parsed JSON, null when
+ * the file did not exist at that commit, or undefined when it cannot be known (no base commit, the read failed).
+ * Never throws.
+ */
+export async function readDraftBase(gh, draft, remote) {
+  const out = {};
+  await Promise.all(['site', 'access'].map(async (k) => {
+    if ((remote?.shas?.[k] ?? null) === (draft?.baseShas?.[k] ?? null) && remote?.[k] !== undefined) {
+      out[k] = remote[k];
+      return;
+    }
+    out[k] = undefined;
+    if (!draft?.baseCommit) return;
+    try {
+      const file = await gh.getFile(PATHS[k], draft.baseCommit);
+      out[k] = file ? JSON.parse(new TextDecoder().decode(file.bytes)) : null;
+    } catch { /* unknown: the caller falls back to the sections dirty() names */ }
+  }));
+  return out;
+}
+
 /**
  * The draft rebased on newer content from GitHub (the conflict modal's "Reload and reapply", and with keepSite its
  * "Overwrite with my draft"). Pure; returns copies.
  *   draft          the store's draft
- *   remote         { site, access, keys } as they are on GitHub now (a loadBase() result)
- *   dirtySections  the section ids with changes (store.dirty().bySection)
- *   keepSite       keep the draft's whole site (overwrite) instead of merging it by section
- * Returns { site, access, keys, pending, deleted, revoked: [], rotate: false, dropped, vaultChanged, discardedAccess }:
- *   site      per top-level key: a dirty section keeps the draft's value, any other key takes the remote's
- *   access    always the remote's, and keys too: a rotation made elsewhere is never clobbered. The draft's new
- *             attachments keep their wrapped keys when the vault key is the same; otherwise (vaultChanged) their
- *             keys are useless, so they leave the site and the draft: `dropped` lists every pending id not kept
- *   deleted   the draft's deleted ids that the merged site no longer references
- *   discardedAccess  the draft had access-code changes (revoke, new codes), now gone
+ *   remote         { shas, site, access, keys } as they are on GitHub now (a loadBase() result)
+ *   dirtySections  the sections the owner changed since the draft's base ('access' for access-code changes)
+ *   keepSite       keep the draft's whole site (overwrite)
+ *   baseSite       the content the draft started from (readDraftBase): the site is then merged three-way, field by
+ *                  field; without it, by section (a dirty section keeps the draft's value, the rest the remote's)
+ * Returns { site, access, keys, pending, deleted, revoked, rotate, dropped, vaultChanged, keyChanged, discardedAccess }:
+ *   vaultChanged  vault/access.json or vault/keys.json moved on GitHub since the draft's base. Only then do access
+ *                 and keys come from GitHub (a rotation made elsewhere is never clobbered) and are the draft's
+ *                 revoked and rotate cleared; otherwise the draft keeps all four, as there is nothing to clobber.
+ *   keyChanged    the vault key itself differs (keys.vk): the draft's new attachments were wrapped under a key that
+ *                 is gone, so they leave the site and the draft. Otherwise they keep their wrapped keys.
+ *   dropped       every pending id not kept      deleted  the draft's deleted ids the merged site no longer references
+ *   discardedAccess  the vault changed and the owner had access-code changes, which are now gone
  */
-export function mergeDrafts(draft, remote, dirtySections = [], { keepSite = false } = {}) {
+export function mergeDrafts(draft, remote, dirtySections = [], { keepSite = false, baseSite } = {}) {
   const dirty = new Set(dirtySections);
   const mine = isObj(draft?.site) ? draft.site : {};
   const theirs = isObj(remote?.site) ? remote.site : {};
   let site;
-  if (keepSite) {
-    site = copy(mine);
-  } else {
-    site = {};
-    const keys = [...Object.keys(theirs), ...Object.keys(mine).filter((k) => !Object.hasOwn(theirs, k))];
-    for (const key of keys) {
-      if (key === '__proto__') continue;
-      const value = key === 'site' ? mergeSiteKey(mine.site, theirs.site, dirty) : copy(dirty.has(contentSection(key)) ? mine[key] : theirs[key]);
-      if (value !== undefined) site[key] = value;
-    }
-  }
+  if (keepSite) site = copy(mine);
+  else if (isObj(baseSite)) site = merge3(baseSite, mine, theirs);
+  else site = mergeBySection(mine, theirs, dirty);
 
-  const vaultChanged = !(isObj(draft?.keys) && isObj(remote?.keys) && draft.keys.vk === remote.keys.vk);
+  const moved = (k) => (remote?.shas?.[k] ?? null) !== (draft?.baseShas?.[k] ?? null);
+  const vaultChanged = moved('access') || moved('keys');
+  const keyChanged = vaultChanged && !(isObj(draft?.keys) && isObj(remote?.keys) && draft.keys.vk === remote.keys.vk);
   const pendingIds = (draft?.pending ?? []).map(idOf);
-  if (vaultChanged && pendingIds.length) site = stripFiles(site, new Set(pendingIds));
+  if (keyChanged && pendingIds.length) site = stripFiles(site, new Set(pendingIds));
   const referenced = referencedFileIds(site);
-  const pending = vaultChanged ? [] : (draft?.pending ?? []).filter((p) => referenced.has(idOf(p))).map(copy);
+  const pending = keyChanged ? [] : (draft?.pending ?? []).filter((p) => referenced.has(idOf(p))).map(copy);
   const kept = new Set(pending.map(idOf));
-  const keys = copy(remote?.keys);
-  if (isObj(keys) && kept.size) {
-    keys.files = { ...(isObj(keys.files) ? keys.files : {}) };
-    for (const id of kept) {
-      if (draft.keys?.files?.[id] !== undefined) keys.files[id] = copy(draft.keys.files[id]);
+  let keys = copy(draft?.keys);
+  if (vaultChanged) {
+    keys = copy(remote?.keys);
+    if (isObj(keys) && kept.size) {
+      keys.files = { ...(isObj(keys.files) ? keys.files : {}) };
+      for (const id of kept) {
+        if (draft.keys?.files?.[id] !== undefined) keys.files[id] = copy(draft.keys.files[id]);
+      }
     }
   }
   return {
     site,
-    access: copy(remote?.access),
+    access: copy(vaultChanged ? remote?.access : draft?.access),
     keys,
     pending,
     deleted: (draft?.deleted ?? []).filter((id) => !referenced.has(id)),
-    revoked: [],
-    rotate: false,
+    revoked: vaultChanged ? [] : copy(draft?.revoked ?? []),
+    rotate: vaultChanged ? false : draft?.rotate === true,
     dropped: pendingIds.filter((id) => !kept.has(id)),
     vaultChanged,
-    discardedAccess: dirty.has('access'),
+    keyChanged,
+    discardedAccess: vaultChanged && dirty.has('access'),
   };
 }
 
@@ -297,7 +366,7 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
 
   function refresh() {
     const draft = store.get();
-    const state = buttonState(draft, { dirty: draft ? store.dirty().total : 0, busy });
+    const state = buttonState(draft, { dirty: draft ? store.dirty().total : 0, busy, inflight: inflight.kinds() });
     button.disabled = !state.enabled;
     button.textContent = state.label;
     button.title = state.reason;
@@ -342,8 +411,16 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
 
   /* publish */
 
+  // Work still to land in the draft (an attachment being encrypted, an access code being derived) would be lost by the
+  // rebase after a publish, or wrapped under a key the publish rotates away: publish and reload wait for it.
+  function unfinished() {
+    if (inflight.count() === 0) return false;
+    toast(`${waitText(inflight.kinds())}, then try again`);
+    return true;
+  }
+
   async function start() {
-    if (busy) return;
+    if (busy || unfinished()) return;
     flushPending();                         // a keystroke typed just before the click is part of what is published
     setBusy(true);
     const card = openCard('Publishing');
@@ -462,29 +539,39 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
       el('p', { class: 'adm-modal-text adm-pub-lead', text: stepLine('conflict') }),
       el('p', { class: 'adm-pub-detail', text: detail }),
       el('ul', { class: 'adm-pub-choices' },
-        el('li', {}, el('b', { text: 'Reload and reapply' }), ' puts your draft on top of the newer content: the sections you changed keep your version, the others take the newer one. You publish afterwards.'),
+        el('li', {}, el('b', { text: 'Reload and reapply' }), ' puts your draft on top of the newer content: what you changed keeps your version, everything else takes the newer one. You publish afterwards.'),
         el('li', {}, el('b', { text: 'Overwrite with my draft' }), ' publishes your content as it is, now.'),
-        el('li', {}, 'Either way, access codes and file keys come from GitHub.')));
+        el('li', {}, 'Your access-code changes stay, unless the access codes changed on GitHub too: then GitHub’s win, and you are asked first.')));
+    // While an attachment is still being encrypted the choice waits: the modal stays open (onClick returns false).
+    const choose = (overwrite) => () => {
+      if (unfinished()) return false;
+      setTimeout(() => reapply(overwrite), 0);
+      return undefined;
+    };
     const dialog = modal({
       title: 'Changed on GitHub',
       body,
       actions: [
         { label: 'Cancel' },
-        { label: 'Overwrite with my draft', onClick: () => { setTimeout(() => reapply(true), 0); } },
-        { label: 'Reload and reapply', primary: true, onClick: () => { setTimeout(() => reapply(false), 0); } },
+        { label: 'Overwrite with my draft', onClick: choose(true) },
+        { label: 'Reload and reapply', primary: true, onClick: choose(false) },
       ],
     });
     dialog.element.classList.add('adm-modal-wide');
   }
 
-  function confirmApply() {
+  // The last word before the draft is rebased: the promise of the merge (Reload) and every warning that applies.
+  function confirmApply({ overwrite, siteMoved, notes }) {
+    const body = el('div', {},
+      !overwrite && siteMoved ? el('p', { class: 'adm-modal-text', text: 'Your draft will be applied on top of the newer content; fields you did not touch take the newer values' }) : null,
+      notes.map((text) => el('p', { class: 'adm-pub-warn', text })));
     return new Promise((resolve) => {
       modal({
-        title: 'Reload and reapply',
-        body: 'Your draft will be applied on top of the newer content; fields you did not touch take the newer values',
+        title: overwrite ? 'Overwrite with my draft' : 'Reload and reapply',
+        body,
         actions: [
           { label: 'Cancel', onClick: () => resolve(false) },
-          { label: 'Apply my draft', primary: true, onClick: () => resolve(true) },
+          { label: overwrite ? 'Overwrite and publish' : 'Apply my draft', primary: true, onClick: () => resolve(true) },
         ],
         onClose: () => resolve(false),
       });
@@ -493,14 +580,17 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
 
   // Reload and reapply (overwrite = false) or Overwrite with my draft (true, then publish again).
   async function reapply(overwrite) {
-    if (busy) return;
+    if (busy || unfinished()) return;
     flushPending();
     setBusy(true);
     const card = openCard(overwrite ? 'Publishing' : 'Reloading');
     card.line('reload', 'Reloading from GitHub…', 'active');
+    const draft = store.get();
     let remote;
+    let base;
     try {
       remote = await loadBase(gh);
+      base = await readDraftBase(gh, draft, remote);    // never throws: unknown parts are undefined
     } catch (err) {
       setBusy(false);
       card.line('reload', null, 'failed');
@@ -508,20 +598,40 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
       return;
     }
     card.line('reload', 'Reloaded from GitHub', 'done');
-    const draft = store.get();
-    if (!overwrite && remote.shas.site !== (draft.baseShas?.site ?? null) && !(await confirmApply())) {
+
+    // What the owner changed: compared with the content the draft started from (at its base commit), not with the
+    // base loaded at sign-in, which may be newer. When that content cannot be read, dirty() names the sections, and
+    // the confirmation lists them, so the owner can cancel.
+    const known = isObj(base.site);
+    const fallback = dirtyIds();
+    const own = known ? changedSections(draft.site, base.site) : fallback.filter((id) => id !== 'access' && id !== 'files');
+    const accessOwn = (draft.revoked ?? []).length > 0 || draft.rotate === true
+      || (base.access === undefined ? fallback.includes('access') : !equal(draft.access, base.access));
+    const merged = mergeDrafts(draft, remote, accessOwn ? [...own, 'access'] : own, { keepSite: overwrite, baseSite: known ? base.site : undefined });
+
+    const siteMoved = (remote.shas?.site ?? null) !== (draft.baseShas?.site ?? null);
+    const notes = [];
+    if (!overwrite && siteMoved && !known && own.length) {
+      notes.push(`The content your draft started from could not be read, so these sections keep your version as a whole: ${own.map((id) => SECTION_LABELS[id] ?? id).join(', ')}. Cancel if one of them should take the newer content.`);
+    }
+    if (merged.discardedAccess) {
+      notes.push('Your access-code changes (revoked or new codes, a changed admin code) will be discarded, because the access codes changed on GitHub. Redo them afterwards.');
+    }
+    const ask = overwrite ? merged.discardedAccess : siteMoved || merged.discardedAccess;
+    if (ask && !(await confirmApply({ overwrite, siteMoved, notes }))) {
       setBusy(false);
       card.close();
       return;
     }
 
-    const merged = mergeDrafts(draft, remote, dirtyIds(), { keepSite: overwrite });
-    store.reset(remote);                    // base, access, keys, revoked and rotate from GitHub
-    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-    if (!same(merged.site, remote.site)) store.set(['site'], merged.site);
-    if (!same(merged.keys, remote.keys)) store.set(['keys'], merged.keys);
+    store.reset(remote);                    // the base and the vault files from GitHub; then the draft's parts back
+    if (!equal(merged.site, remote.site)) store.set(['site'], merged.site);
+    if (!equal(merged.access, remote.access)) store.set(['access'], merged.access);
+    if (!equal(merged.keys, remote.keys)) store.set(['keys'], merged.keys);
     if (merged.pending.length) store.set(['pending'], merged.pending);
     if (merged.deleted.length) store.set(['deleted'], merged.deleted);
+    if (merged.revoked.length) store.set(['revoked'], merged.revoked);
+    if (merged.rotate) store.set(['rotate'], true);
     for (const id of merged.dropped) {
       try { await fileStore.delete(id); } catch { /* an orphan in the browser's store is harmless */ }
     }
@@ -530,7 +640,7 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
     card.close();
 
     if (merged.discardedAccess) toast('Access-code changes were discarded because the vault changed on GitHub; redo them', { ms: 12000 });
-    if (merged.vaultChanged) {
+    if (merged.keyChanged) {
       toast(`The vault key changed on GitHub${merged.dropped.length ? `, so ${merged.dropped.length} new attachment(s) were removed` : ''}: sign out and sign in again before attaching files or changing access codes`, { ms: 15000 });
     } else if (merged.dropped.length) {
       toast(`${merged.dropped.length} new attachment(s) were removed with the older content: attach them again`, { ms: 12000 });
@@ -543,6 +653,7 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
 
   button.onclick = () => { start(); };
   store.subscribe(refresh);
+  inflight.subscribe(refresh);
   window.addEventListener('beforeunload', (event) => {
     if (!busy) return;
     event.preventDefault();

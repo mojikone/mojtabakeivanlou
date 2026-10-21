@@ -93,6 +93,24 @@ test('getFile reads the Contents API on the branch and decodes the base64 (with 
   assert.equal(calls.length, 1);
 });
 
+test('getFile(path, ref) reads the file at a commit instead of the branch head; null when it did not exist there', async () => {
+  const { gh, calls } = client({
+    [`GET ${R}/contents/content/site.json?ref=abc123`]: { body: { sha: 'old-sha', encoding: 'base64', content: b64('{"v":1}') } },
+    [`GET ${R}/contents/vault/access.json?ref=abc123`]: { status: 404, body: { message: 'Not Found' } },
+    [`GET ${R}/contents/content/site.json?ref=a%2Fb`]: { body: { sha: 's', encoding: 'base64', content: b64('{}') } },
+  });
+  const file = await gh.getFile('content/site.json', 'abc123');
+  assert.equal(file.sha, 'old-sha');
+  assert.equal(new TextDecoder().decode(file.bytes), '{"v":1}');
+  assert.equal(await gh.getFile('vault/access.json', 'abc123'), null);
+  assert.equal((await gh.getFile('content/site.json', 'a/b')).sha, 's');   // the ref is one encoded query value
+  assert.deepEqual(calls.map((c) => c.url), [
+    `${R}/contents/content/site.json?ref=abc123`,
+    `${R}/contents/vault/access.json?ref=abc123`,
+    `${R}/contents/content/site.json?ref=a%2Fb`,
+  ]);
+});
+
 test('getFile returns null on 404', async () => {
   const { gh } = client({ [`GET ${R}/contents/vault/keys.json?ref=${BRANCH}`]: { status: 404, body: { message: 'Not Found' } } });
   assert.equal(await gh.getFile('vault/keys.json'), null);

@@ -558,6 +558,10 @@
 .adm-pub-detail { margin-bottom: 12px; font-size: 13px; color: var(--text-2); overflow-wrap: anywhere; }
 .adm-pub-choices { display: flex; flex-direction: column; gap: 6px; margin: 0 0 20px; padding-left: 18px; list-style: disc; font-size: 13px; color: var(--text-2); }
 .adm-pub-choices b { color: var(--text); font-weight: 600; }
+.adm-pub-warn {
+  margin: 0 0 14px; padding: 8px 12px; font-size: 13px; overflow-wrap: anywhere;
+  background: #fff5dc; border-left: 3px solid #e3a72f; border-radius: 0 8px 8px 0;
+}
 
 @media (max-width: 900px) {
   .adm-status-note { order: 4; flex-basis: 100%; max-width: none; padding: 4px 12px; border-radius: 10px; white-space: normal; text-align: center; }

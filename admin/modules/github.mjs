@@ -42,7 +42,7 @@ const encodePath = (path) => String(path).split('/').map(encodeURIComponent).joi
  * createGitHub({ token, owner, repo, branch, fetch }) -> the client below. All methods return promises.
  *   validate()            { ok, status } of GET /repos/{owner}/{repo}; never throws (status 0: unreachable)
  *   getHead()             { sha, tree } of the branch head
- *   getFile(path)         { sha, bytes } of the file on the branch, or null when it does not exist
+ *   getFile(path, ref?)   { sha, bytes } of the file on the branch (or at commit `ref`), or null when it does not exist
  *   listTree()            the paths of every file (blob) in the head commit, recursively
  *   commitFiles({ message, files: [{ path, bytes }], deletes: [path], parent })  -> { sha } of the new commit
  *   latestRun(headSha)    { id, status, conclusion, html_url } of the push run for that commit, or null
@@ -117,8 +117,10 @@ export function createGitHub({ token, owner, repo, branch, fetch: fetchImpl = gl
     return { sha, tree: await commitTree(sha) };
   }
 
-  async function getFile(path) {
-    const file = await get(`/contents/${encodePath(path)}?ref=${branchQuery}`, { notFound: null });
+  // `ref` (a commit sha, say) reads the file as it was there; the default is the branch head.
+  async function getFile(path, ref) {
+    const at = ref === undefined || ref === null ? branchQuery : encodeURIComponent(ref);
+    const file = await get(`/contents/${encodePath(path)}?ref=${at}`, { notFound: null });
     if (file === null) return null;
     if (Array.isArray(file) || typeof file.sha !== 'string') throw new GitHubError(200, `${path} is not a file`);
     if (file.encoding === 'base64') return { sha: file.sha, bytes: decode(file.content) };
