@@ -42,13 +42,17 @@ export const sections = [
   { id: 'settings', label: 'Settings', group: 'admin', render: settings.render },
 ];
 
-// First-run setup (spec 13.2), reached through #setup with or without a session (there is no admin code yet the
-// first time). Task 24 replaces it with the wizard. Same signature, but `store` is always null (the wizard needs no
-// draft) and ctx is { github: null, session: null } when nobody is signed in.
+// First-run setup (spec 13.2): the wizard of ../modules/setup.mjs, reached through #setup. The shell shows it on its own,
+// and only while nobody is signed in (admin.mjs sends a signed-in owner to #profile). Same signature as a section, but
+// `store` is always null (the wizard needs no draft) and ctx is { github: null, session: null }; the wizard builds its
+// own GitHub client from the token the owner pastes. render returns the teardown that empties the secret fields.
+import { runSetup } from '../modules/setup.mjs';
+import { createGitHub } from '../modules/github.mjs';
+
 export const setupSection = {
   id: 'setup',
   label: 'Setup',
   render(container) {
-    container.innerHTML = html`<div class="adm-card"><h1 class="adm-title">Setup wizard — Task 24</h1></div>`;
+    return runSetup(container, { createGitHub });
   },
 };

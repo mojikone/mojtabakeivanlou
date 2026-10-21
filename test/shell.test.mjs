@@ -170,15 +170,14 @@ test('the nav lists the ten sections of spec 13.3 in order, content first, then 
   for (const s of [...sections, setupSection]) assert.equal(typeof s.render, 'function', s.id);
 });
 
-test('no "coming soon" placeholder is left: every nav entry renders through its own module; setup names Task 24', async () => {
+test('no "coming soon" placeholder is left: every nav entry renders through its own module', async () => {
   // Task 23 built the last placeholders (access, files): each entry's render is the one of admin/sections/<id>.mjs.
   for (const s of sections) {
-    const mod = await import(`../admin/sections/${s.id}.mjs`);
+    const mod = await import();
     assert.equal(s.render, mod.render, s.id);
   }
-  const container = { innerHTML: '' };
-  setupSection.render(container, null, { github: null, session: null });
-  assert.match(container.innerHTML, /Setup wizard — Task 24/);
+  // The setup route renders the real wizard (Task 24), which needs a DOM; only its shape is checked here.
+  assert.equal(typeof setupSection.render, 'function');
 });
 
 test('routeOf maps the hash to a section id, #setup to setup, and anything else to the first section', () => {
