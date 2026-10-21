@@ -6,7 +6,9 @@
 // No text shown here carries a secret: every error passes through publish.mjs's clean() with the session's vault
 // key, KEK and token, and links are only ever https URLs.
 
-import { publish, finalizePublished, PublishValidationError, SECTION_LABELS, clean, referencedFileIds } from './publish.mjs';
+import {
+  publish, finalizePublished, PublishValidationError, SECTION_LABELS, SESSION_KEY_MISMATCH, clean, referencedFileIds,
+} from './publish.mjs';
 import { AuthError } from './github.mjs';
 import { contentSection, changedSections, SITE_FIELDS } from './state.mjs';
 import { loadBase, PATHS } from './shell.mjs';
@@ -104,6 +106,13 @@ export function failureMessage(result, fallbackUrl = null, secrets = []) {
       title: 'Saved, not live',
       retry: false,
       parts: ['Saved to GitHub, but the build failed. ', { text: 'Open the run', href: result.runUrl }, '. Fix the problem and publish again, or re-run the workflow on GitHub.'],
+    };
+  }
+  if (!result?.sha && result?.error === SESSION_KEY_MISMATCH) {
+    return {
+      title: 'Not published',
+      retry: false,
+      parts: [`Nothing was published: ${SESSION_KEY_MISMATCH}. Reload the dashboard: it takes the current keys from the draft, or asks you to sign in again.`],
     };
   }
   const error = clean(result?.error, secrets);
@@ -352,7 +361,8 @@ const wired = new WeakMap();                // root -> handle (admin.mjs's loadD
  *   getSession(), getGh()     the session ({ vk, ok, kek, entryId, github }) and the GitHub client as they are now: read at
  *                             every click, because a change of the admin code or the token replaces both after wiring
  *                             (admin.mjs's session hook). `session` and `gh` instead fix them for good.
- *   onSessionVk(vk, ok)  a publish rotated the vault key and the owner key (base64): the session must take them at once
+ *   onSessionVk(vk, ok)  a publish rotated the vault key and the owner key (base64): the session must take them at
+ *                        once, as soon as the commit is on the branch (publish's onCommitted), not after the build
  *   onPublished()        a publish went live: refresh "published N min ago"
  *   publishFn            publish.mjs's publish(), replaceable in tests
  * Every way into a publish (the button, Retry, Overwrite, Reload and reapply) first checks that the session still
@@ -472,9 +482,18 @@ export function wirePublish({
       }
     };
 
+    // A rotation: the session takes the new keys the moment the commit lands, so a reload or a lost connection during
+    // the build cannot leave it on keys the vault no longer holds.
+    let keysTaken = false;
+    const takeKeys = ({ vk, ok } = {}) => {
+      if (!vk || keysTaken) return;
+      keysTaken = true;
+      try { onSessionVk?.(vk, ok); } catch { /* the committed vault is under the new key whatever happens here */ }
+    };
+
     let result;
     try {
-      result = await publishFn({ store, gh, fileStore, session, icons, onProgress });
+      result = await publishFn({ store, gh, fileStore, session, icons, onProgress, onCommitted: takeKeys });
     } catch (err) {
       setBusy(false);
       if (err instanceof PublishValidationError) {
@@ -489,9 +508,7 @@ export function wirePublish({
       return;
     }
 
-    if (result.vk) {
-      try { onSessionVk?.(result.vk, result.ok); } catch { /* the committed vault is under the new key whatever happens here */ }
-    }
+    if (result.vk) takeKeys(result);        // normally done already, when the commit landed
 
     if (result.conflict) {
       setBusy(false);

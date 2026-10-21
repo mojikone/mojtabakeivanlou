@@ -9,10 +9,10 @@ import { publish } from '../admin/modules/publish.mjs';
 import {
   listCodes, createDownloadCode, revoke, unrevoke, changeAdminCode, replaceToken, totalAttachmentBytes, orphanBlobs,
   listAttachments, isStaleSession, resumeAdminSession, cancelAdminChange, applySessionChange, onSessionChanged,
-  sessionChanged, today, budgetLevel, validateNewToken, sessionMatchesDraft,
+  sessionChanged, today, budgetLevel, validateNewToken, sessionMatchesDraft, adoptSessionKeys, sessionKeysMatch,
 } from '../admin/modules/codes.mjs';
 import {
-  createAccessFile, createKeysFile, addEntry, unlock, generateKey, exportKey, importKey, readMeta, shortId,
+  createAccessFile, createKeysFile, addEntry, unlock, generateKey, exportKey, importKey, readMeta, shortId, rotateVault,
 } from '../assets/js/vault.mjs';
 
 const ITER = 1000; // production uses 600000; tests stay fast
@@ -317,6 +317,49 @@ test('sessionMatchesDraft: the publish guard, ok only for a live admin entry of 
     assert.deepEqual(sessionMatchesDraft(store.get(), nobody), { ok: false, reason: 'missing' });
   }
   assert.deepEqual(sessionMatchesDraft(null, session), { ok: false, reason: 'missing' });
+});
+
+/* --- the session's keys at load (I2) --- */
+
+test('adoptSessionKeys: after a rotation the session takes the keys of its admin entry in the draft; itself untouched', async () => {
+  const { store, vk, ok, session } = await setup({ downloads: ['MK-AAAA-BBBB'] });
+  assert.equal(await sessionKeysMatch(store.get().access, session), true);
+  const same = await adoptSessionKeys(store.get(), session);
+  assert.deepEqual(same, session, 'nothing to adopt when the keys are current');
+  assert.notEqual(same, session, 'a new object');
+
+  // the draft now holds a rotated vault (another tab published a revoke, or this tab reloaded during the build)
+  const draft = store.get();
+  const rotated = await rotateVault({
+    access: draft.access, keys: draft.keys, vk, ok, kek: await importKey(session.kek), adminEntryId: session.entryId,
+    codesById: { [draft.access.entries[1].id]: 'MK-AAAA-BBBB' },
+  });
+  store.set(['access'], rotated.access);
+  const snapshot = clone(session);
+  assert.equal(await sessionKeysMatch(store.get().access, session), false, 'the stale session no longer matches');
+
+  const adopted = await adoptSessionKeys(store.get(), session);
+  assert.deepEqual(adopted, { ...session, vk: await exportKey(rotated.vk), ok: await exportKey(rotated.ok) });
+  assert.equal(await sessionKeysMatch(store.get().access, adopted), true);
+  assert.deepEqual(session, snapshot, 'the given session is left as it is');
+  assert.equal((await listCodes(store.get(), adopted.ok))[1].code, 'MK-AAAA-BBBB', 'the codes read again');
+});
+
+test('adoptSessionKeys: null when the session\'s admin entry does not open (the sign-in is out of date)', async () => {
+  const { store, session } = await setup({ downloads: ['MK-AAAA-BBBB'] });
+  const download = store.get().access.entries[1];
+  const other = await exportKey(await generateKey());
+  for (const stale of [
+    { ...session, kek: other },                 // a KEK that opens nothing
+    { ...session, entryId: 'ffffffff' },        // an entry the draft does not hold (a vault made again)
+    { ...session, entryId: download.id },       // not an admin entry
+    { ...session, kek: undefined },
+    null,
+  ]) {
+    assert.equal(await adoptSessionKeys(store.get(), stale), null);
+  }
+  assert.equal(await adoptSessionKeys({ ...store.get(), access: createAccessFile(ITER) }, session), null);
+  assert.equal(await adoptSessionKeys(null, session), null);
 });
 
 /* --- replace the GitHub token --- */

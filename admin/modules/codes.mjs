@@ -83,6 +83,18 @@ export async function sessionKeysMatch(access, session) {
   return Boolean(payload) && filled(payload.vk) && payload.vk === session.vk && filled(payload.ok) && payload.ok === session.ok;
 }
 
+/**
+ * The session with the vault key and owner key its admin entry in the draft holds, or null when that entry does not
+ * open with the session's KEK (or holds no keys): the sign-in is out of date. The dashboard adopts the keys each time
+ * the draft loads, so a key kept from before a rotation (a reload during the build, a lost answer to the ref update,
+ * a rotation from another tab) can never wrap an attachment nobody could decrypt. `session` itself is left as it is.
+ */
+export async function adoptSessionKeys(draft, session) {
+  const payload = await openSessionEntry(draft?.access, session);
+  if (!filled(payload?.vk) || !filled(payload?.ok)) return null;
+  return applySessionChange(session, { vk: payload.vk, ok: payload.ok });
+}
+
 /* ─── LIST ─── */
 
 /**

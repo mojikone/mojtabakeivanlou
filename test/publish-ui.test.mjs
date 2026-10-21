@@ -8,6 +8,7 @@ import {
   buttonState, stepLine, sectionForPath, mergeDrafts, failureMessage, isDeploySkipped, actionsUrl, readDraftBase,
   wirePublish, SESSION_MISMATCH_TEXT,
 } from '../admin/modules/publish-ui.mjs';
+import { SESSION_KEY_MISMATCH } from '../admin/modules/publish.mjs';
 import { changedSections } from '../admin/modules/state.mjs';
 import { createInflight } from '../admin/modules/inflight.mjs';
 import { FakeNode, installFakeDom } from './helpers/fake-dom.mjs';
@@ -129,6 +130,13 @@ test('failureMessage: an error after the commit is saved-but-unfollowed; before 
   assert.equal(before.title, 'Not published');
   assert.deepEqual(before.parts, ['Nothing was published: Could not reach GitHub (GET /x)']);
   assert.equal(before.retry, true);
+});
+
+test('failureMessage: a stale session key says to reload (Retry would only fail the same way)', () => {
+  const m = failureMessage({ failed: true, error: SESSION_KEY_MISMATCH }, ACTIONS);
+  assert.equal(m.title, 'Not published');
+  assert.equal(m.retry, false);
+  assert.deepEqual(m.parts, ['Nothing was published: session vault key does not match the vault. Reload the dashboard: it takes the current keys from the draft, or asks you to sign in again.']);
 });
 
 test('failureMessage: the error text is cleaned of tokens and the given secrets', () => {
@@ -472,6 +480,39 @@ test('wirePublish: publish() gets the session and GitHub client current at the c
     assert.equal(dialogs().length, 0);
     assert.equal(buttonsNamed('Retry').length, 1, 'the fake failure leaves a Retry button');
     assert.equal(nodes['#publishButton'].textContent, 'Publish');
+  } finally {
+    restore();
+  }
+});
+
+test('wirePublish: a rotation hands the new keys to the session when the commit lands, once, before the build is over', async () => {
+  const restore = installFakeDom();
+  try {
+    const { root } = shellRoot();
+    const draft = changedDraft();
+    const store = { get: () => draft, dirty: () => ({ total: 1, bySection: { profile: 1 } }), subscribe: () => () => {} };
+    const gh = { getHead: async () => ({ sha: draft.baseCommit, tree: 't' }), runJobs: async () => [] };
+    const taken = [];
+    let finishBuild;
+    const building = new Promise((resolve) => { finishBuild = resolve; });
+    const handle = wirePublish({
+      root, store, fileStore: {}, getSession: () => asSession('new'), getGh: () => gh,
+      onSessionVk: (vk, ok) => { taken.push([vk, ok]); },
+      publishFn: async ({ onCommitted }) => {
+        onCommitted({ sha: 'c1', vk: 'bmV3LXZr', ok: 'bmV3LW9r' });
+        await building;                            // the build takes minutes; a reload may come meanwhile
+        return { sha: 'c1', vk: 'bmV3LXZr', ok: 'bmV3LW9r' };
+      },
+    });
+    await tick();
+    const run = handle.start();
+    await tick();
+    assert.deepEqual(taken, [['bmV3LXZr', 'bmV3LW9r']], 'taken while the build still runs');
+    assert.equal(handle.busy(), true);
+    finishBuild();
+    await run;
+    assert.deepEqual(taken, [['bmV3LXZr', 'bmV3LW9r']], 'not taken twice');
+    assert.equal(handle.busy(), false);
   } finally {
     restore();
   }

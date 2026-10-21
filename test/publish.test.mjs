@@ -2,7 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { SECTION_LABELS, buildCommit, publish, finalizePublished, clean, PublishValidationError } from '../admin/modules/publish.mjs';
+import {
+  SECTION_LABELS, SESSION_KEY_MISMATCH, buildCommit, publish, finalizePublished, clean, PublishValidationError,
+} from '../admin/modules/publish.mjs';
 import { createStore } from '../admin/modules/state.mjs';
 import { createMemoryFileStore } from '../admin/modules/files.mjs';
 import { AuthError, ConflictError, GitHubError } from '../admin/modules/github.mjs';
@@ -103,8 +105,20 @@ function fakeGitHub(base) {
   return gh;
 }
 
+// The default vault of setup(): one admin entry, and the session it gives (its keys are the ones the entry holds, so
+// publish's session check passes).
+async function makeAdminVault() {
+  const vk = await generateKey();
+  const ok = await generateKey();
+  const [vkB64, okB64] = [await exportKey(vk), await exportKey(ok)];
+  const access = await addEntry(createAccessFile(ITER), { kind: 'admin', code: ADMIN_CODE, payload: { vk: vkB64, ok: okB64, github: GITHUB }, meta: { label: 'Admin', created: DAY } }, ok);
+  const admin = await unlock(access, ADMIN_CODE);
+  return { access, session: { vk: vkB64, ok: okB64, kek: await exportKey(admin.kek), entryId: admin.entry.id } };
+}
+const ADMIN_VAULT = await makeAdminVault();
+
 // A store initialised from a base that matches the fake GitHub, a memory file store and a recording onProgress.
-function setup({ access = createAccessFile(ITER), keys = createKeysFile('abcdef01'), session, site = SITE } = {}) {
+function setup({ access = ADMIN_VAULT.access, keys = createKeysFile('abcdef01'), session, site = SITE } = {}) {
   const storage = memStorage();
   const store = createStore({ storage });
   const base = {
@@ -120,7 +134,7 @@ function setup({ access = createAccessFile(ITER), keys = createKeysFile('abcdef0
   const fileStore = createMemoryFileStore();
   const steps = [];
   const onProgress = (step, info) => { steps.push([step, info]); };
-  const sess = session ?? { vk: 'A'.repeat(43) + '=', ok: 'C'.repeat(43) + '=', kek: 'B'.repeat(43) + '=', entryId: 'abcdef01' };
+  const sess = session ?? ADMIN_VAULT.session;
   const run = (over = {}) => publish({ store, gh, fileStore, session: sess, icons, onProgress, pollMs: 1, ...over });
   return { storage, store, base, gh, fileStore, steps, run, session: sess };
 }
@@ -550,6 +564,63 @@ test('publish: an AuthError while polling, after the commit, resolves failed wit
   const committed = JSON.parse(dec(commitCalls(w.gh)[0].files[1].bytes));
   assert.equal((await unlock(committed, vault.kept)).payload.vk, result.vk);
   assert.equal(w.store.get(), before);                      // the UI finalizes; publish leaves the draft alone
+});
+
+test('publish: a session whose vault key or owner key is not the one its admin entry holds commits nothing (I2)', async () => {
+  const other = await exportKey(await generateKey());
+  const stale = [
+    { ...ADMIN_VAULT.session, vk: other },                 // kept from before a rotation (a reload during the build)
+    { ...ADMIN_VAULT.session, ok: other },
+    { ...ADMIN_VAULT.session, kek: other },                // a KEK that opens nothing
+    { ...ADMIN_VAULT.session, entryId: 'ffffffff' },       // an entry the draft does not hold
+    { ...ADMIN_VAULT.session, ok: undefined },
+  ];
+  for (const session of stale) {
+    const w = setup({ session });
+    await attach(w);                                       // the real risk: an attachment wrapped under a stale key
+    const before = w.store.get();
+
+    const result = await w.run();
+
+    assert.deepEqual(result, { failed: true, error: SESSION_KEY_MISMATCH });
+    assert.equal(SESSION_KEY_MISMATCH, 'session vault key does not match the vault');
+    assert.deepEqual(names(w.steps), ['validating', 'failed']);
+    assert.deepEqual(w.steps.at(-1), ['failed', { error: SESSION_KEY_MISMATCH }]);
+    assert.deepEqual(w.gh.calls, [], 'not even the head is read');
+    assert.equal(w.store.get(), before);
+  }
+});
+
+test('publish: onCommitted gets the sha, and with a rotation the new keys, the moment the commit lands (before the build)', async () => {
+  const vault = await makeVault();
+  const w = setup({ access: vault.access, keys: vault.keys, session: vault.session, site: vault.site });
+  w.store.set(['revoked'], [vault.ids[2]]);
+  const order = [];
+  const committed = [];
+  const onProgress = (step) => { order.push(step); };
+  const onCommitted = (info) => { order.push('onCommitted'); committed.push(info); };
+
+  const result = await w.run({ onProgress, onCommitted });
+
+  assert.deepEqual(order, ['validating', 'checking', 'committing', 'onCommitted', 'building', 'live']);
+  assert.deepEqual(committed, [{ sha: 'commit1', vk: result.vk, ok: result.ok }]);
+  assert.notEqual(result.vk, vault.vkB64);
+
+  // without a rotation: the sha alone; a throwing callback breaks nothing
+  const plain = setup();
+  plain.store.set([...BULLET, 'text'], 'changed');
+  const seen = [];
+  const again = await plain.run({ onCommitted: (info) => { seen.push(info); throw new Error('a broken callback'); } });
+  assert.deepEqual(seen, [{ sha: 'commit1' }]);
+  assert.deepEqual(again, { sha: 'commit1' });
+
+  // nothing committed (a conflict): never called
+  const conflict = setup();
+  conflict.store.set([...BULLET, 'text'], 'changed');
+  conflict.gh.files[PATHS.site].sha = 'moved';
+  const none = [];
+  assert.equal((await conflict.run({ onCommitted: (info) => none.push(info) })).conflict, true);
+  assert.deepEqual(none, []);
 });
 
 test('publish: live carries the run id of the run that went live (for the deploy check)', async () => {

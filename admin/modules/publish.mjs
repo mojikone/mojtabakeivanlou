@@ -10,6 +10,7 @@ import { normalizeSite, validateSite } from '../../assets/js/render/model.mjs';
 import { icons as defaultIcons } from '../../assets/js/render/icons.mjs';
 import { AuthError, ConflictError, GitHubError } from './github.mjs';
 import { PATHS } from './shell.mjs';
+import { sessionKeysMatch } from './codes.mjs';
 
 export const SECTION_LABELS = Object.freeze({
   profile: 'Profile & contact',
@@ -23,6 +24,9 @@ export const SECTION_LABELS = Object.freeze({
   files: 'Files',
   settings: 'Settings',
 });
+
+/** The failure when the session's vault key or owner key is not the one the draft's admin entry holds (I2). */
+export const SESSION_KEY_MISMATCH = 'session vault key does not match the vault';
 
 const MESSAGE = 'Content update from dashboard';
 const CHECKED = ['site', 'access', 'keys'];         // the files the conflict check compares (keys of PATHS)
@@ -250,16 +254,21 @@ export async function finalizePublished({ store, gh, fileStore, draft = store.ge
  *   onProgress  (step, info) => void; steps: validating, checking, committing, building { sha },
  *               live { sha, url, runId? }, conflict { paths },
  *               failed { sha?, runUrl? | reason: 'timeout' (+ runUrl when a run was seen) | error }
+ *   onCommitted ({ sha, vk?, ok? }) => void, called once, the moment the commit is on the branch (before the build
+ *               is followed): with a rotation, the session must take the new keys then, not minutes later
  *   pollMs      delay before each poll of the run (default 10000); maxPolls (default 90)
  * Resolves { sha } (plus vk and ok, base64, when the vault key and owner key were rotated), { conflict: true, paths }
  * or { failed: true, runUrl | reason (+ runUrl) | error }. A failure after the commit reached the branch also carries
  * that commit's `sha` (the content is saved: the caller runs finalizePublished) and `vk` and `ok` when a rotation was
  * committed.
  * After live the draft is already rebased (finalizePublished). After a failure the draft and the blobs are untouched.
+ * A session whose vault key or owner key is not the one its admin entry in the draft holds commits nothing: it
+ * resolves { failed: true, error: SESSION_KEY_MISMATCH } (an attachment wrapped under a stale key could never be
+ * decrypted, and a rotation would fail).
  * Rejects only with PublishValidationError, or with an AuthError raised before the commit reached the branch.
  */
 export async function publish({
-  store, gh, fileStore, session, icons = defaultIcons, onProgress = () => {},
+  store, gh, fileStore, session, icons = defaultIcons, onProgress = () => {}, onCommitted = () => {},
   pollMs = 10000, maxPolls = 90,
 } = {}) {
   const emit = (step, info) => {
@@ -278,6 +287,10 @@ export async function publish({
     emit('validating');
     const errors = validateSite(normalizeSite(draft?.site), { icons: Object.keys(icons) });
     if (errors.length) throw new PublishValidationError(errors);
+    if (!(await sessionKeysMatch(draft?.access, session))) {
+      emit('failed', { error: SESSION_KEY_MISMATCH });
+      return { failed: true, error: SESSION_KEY_MISMATCH };
+    }
 
     // The head is read before the files: if anything is pushed after it, the ref update below fails (a conflict)
     // instead of committing on top of a change the check did not see.
@@ -320,6 +333,7 @@ export async function publish({
       emit('conflict', { paths: ['ref'] });
       return { conflict: true, paths: ['ref'] };
     }
+    try { onCommitted({ sha, ...rotatedKeys() }); } catch { /* the commit is on the branch whatever happens here */ }
 
     emit('building', { sha });
     const { run, seen } = await follow(gh, sha, { pollMs, maxPolls });

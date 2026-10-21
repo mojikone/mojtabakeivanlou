@@ -19,7 +19,7 @@ import { wirePublish } from './modules/publish-ui.mjs';
 import { createGitHub, AuthError, RATE_LIMIT_TEXT } from './modules/github.mjs';
 import { createStore } from './modules/state.mjs';
 import { createFileStore, createMemoryFileStore } from './modules/files.mjs';
-import { onSessionChanged, applySessionChange, replaceToken } from './modules/codes.mjs';
+import { onSessionChanged, applySessionChange, adoptSessionKeys, replaceToken } from './modules/codes.mjs';
 import { openTokenModal } from './modules/token-modal.mjs';
 import { toast } from './modules/ui.mjs';
 import {
@@ -29,6 +29,8 @@ import {
 import { sections, setupSection } from './sections/index.mjs';
 
 const STATUS_TICK_MS = 30000;               // "published 2 min ago" (and the token expiry note) stay current
+const NOTICE_KEY = 'mk.notice';             // a one-shot reason for a sign-out, shown at the gate after the reload
+const NOTICES = Object.freeze({ stale: 'Your sign-in is out of date — sign in again' });
 const SECTION_IDS = sections.map((s) => s.id);
 const $ = (id) => document.getElementById(id);
 
@@ -87,6 +89,7 @@ const PILL = html`<div class="hero-contact-link access-pill" id="accessPill" dat
 function showGate() {
   show('gate');
   leaveSection();                           // leaving #setup empties the wizard's token and code fields
+  showNotice();
   if (pillMounted) return;
   pillMounted = true;
   $('gatePill').innerHTML = PILL;
@@ -173,13 +176,41 @@ function applySession(change) {
   renderMain();
 }
 
-// A publish rotated the vault key and the owner key (wirePublish's onSessionVk, Task 22b): the session takes them at
-// once, in memory (the sections' ctx.session is this object) and in mk.vault / mk.admin. The section is mounted again:
-// it was repainted when publish rebased the draft, still with the old keys (Access codes then read "(cannot be read)").
+// A publish rotated the vault key and the owner key (wirePublish's onSessionVk, Task 22b): the session takes them the
+// moment the commit lands, in memory and in mk.vault / mk.admin. In place: the sections' ctx.session is this object,
+// so the repaint when publish rebases the draft (after the build) already reads the new keys. No remount here: the
+// draft still holds the old access file until that rebase.
 function takeVaultKey(vk, ok) {
   Object.assign(session, applySessionChange(session, { vk, ok }));
   writeSession(sessionStorageOrNull, session);
-  renderMain();
+}
+
+// I2: once the draft is in, the session takes the vault key and owner key of its own admin entry in the draft (opened
+// with the session's KEK), whatever sessionStorage held: a reload during a build, a lost answer to the ref update or a
+// rotation in another tab can leave stale keys there. An entry the KEK does not open means the sign-in is out of date.
+async function adoptDraftKeys() {
+  const next = await adoptSessionKeys(store.get(), session);
+  if (!next) return false;
+  if (next.vk !== session.vk || next.ok !== session.ok) {
+    Object.assign(session, next);
+    writeSession(sessionStorageOrNull, session);
+  }
+  return true;
+}
+
+// Signs out, and says why at the gate after the reload (the reason is one of NOTICES, never free text).
+function signOutWith(reason) {
+  try { sessionStorageOrNull?.setItem(NOTICE_KEY, reason); } catch { /* the gate then just asks again */ }
+  signOut();
+}
+
+function showNotice() {
+  let reason = null;
+  try {
+    reason = sessionStorageOrNull?.getItem(NOTICE_KEY) ?? null;
+    sessionStorageOrNull?.removeItem(NOTICE_KEY);
+  } catch { /* blocked storage: nothing to show */ }
+  if (reason && Object.hasOwn(NOTICES, reason)) toast(NOTICES[reason], { ms: 12000 });
 }
 
 // IndexedDB keeps attachments until they are published. Without it they live in memory, so a reload loses them.
@@ -206,6 +237,10 @@ async function loadDraft() {
     const base = await loadBase(github);
     load = { state: 'ready' };
     store.init(base);                       // notifies: nav, status and name follow
+    if (!(await adoptDraftKeys())) {
+      signOutWith('stale');
+      return;
+    }
     $('previewButton').onclick = () => openPreview(store, pageForSection(route));
     $('previewButton').disabled = false;
     wirePublish({
