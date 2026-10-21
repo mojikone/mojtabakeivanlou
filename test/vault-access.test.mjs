@@ -352,17 +352,37 @@ test('rotateVault refuses to drop the admin entry, an unknown admin id, a wrong 
 
 // -- committed initial files ------------------------------------------------
 
-test('vault/access.json and vault/keys.json are committed in their initial, empty state', async () => {
+test('the committed vault/access.json and vault/keys.json are well-formed and hold no plaintext secret', async () => {
+  // Before the setup wizard runs these are the empty skeletons; afterwards they hold sealed entries and wrapped
+  // file keys. Either way the shape, the KDF strength and the absence of anything readable must hold.
   const root = new URL('../vault/', import.meta.url);
   const accessText = (await readFile(new URL('access.json', root), 'utf8')).replace(/\r\n/g, '\n');
   const keysText = (await readFile(new URL('keys.json', root), 'utf8')).replace(/\r\n/g, '\n');
   const access = JSON.parse(accessText);
+  const keys = JSON.parse(keysText);
   assert.equal(access.v, 1);
   assert.deepEqual({ ...access.kdf, salt: 'x' }, { name: 'PBKDF2', hash: 'SHA-256', iterations: 600000, salt: 'x' });
   assert.equal(fromB64(access.kdf.salt).length, 16);
-  assert.deepEqual(access.entries, []);
+  assert.ok(Array.isArray(access.entries));
+  for (const e of access.entries) {
+    assert.match(e.id, /^[0-9a-f]{8}$/);
+    assert.ok(e.kind === 'admin' || e.kind === 'download', e.kind);
+    for (const sealed of [e, e.meta]) {
+      assert.equal(fromB64(sealed.iv).length, 12);
+      assert.ok(fromB64(sealed.data).length > 16);
+    }
+  }
+  assert.equal(keys.v, 1);
+  assert.ok(keys.vk === '' || /^[0-9a-f]{8}$/.test(keys.vk), keys.vk);
+  for (const [id, wrapped] of Object.entries(keys.files)) {
+    assert.match(id, /^[0-9a-f]{32}$/);
+    assert.equal(fromB64(wrapped.iv).length, 12);
+    assert.ok(fromB64(wrapped.key).length > 32);
+  }
+  // nothing readable: no token, no code-shaped string, no label text outside sealed blobs
+  assert.doesNotMatch(accessText + keysText, /gh[pousr]_|github_pat_|MK-[A-Z2-9]{4}-[A-Z2-9]{4}|"label"|"code"/);
   assert.equal(accessText, JSON.stringify(access, null, 2) + '\n');
-  assert.equal(keysText, JSON.stringify({ v: 1, vk: '', files: {} }, null, 2) + '\n');
+  assert.equal(keysText, JSON.stringify(keys, null, 2) + '\n');
 });
 
 // -- CLI --------------------------------------------------------------------
