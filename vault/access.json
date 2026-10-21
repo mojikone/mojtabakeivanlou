@@ -4,7 +4,18 @@
     "name": "PBKDF2",
     "hash": "SHA-256",
     "iterations": 600000,
-    "salt": "xXqHlfPTmLtKtxodOuqyTA=="
+    "salt": "U2nQ1Hf5axjSIWzUQeYgtg=="
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "9d05f084",
+      "kind": "admin",
+      "iv": "mXvjXGE+842GTqGN",
+      "data": "K4r2vMAbuLICo88ooaYjNbR2kF9LFO1/MUUPw0i1WJxwaFoQOBF+yuUPGm/DfASA81fGM2FKRc5MTZ5XqGQYJWlwqOtgebejE90xER6z3jmXbfkJ0KBEDUVrTrDwnvBVKAXUTSrUG1F/eAWwolSTwJexqkZJBYSlB4Ggk1J9x5SvrrmIwPutMOijwiw8ah1fPDXqG7hG/dhY6QCVYKEOXngqVEDO1uNdBnvIOQF1+t+5mm7tqKZqw5VtZXyE2N6o76YPn4GE3oeZTbCBpw5kf74a6dPszt5fvlrvjxCpY+/QJtk10xQRHNtDOxBpc/22dVwS/GcXRB6jxQZQ7hEHfBGEFegWn91f5jGTvAPTmXnWdfb+apeQB68jtAClJskD+OLIDsm/ZMkEp/0Nr/uV9Kcc8DI=",
+      "meta": {
+        "iv": "3DSEac+Gh4rJbyVh",
+        "data": "HCC0dHkQmJvcTHTksq59u+Dyc5fWDevN/jsDaH5nv0KZgsZlnGVXo/IT8LsSXjosMOlwL6Y="
+      }
+    }
+  ]
 }
