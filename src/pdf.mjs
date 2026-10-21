@@ -15,19 +15,23 @@ import { startServer } from './serve.mjs';
 // connection open. Left alone, that connection would stop `networkidle0` from ever settling and the colours would depend
 // on whatever the global default is in the database at render time. So the renderer refuses those requests: the PDF is
 // deterministic and always uses palette.js's own DEFAULT_ID colours, not the Firebase global default.
+// Google Analytics is refused too, so a render (on every CI run) never counts as a page view.
 // Google Fonts (fonts.googleapis.com / fonts.gstatic.com) must stay reachable, so www.gstatic.com is matched exactly.
-const FIREBASE_HOSTS = ['www.gstatic.com'];
-const FIREBASE_DOMAINS = ['firebasedatabase.app', 'firebaseio.com'];   // the domains themselves and every subdomain
+const BLOCKED_HOSTS = ['www.gstatic.com', 'www.googletagmanager.com'];
+const BLOCKED_DOMAINS = ['firebasedatabase.app', 'firebaseio.com', 'google-analytics.com'];   // the domains and every subdomain
 
-/** True for a request the PDF renderer must refuse: the Firebase SDK (www.gstatic.com) or the Realtime Database. */
-export function isFirebaseUrl(url) {
+/**
+ * True for a request the PDF renderer must refuse: the Firebase SDK (www.gstatic.com), the Realtime Database, or Google
+ * Analytics (gtag.js from www.googletagmanager.com, hits to *.google-analytics.com).
+ */
+export function isBlockedUrl(url) {
   let host;
   try {
     host = new URL(url).hostname.toLowerCase();
   } catch {
     return false;
   }
-  return FIREBASE_HOSTS.includes(host) || FIREBASE_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+  return BLOCKED_HOSTS.includes(host) || BLOCKED_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`));
 }
 
 /**
@@ -57,10 +61,12 @@ export async function renderPdf({ distDir = 'dist', filename } = {}) {
       const page = await browser.newPage();
       await page.setRequestInterception(true);
       page.on('request', (request) => {
-        if (isFirebaseUrl(request.url())) request.abort('blockedbyclient');
+        if (isBlockedUrl(request.url())) request.abort('blockedbyclient');
         else request.continue();
       });
-      await page.goto(`${server.url}/cv.html`, { waitUntil: 'networkidle0' });
+      const res = await page.goto(`${server.url}/cv.html`, { waitUntil: 'networkidle0' });
+      // A missing dist/cv.html is a 404 page, which Chromium would happily print: fail instead.
+      if (!res || !res.ok()) throw new Error(`cv.html returned HTTP ${res ? res.status() : '(no response)'}`);
       await page.evaluate(async () => { await document.fonts.ready; });
       await page.pdf({ path, preferCSSPageSize: true, printBackground: true, displayHeaderFooter: false });
     } finally {
