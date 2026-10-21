@@ -154,7 +154,10 @@ test('building a root without vault/ and admin/ succeeds and ships neither', () 
   for (const f of PAGES) assert.ok(existsSync(join(root, 'dist', f)), f);
   assert.ok(!existsSync(join(root, 'dist/vault')) && !existsSync(join(root, 'dist/admin')));
   assert.ok(r.written.every((f) => !f.startsWith('vault/') && !f.startsWith('admin/')));
-  assert.deepEqual(r.warnings.filter((w) => /vault|admin/.test(w)), [], 'their absence is not worth a warning');
+  // The live content may reference attachments; with vault/ absent their blobs are (correctly) reported missing.
+  // Only the FOLDERS' absence must stay silent.
+  const folderWarnings = r.warnings.filter((w) => /vault|admin/.test(w) && !/^vault\/files\/[0-9a-f]{32}\.bin missing/.test(w));
+  assert.deepEqual(folderWarnings, [], 'their absence is not worth a warning');
   assert.ok((await stat(join(root, 'dist/pdf'))).isDirectory());
 }, async (root) => {
   await rm(join(root, 'vault'), { recursive: true });
