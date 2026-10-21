@@ -11,9 +11,17 @@
 //                { entryId, vk, kek, github }. Never log or render session values.
 //   The shell calls the teardown (if returned) before it shows another section: unsubscribe and drop listeners on
 //   anything outside `container` there. Listeners on elements inside `container` die with it.
+//   Form sections are built with formSection() (./_common.mjs), which owns the re-render rule that keeps the focus and
+//   the caret while the owner types, and the controls of ../modules/ui.mjs.
 //   group  'content' or 'admin': the nav draws its separator where the group changes.
 
 import { html } from '../../assets/js/render/html.mjs';
+import * as profile from './profile.mjs';
+import * as education from './education.mjs';
+import * as languages from './languages.mjs';
+import * as services from './services.mjs';
+import * as contact from './contact.mjs';
+import * as settings from './settings.mjs';
 
 // A section that is not built yet: its heading and nothing else.
 function comingSoon(id, label, group) {
@@ -28,16 +36,16 @@ function comingSoon(id, label, group) {
 }
 
 export const sections = [
-  comingSoon('profile', 'Profile & contact', 'content'),
-  comingSoon('education', 'Education', 'content'),
-  comingSoon('languages', 'Languages', 'content'),
-  comingSoon('services', 'Engineering services', 'content'),
+  { id: 'profile', label: 'Profile & contact', group: 'content', render: profile.render },
+  { id: 'education', label: 'Education', group: 'content', render: education.render },
+  { id: 'languages', label: 'Languages', group: 'content', render: languages.render },
+  { id: 'services', label: 'Engineering services', group: 'content', render: services.render },
   comingSoon('experience', 'Experience', 'content'),
   comingSoon('skills', 'Skills & software', 'content'),
-  comingSoon('contact', 'Contact page', 'content'),
+  { id: 'contact', label: 'Contact page', group: 'content', render: contact.render },
   comingSoon('access', 'Access codes', 'admin'),
   comingSoon('files', 'Files', 'admin'),
-  comingSoon('settings', 'Settings', 'admin'),
+  { id: 'settings', label: 'Settings', group: 'admin', render: settings.render },
 ];
 
 // First-run setup (spec 13.2), reached through #setup with or without a session (there is no admin code yet the

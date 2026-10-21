@@ -172,8 +172,8 @@ test('the nav lists the ten sections of spec 13.3 in order, content first, then 
 
 test('a placeholder section writes its escaped "coming soon" heading; setup names Task 24', () => {
   const container = { innerHTML: '' };
-  sections[0].render(container, null, {});
-  assert.equal(container.innerHTML, '<div class="adm-card"><h1 class="adm-title">Profile &amp; contact — coming soon</h1></div>');
+  sections.find((s) => s.id === 'skills').render(container, null, {});
+  assert.equal(container.innerHTML, '<div class="adm-card"><h1 class="adm-title">Skills &amp; software — coming soon</h1></div>');
   setupSection.render(container, null, { github: null, session: null });
   assert.match(container.innerHTML, /Setup wizard — Task 24/);
 });
