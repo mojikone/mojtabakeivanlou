@@ -12,7 +12,7 @@ Until the cutover (see below) the live site is still served from branch `redesig
 
 ## Working rules
 
-- **Content lives in `content/site.json`**, and nowhere else: text, lists, links, file attachments. Edit it through the dashboard at `/admin/` (the dashboard is built in later tasks; `admin/index.html` is a placeholder until then) or by hand followed by `npm run build`. The build validates it and fails with a message that names the path, for example `experience.companies[2].projects[0].bullets[3].text is empty`.
+- **Content lives in `content/site.json`**, and nowhere else: text, lists, links, file attachments. Edit it through the dashboard at `/admin/` (first-run setup at `/admin/#setup`; the code is under `admin/`, every section of §13.3 included) or by hand followed by `npm run build`. The build validates it and fails with a message that names the path, for example `experience.companies[2].projects[0].bullets[3].text is empty`.
   - Placeholders in strings: `{{years}}`, `{{year}}`, `{{name}}`, `{{roleTitle}}`, `{{domain}}`. Years of experience are computed from `site.experienceStart` (full UTC years); never type the number.
   - Rich-text fields accept `**bold**`, `_italic_` and a blank line for a new paragraph. Everything is HTML-escaped; never put HTML in content.
 - **Never edit `dist/`.** It is git-ignored and is emptied and rewritten by every build.

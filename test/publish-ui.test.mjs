@@ -1,13 +1,16 @@
 // Publish UI (Task 22b, spec 13.6): the pure helpers behind the Publish button, the progress card, the validation
-// links and the conflict merge. The DOM glue (wirePublish) is checked by hand in the browser.
+// links and the conflict merge. The DOM glue (wirePublish) is checked by hand in the browser, except its session guard
+// (Task 23b), which runs here on a fake DOM (test/helpers/fake-dom.mjs) with a fake publish().
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   buttonState, stepLine, sectionForPath, mergeDrafts, failureMessage, isDeploySkipped, actionsUrl, readDraftBase,
+  wirePublish, SESSION_MISMATCH_TEXT,
 } from '../admin/modules/publish-ui.mjs';
 import { changedSections } from '../admin/modules/state.mjs';
 import { createInflight } from '../admin/modules/inflight.mjs';
+import { FakeNode, installFakeDom } from './helpers/fake-dom.mjs';
 
 const SITE = JSON.parse(readFileSync(new URL('./fixtures/site.min.json', import.meta.url), 'utf8'));
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -398,4 +401,115 @@ test('mergeDrafts: a vault key rotated on GitHub drops the new attachments (thei
     assert.equal(m.site.profile.firstName, 'Draft');
   }
   assert.deepEqual(draft.site.experience.companies[0].projects[0].bullets[0].files, [record(pend)]); // not mutated
+});
+
+/* ─── wirePublish: the session guard (Task 23b) ─── */
+
+const GH_DETAILS = { token: 'ghp_FAKE_T23B', owner: 'mojikone', repo: 'mojtabakeivanlou', branch: 'main' };
+const asSession = (entryId) => ({ entryId, vk: 'dmF1bHQ=', kek: 'a2Vr', github: { ...GH_DETAILS } });
+const tick = () => new Promise((resolve) => { setImmediate(resolve); });
+
+// The top bar and areas wirePublish looks up in its root, as fake nodes.
+function shellRoot() {
+  const nodes = {
+    '#publishButton': new FakeNode('button'),
+    '#status': new FakeNode('p'),
+    '#signOut': new FakeNode('button'),
+    '#main': new FakeNode('main'),
+    '.adm-nav': new FakeNode('nav'),
+  };
+  new FakeNode('header').append(nodes['#status']);
+  return { nodes, root: { querySelector: (selector) => nodes[selector] ?? null } };
+}
+
+// A draft whose admin code was changed: 'old' is the replaced admin entry, 'new' the one the change made current.
+function changedDraft() {
+  return draftOf({
+    access: { v: 1, entries: [{ id: 'old', kind: 'admin' }, { id: 'dl', kind: 'download' }, { id: 'new', kind: 'admin' }] },
+    revoked: ['old'],
+    rotate: true,
+  });
+}
+
+function wireForGuard({ session, draft = changedDraft() }) {
+  const { root, nodes } = shellRoot();
+  const state = { session, gh: null, published: [], ghCalls: [] };
+  const makeGh = (name) => ({
+    name,
+    getHead: async () => { state.ghCalls.push(`${name} getHead`); return { sha: draft.baseCommit, tree: 't' }; },
+    getFile: async (path) => { state.ghCalls.push(`${name} getFile ${path}`); return null; },
+  });
+  state.makeGh = makeGh;
+  state.gh = makeGh('gh1');
+  const store = { get: () => draft, dirty: () => ({ total: 1, bySection: { profile: 1 } }), subscribe: () => () => {} };
+  const handle = wirePublish({
+    root, store, fileStore: {}, getSession: () => state.session, getGh: () => state.gh,
+    publishFn: async ({ session: s, gh }) => {
+      state.published.push({ entryId: s.entryId, gh: gh.name });
+      return { failed: true, error: 'fake failure' };   // "Not published" with a Retry button
+    },
+  });
+  return { handle, nodes, state };
+}
+
+const dialogs = () => document.body.findAll((n) => n.tagName === 'DIALOG');
+const buttonsNamed = (label, from = document.body) => from.findAll((n) => n.tagName === 'BUTTON' && n.textContent === label);
+
+test('wirePublish: the session guard text is the one the owner is shown', () => {
+  assert.equal(SESSION_MISMATCH_TEXT, "Your sign-in no longer matches the draft's access codes. Open Access codes to resume or cancel the admin-code change.");
+});
+
+test('wirePublish: publish() gets the session and GitHub client current at the click, and only while they match the draft', async () => {
+  const restore = installFakeDom();
+  try {
+    const { handle, nodes, state } = wireForGuard({ session: asSession('new') });
+    await tick();
+    assert.deepEqual(state.ghCalls, ['gh1 getHead'], 'only the load-time notice check');
+
+    state.gh = state.makeGh('gh2');                     // a session change recreated the client after wiring
+    await handle.start();
+    assert.deepEqual(state.published, [{ entryId: 'new', gh: 'gh2' }]);
+    assert.equal(dialogs().length, 0);
+    assert.equal(buttonsNamed('Retry').length, 1, 'the fake failure leaves a Retry button');
+    assert.equal(nodes['#publishButton'].textContent, 'Publish');
+  } finally {
+    restore();
+  }
+});
+
+test('wirePublish: a stale or missing sign-in never reaches publish(), whether from the button, Retry, Overwrite or Reload', async () => {
+  const restore = installFakeDom();
+  try {
+    const { handle, nodes, state } = wireForGuard({ session: asSession('new') });
+    await tick();
+    await handle.start();                               // publishes once, and leaves the Retry button
+    assert.equal(state.published.length, 1);
+
+    state.session = asSession('old');                   // signed in again with the replaced admin code: stale
+    buttonsNamed('Retry')[0].click();
+    nodes['#publishButton'].onclick();
+    await handle.reapply(true);                         // Overwrite with my draft
+    await handle.reapply(false);                        // Reload and reapply
+    state.session = asSession('ghost');                 // an admin entry the draft does not hold
+    await handle.start();
+    state.session = asSession('dl');                    // not an admin entry
+    await handle.start();
+    await tick();
+
+    assert.equal(state.published.length, 1, 'publish() was never called again');
+    assert.deepEqual(state.ghCalls, ['gh1 getHead'], 'nothing was read from GitHub either');
+    assert.equal(nodes['#publishButton'].textContent, 'Publish', 'not left busy');
+    assert.equal(nodes['#main'].classList.contains('adm-busy'), false);
+    const shown = dialogs();
+    assert.equal(shown.length, 6, 'one notice per attempt');
+    for (const dialog of shown) assert.ok(dialog.textContent.includes(SESSION_MISMATCH_TEXT));
+
+    // its button opens Access codes, where the owner resumes or cancels the change
+    buttonsNamed('Open Access codes', shown[0])[0].click();
+    await tick();
+    assert.equal(location.hash, '#access');
+    assert.equal(dialogs().length, 5, 'that notice closed');
+  } finally {
+    restore();
+  }
 });

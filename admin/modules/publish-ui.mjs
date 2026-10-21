@@ -11,7 +11,11 @@ import { AuthError } from './github.mjs';
 import { contentSection, changedSections, SITE_FIELDS } from './state.mjs';
 import { loadBase, PATHS } from './shell.mjs';
 import { inflight } from './inflight.mjs';
+import { sessionMatchesDraft } from './codes.mjs';
 import { el, modal, toast, flushPending } from './ui.mjs';
+
+/** What Publish says instead of publishing when the sign-in does not match the draft's access codes (Task 23b). */
+export const SESSION_MISMATCH_TEXT = "Your sign-in no longer matches the draft's access codes. Open Access codes to resume or cancel the admin-code change.";
 
 /* ─── PURE HELPERS ─── */
 
@@ -344,12 +348,22 @@ const wired = new WeakMap();                // root -> handle (admin.mjs's loadD
 /**
  * Wires the top bar's Publish button (#publishButton inside `root`) once the draft is loaded. Owns the button's state,
  * the read-only mode while publishing, the progress card and the modals.
- *   store, gh, fileStore, session, icons   as publish() takes them (session: { vk, kek, entryId, github })
+ *   store, fileStore, icons   as publish() takes them
+ *   getSession(), getGh()     the session ({ vk, kek, entryId, github }) and the GitHub client as they are now: read at
+ *                             every click, because a change of the admin code or the token replaces both after wiring
+ *                             (admin.mjs's session hook). `session` and `gh` instead fix them for good.
  *   onSessionVk(vkB64)   a publish rotated the vault key: the session must take it at once
  *   onPublished()        a publish went live: refresh "published N min ago"
- * Returns { refresh, start, busy() }.
+ *   publishFn            publish.mjs's publish(), replaceable in tests
+ * Every way into a publish (the button, Retry, Overwrite, Reload and reapply) first checks that the session still
+ * matches the draft's access codes (codes.mjs sessionMatchesDraft); if not, nothing starts and a modal sends the owner
+ * to Access codes.
+ * Returns { refresh, start, reapply(overwrite), busy() }.
  */
-export function wirePublish({ root = document, store, gh, fileStore, session, icons, onSessionVk, onPublished } = {}) {
+export function wirePublish({
+  root = document, store, gh, fileStore, session, getSession = () => session, getGh = () => gh, icons, onSessionVk,
+  onPublished, publishFn = publish,
+} = {}) {
   if (wired.has(root)) {
     wired.get(root).refresh();
     return wired.get(root);
@@ -359,7 +373,10 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
   const status = find('#status');
   const signOut = find('#signOut');
   const areas = [find('#main'), find('.adm-nav')].filter(Boolean);
-  const secrets = () => [session?.vk, session?.kek, session?.github?.token];
+  const secrets = () => {
+    const now = getSession();
+    return [now?.vk, now?.kek, now?.github?.token];
+  };
   const safe = (message) => clean(message?.message ?? message, secrets());
   let busy = false;
   let note = null;
@@ -404,7 +421,7 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
     return Object.keys(bySection).filter((id) => bySection[id] > 0);
   };
 
-  async function deploySkipped(runId) {
+  async function deploySkipped(gh, runId) {
     if (runId === undefined || runId === null) return false;
     try { return isDeploySkipped(await gh.runJobs(runId)); } catch { return false; }
   }
@@ -419,8 +436,27 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
     return true;
   }
 
+  // A session whose admin entry the draft replaced (signed in again with the old code before publishing the change) or
+  // does not hold could only fail inside the rotation. Nothing starts; the owner resumes or cancels in Access codes.
+  function sessionBlocked() {
+    const { ok, reason } = sessionMatchesDraft(store.get(), getSession());
+    if (ok) return false;
+    const { element } = modal({
+      title: 'Not published',
+      body: SESSION_MISMATCH_TEXT,
+      actions: [
+        { label: 'Cancel' },
+        { label: 'Open Access codes', primary: true, onClick: () => { location.hash = '#access'; } },
+      ],
+    });
+    element.dataset.reason = reason;
+    return true;
+  }
+
   async function start() {
-    if (busy || unfinished()) return;
+    if (busy || unfinished() || sessionBlocked()) return;
+    const session = getSession();           // the session and client of this click, for the whole run
+    const gh = getGh();
     flushPending();                         // a keystroke typed just before the click is part of what is published
     setBusy(true);
     const card = openCard('Publishing');
@@ -438,7 +474,7 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
 
     let result;
     try {
-      result = await publish({ store, gh, fileStore, session, icons, onProgress });
+      result = await publishFn({ store, gh, fileStore, session, icons, onProgress });
     } catch (err) {
       setBusy(false);
       if (err instanceof PublishValidationError) {
@@ -448,7 +484,7 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
       }
       if (card.state('save') === 'active') card.line('save', null, 'failed');
       card.fail('Not published', [err instanceof AuthError
-        ? `GitHub rejected the token (HTTP ${err.status}). Nothing was published; replacing the token comes with a later update.`
+        ? `GitHub rejected the token (HTTP ${err.status}). Nothing was published. Replace it in Settings (Replace GitHub token), then publish again.`
         : `Nothing was published: ${safe(err)}`], { retry: start });
       return;
     }
@@ -489,7 +525,7 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
     }
 
     // live: the draft is already rebased by publish(); say where it went
-    const skipped = await deploySkipped(live?.runId);
+    const skipped = await deploySkipped(gh, live?.runId);
     if (skipped) card.line('live', stepLine('skipped'), 'done');
     else card.line('live', stepLine('live', live ?? {}), 'done', live?.url ?? undefined);
     if (result.vk) card.line('rotated', stepLine('rotated'), 'done');
@@ -580,7 +616,8 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
 
   // Reload and reapply (overwrite = false) or Overwrite with my draft (true, then publish again).
   async function reapply(overwrite) {
-    if (busy || unfinished()) return;
+    if (busy || unfinished() || sessionBlocked()) return;
+    const gh = getGh();
     flushPending();
     setBusy(true);
     const card = openCard(overwrite ? 'Publishing' : 'Reloading');
@@ -663,11 +700,11 @@ export function wirePublish({ root = document, store, gh, fileStore, session, ic
 
   // Spec 13.6 pre-flight: a draft based on an older commit than the branch head (code pushed since it was loaded).
   const loadedOn = store.get()?.baseCommit;
-  gh.getHead().then(({ sha }) => {
+  getGh().getHead().then(({ sha }) => {
     if (sha && loadedOn && sha !== loadedOn && store.get()?.baseCommit === loadedOn) showNote();
   }).catch(() => { /* the notice is a courtesy; Publish checks for conflicts anyway */ });
 
-  const handle = { refresh, start, busy: () => busy };
+  const handle = { refresh, start, reapply, busy: () => busy };
   wired.set(root, handle);
   return handle;
 }

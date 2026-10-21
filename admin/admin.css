@@ -646,3 +646,18 @@ a.adm-btn { text-decoration: none; }
 .adm-orphans li.is-queued .adm-code { text-decoration: line-through; color: var(--text-2); }
 .adm-loading-line { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-2); }
 @media (prefers-reduced-motion: reduce) { .adm-meter-bar { transition: none; } }
+
+/* ─── TOKEN EXPIRY NOTE AND THE LOAD-TIME TOKEN CARD (Task 23b, spec 13.7) ───────────────── */
+/* "Token expires <date>" beside the status line: amber within two weeks, red after; a link to Settings */
+.adm-token-note {
+  flex: none; margin-left: auto; padding: 3px 10px; border-radius: 100px;
+  font-size: 12px; font-weight: 600; line-height: 1.4; white-space: nowrap; text-decoration: none;
+}
+.adm-token-note.is-soon { color: var(--text); background: #f6dc8c; }
+.adm-token-note.is-past { color: #fff; background: #a3261e; }
+.adm-token-note:hover { text-decoration: underline; }
+.adm-token-note:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.adm-alert .adm-actions-row { align-items: center; gap: 10px 18px; }
+@media (max-width: 900px) {
+  .adm-token-note { order: 4; margin-left: 0; }
+}

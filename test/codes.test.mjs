@@ -9,7 +9,7 @@ import { publish } from '../admin/modules/publish.mjs';
 import {
   listCodes, createDownloadCode, revoke, unrevoke, changeAdminCode, replaceToken, totalAttachmentBytes, orphanBlobs,
   listAttachments, isStaleSession, resumeAdminSession, cancelAdminChange, applySessionChange, onSessionChanged,
-  sessionChanged, today, budgetLevel, validateNewToken,
+  sessionChanged, today, budgetLevel, validateNewToken, sessionMatchesDraft,
 } from '../admin/modules/codes.mjs';
 import {
   createAccessFile, createKeysFile, addEntry, unlock, generateKey, exportKey, shortId,
@@ -255,6 +255,26 @@ test('a session whose admin entry the draft replaces is stale; the new code resu
   assert.equal(isStaleSession(store.get(), session), false);
 });
 
+test('sessionMatchesDraft: the publish guard, ok only for a live admin entry of the draft that is the session', async () => {
+  const { store, vk, session } = await setup({ downloads: ['MK-AAAA-BBBB'] });
+  assert.deepEqual(sessionMatchesDraft(store.get(), session), { ok: true, reason: null });
+
+  // fail-closed: a change the shell never applied leaves the session on the replaced entry, which stops the publish
+  const change = await changeAdminCode(store, { currentCode: ADMIN_CODE, newCode: NEW_ADMIN_CODE }, vk);
+  assert.deepEqual(sessionMatchesDraft(store.get(), session), { ok: false, reason: 'stale' });
+  assert.deepEqual(sessionMatchesDraft(store.get(), applySessionChange(session, change)), { ok: true, reason: null });
+
+  // an entry the draft does not hold (a Reset draft after the change, a vault changed elsewhere), or not an admin one
+  const download = store.get().access.entries.find((e) => e.kind === 'download');
+  assert.deepEqual(sessionMatchesDraft(store.get(), { ...session, entryId: 'ffffffff' }), { ok: false, reason: 'missing' });
+  assert.deepEqual(sessionMatchesDraft(store.get(), { ...session, entryId: download.id }), { ok: false, reason: 'missing' });
+  assert.deepEqual(sessionMatchesDraft({ ...store.get(), access: { ...store.get().access, entries: [] } }, applySessionChange(session, change)), { ok: false, reason: 'missing' });
+  for (const nobody of [null, undefined, {}, { ...session, entryId: '' }]) {
+    assert.deepEqual(sessionMatchesDraft(store.get(), nobody), { ok: false, reason: 'missing' });
+  }
+  assert.deepEqual(sessionMatchesDraft(null, session), { ok: false, reason: 'missing' });
+});
+
 /* --- replace the GitHub token --- */
 
 test('replaceToken re-seals the admin payload with the new token under the session KEK, and sets rotate', async () => {
@@ -311,6 +331,12 @@ test('validateNewToken explains a refused or unreachable check, and never names 
   const broken = await validateNewToken(fakeClientFactory(new TypeError(`bad ${NEW_TOKEN}`)).create, { github: GITHUB }, NEW_TOKEN);
   assert.match(broken, /could not be reached/);
   for (const message of [refused, offline, broken]) assert.ok(!message.includes(NEW_TOKEN));
+});
+
+test('validateNewToken does not blame the token during a GitHub rate limit', async () => {
+  const limited = await validateNewToken(fakeClientFactory({ ok: false, status: 403, rateLimited: true }).create, { github: GITHUB }, NEW_TOKEN);
+  assert.match(limited, /^GitHub rate limit — try again in a few minutes/);
+  assert.doesNotMatch(limited, /did not accept/);
 });
 
 test('validateNewToken refuses an empty token and a session without GitHub details, without asking GitHub', async () => {

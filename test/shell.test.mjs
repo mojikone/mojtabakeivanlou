@@ -3,8 +3,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SESSION_KEYS, toSession, readSession, writeSession, clearSession, loadBase, relativeTime, changesText, statusText,
-  profileName, routeOf,
+  profileName, routeOf, expiryState, tokenNote, readTokenExpiry, writeTokenExpiry, TOKEN_EXPIRES_KEY,
 } from '../admin/modules/shell.mjs';
+import { applySessionChange } from '../admin/modules/codes.mjs';
 import { sections, setupSection } from '../admin/sections/index.mjs';
 import { FILE_MAX, FILE_NOTE, TOTAL_AMBER, TOTAL_RED } from '../admin/modules/limits.mjs';
 import { GitHubError } from '../admin/modules/github.mjs';
@@ -56,6 +57,70 @@ test('writeSession stores all three keys, or none of them when storage fails', (
   assert.equal(writeSession(full, SESSION), false);
   assert.equal(full.data.size, 0, 'no partial session');
   assert.equal(writeSession(null, SESSION), false);
+});
+
+test('a session change round-trips through sessionStorage: new entry, KEK and token; the vault key only at a rotation', () => {
+  const storage = memStorage(stored());
+  // the shell's onSessionChanged handler: applySessionChange, then writeSession
+  const changed = applySessionChange(readSession(storage), { kekB64: 'a2VrLW5ldw==', entryId: 'ef56ab78', token: 'ghp_FAKE_NEW' });
+  assert.equal(writeSession(storage, changed), true);
+  assert.deepEqual(readSession(storage), { ...SESSION, entryId: 'ef56ab78', kek: 'a2VrLW5ldw==', github: { ...GITHUB, token: 'ghp_FAKE_NEW' } });
+  assert.equal(storage.data.get('mk.vault'), SESSION.vk, 'mk.vault is untouched by a code or token change');
+  assert.equal(storage.data.get('mk.kek'), 'a2VrLW5ldw==');
+  assert.equal(JSON.parse(storage.data.get('mk.admin')).entryId, 'ef56ab78');
+
+  // the publish UI's onSessionVk: a rotation gives the session a new vault key, in mk.vault and in mk.admin
+  changed.vk = 'bmV3LXZhdWx0LWtleQ==';
+  writeSession(storage, changed);
+  assert.equal(storage.data.get('mk.vault'), 'bmV3LXZhdWx0LWtleQ==');
+  assert.equal(JSON.parse(storage.data.get('mk.admin')).vk, 'bmV3LXZhdWx0LWtleQ==');
+  assert.deepEqual(readSession(storage), changed);
+});
+
+/* ─── the token expiry note (spec 13.7) ─── */
+
+test('expiryState: ok, soon (within 14 days, today included), past, or null for no or a malformed date', () => {
+  const today = '2026-10-21';
+  assert.equal(expiryState('2026-12-31', today), 'ok');
+  assert.equal(expiryState('2026-11-05', today), 'ok', '15 days ahead');
+  assert.equal(expiryState('2026-11-04', today), 'soon', '14 days ahead');
+  assert.equal(expiryState('2026-10-22', today), 'soon');
+  assert.equal(expiryState('2026-10-21', today), 'soon', 'it expires today: not past yet');
+  assert.equal(expiryState('2026-10-20', today), 'past');
+  assert.equal(expiryState('2025-01-01', today), 'past');
+  assert.equal(expiryState(' 2026-11-04 ', today), 'soon', 'trimmed');
+  for (const bad of ['', null, undefined, 'soon', '2026-02-30', '2026-13-01', '26-10-21', '2026-1-5', 20261021]) {
+    assert.equal(expiryState(bad, today), null, String(bad));
+  }
+  assert.equal(expiryState('2026-11-04', 'not a day'), null);
+  // across a month and a year end, and with today as a Date (its local calendar day)
+  assert.equal(expiryState('2027-01-10', '2026-12-28'), 'soon');
+  assert.equal(expiryState('2026-10-30', new Date(2026, 9, 21, 23, 59)), 'soon');
+  assert.equal(expiryState('2026-10-20', new Date(2026, 9, 21, 0, 1)), 'past');
+});
+
+test('tokenNote: the status-area text for a soon or past expiry, nothing otherwise', () => {
+  assert.deepEqual(tokenNote('2026-10-30', '2026-10-21'), { state: 'soon', text: 'Token expires 30 Oct 2026' });
+  assert.deepEqual(tokenNote('2026-10-21', '2026-10-21'), { state: 'soon', text: 'Token expires 21 Oct 2026' });
+  assert.deepEqual(tokenNote('2026-10-02', '2026-10-21'), { state: 'past', text: 'Token expired 2 Oct 2026' });
+  assert.equal(tokenNote('2027-06-01', '2026-10-21'), null);
+  assert.equal(tokenNote('', '2026-10-21'), null);
+});
+
+test('the token expiry date lives in localStorage mk.tokenExpires only; empty removes it; blocked storage is harmless', () => {
+  assert.equal(TOKEN_EXPIRES_KEY, 'mk.tokenExpires');
+  const storage = memStorage({ 'mk.draft': '{}' });
+  assert.equal(readTokenExpiry(storage), '');
+  assert.equal(writeTokenExpiry(storage, ' 2026-11-04 '), true);
+  assert.equal(storage.data.get('mk.tokenExpires'), '2026-11-04');
+  assert.equal(readTokenExpiry(storage), '2026-11-04');
+  assert.equal(writeTokenExpiry(storage, ''), true);
+  assert.deepEqual([...storage.data.keys()], ['mk.draft']);
+  const blocked = { getItem() { throw new Error('SecurityError'); }, setItem() { throw new Error('SecurityError'); }, removeItem() { throw new Error('SecurityError'); } };
+  assert.equal(readTokenExpiry(blocked), '');
+  assert.equal(writeTokenExpiry(blocked, '2026-11-04'), false);
+  assert.equal(readTokenExpiry(null), '');
+  assert.equal(writeTokenExpiry(null, '2026-11-04'), false);
 });
 
 test('clearSession removes exactly the three session keys (the draft stays)', () => {

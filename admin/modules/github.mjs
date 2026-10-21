@@ -3,6 +3,8 @@
 //
 // The token travels only in the Authorization header: never in a URL, a request body, an error message or a log.
 // Every non-2xx answer becomes a GitHubError with its HTTP status (0 when GitHub could not be reached at all):
+//   403, 429 of a rate limit    GitHubError with rateLimited: true (X-RateLimit-Remaining: 0, a Retry-After header or
+//                               "rate limit" in GitHub's message): not the token's fault, so no AuthError
 //   401, 403                    AuthError (the token is wrong, expired or lacks a permission; spec 13.7)
 //   409, 422 on the ref update  ConflictError (the branch moved since `parent`; spec 13.6 step 3)
 //   404 from getFile            no error: getFile returns null
@@ -13,11 +15,15 @@ const API = 'https://api.github.com';
 const API_VERSION = '2022-11-28';
 const MAX_DETAIL = 200;                     // characters of GitHub's own error message kept in ours
 
+/** What the dashboard says when GitHub rate-limits it (the load card, the token check). */
+export const RATE_LIMIT_TEXT = 'GitHub rate limit — try again in a few minutes';
+
 export class GitHubError extends Error {
   constructor(status, message, options) {
     super(message, options);
     this.name = 'GitHubError';
     this.status = status;
+    this.rateLimited = false;               // true for a 403 or 429 that is a rate limit
   }
 }
 
@@ -35,12 +41,24 @@ export class ConflictError extends GitHubError {
   }
 }
 
+// A 403 or 429 that GitHub sends for a (primary or secondary) rate limit rather than for the token. The headers are
+// readable across origins: api.github.com exposes them (Access-Control-Expose-Headers).
+function isRateLimit(res, message) {
+  if (res.status === 429) return true;
+  if (res.status !== 403) return false;
+  const header = (name) => {
+    try { return res.headers?.get?.(name) ?? null; } catch { return null; }
+  };
+  return header('x-ratelimit-remaining') === '0' || header('retry-after') !== null || /rate limit/i.test(message);
+}
+
 // 'a b/c#d' -> 'a%20b/c%23d': every segment encoded, the slashes kept.
 const encodePath = (path) => String(path).split('/').map(encodeURIComponent).join('/');
 
 /**
  * createGitHub({ token, owner, repo, branch, fetch }) -> the client below. All methods return promises.
- *   validate()            { ok, status } of GET /repos/{owner}/{repo}; never throws (status 0: unreachable)
+ *   validate()            { ok, status } of GET /repos/{owner}/{repo} (plus rateLimited: true during a rate limit);
+ *                         never throws (status 0: unreachable)
  *   getHead()             { sha, tree } of the branch head
  *   getFile(path, ref?)   { sha, bytes } of the file on the branch (or at commit `ref`), or null when it does not exist
  *   listTree()            the paths of every file (blob) in the head commit, recursively
@@ -81,11 +99,20 @@ export function createGitHub({ token, owner, repo, branch, fetch: fetchImpl = gl
     if (res.status === 404 && notFound !== undefined) return notFound;
 
     let detail = '';
+    let raw = '';
     try {
       const data = await res.json();
-      if (data && typeof data.message === 'string') detail = `: ${hide(data.message).slice(0, MAX_DETAIL)}`;
+      if (data && typeof data.message === 'string') {
+        raw = data.message;
+        detail = `: ${hide(data.message).slice(0, MAX_DETAIL)}`;
+      }
     } catch { /* no JSON body */ }
     const message = `GitHub answered ${res.status} to ${what}${detail}`;
+    if (isRateLimit(res, raw)) {
+      const err = new GitHubError(res.status, message);
+      err.rateLimited = true;
+      throw err;
+    }
     if (res.status === 401 || res.status === 403) throw new AuthError(res.status, message);
     if (conflict && (res.status === 409 || res.status === 422)) throw new ConflictError(res.status, message);
     throw new GitHubError(res.status, message);
@@ -101,7 +128,7 @@ export function createGitHub({ token, owner, repo, branch, fetch: fetchImpl = gl
       await request('GET', repoPath);
       return { ok: true, status: 200 };
     } catch (err) {
-      if (err instanceof GitHubError) return { ok: false, status: err.status };
+      if (err instanceof GitHubError) return err.rateLimited ? { ok: false, status: err.status, rateLimited: true } : { ok: false, status: err.status };
       throw err;
     }
   }

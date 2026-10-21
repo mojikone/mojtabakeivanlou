@@ -491,11 +491,11 @@ export function toast(message, { actionLabel, onAction, onClose, ms = UNDO_MS } 
     timer = null;
     left = Math.max(left - (Date.now() - since), 1500);
   };
-  node.append(
+  append(node, [                            // (the DOM's own append would print the null of "no action" as text)
     el('span', { class: 'adm-toast-text', text: message }),
     actionLabel ? el('button', { type: 'button', class: 'adm-toast-action', onclick: () => { close(true); onAction?.(); } }, actionLabel) : null,
     el('button', { type: 'button', class: 'adm-toast-close', 'aria-label': 'Dismiss', onclick: () => close() }, '×'),
-  );
+  ]);
   node.addEventListener('mouseenter', pause);
   node.addEventListener('focusin', pause);
   node.addEventListener('mouseleave', () => { if (timer === null && !node.contains(document.activeElement)) start(); });

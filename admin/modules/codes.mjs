@@ -11,6 +11,7 @@ import {
   unlock, addEntry, readMeta, importKey, exportKey, deriveKek, seal, open, generateDownloadCode, codeStrength,
 } from '../../assets/js/vault.mjs';
 import { TOTAL_AMBER, TOTAL_RED } from './limits.mjs';
+import { RATE_LIMIT_TEXT } from './github.mjs';
 
 const MIN_CUSTOM = 8;                       // characters of a custom download code
 const ADMIN_LABEL = 'Me';                   // the meta label of an admin entry the dashboard makes
@@ -201,6 +202,25 @@ export function isStaleSession(draft, session) {
     && asList(draft?.access?.entries).some((e) => e.id === id && e.kind === 'admin');
 }
 
+/**
+ * The Publish guard (Task 23b): whether this session may publish this draft. { ok: true, reason: null }, or ok false
+ * with reason
+ *   'stale'    the session's admin entry is one the draft replaces (isStaleSession): resume with the new code or
+ *              cancel the change in Access codes
+ *   'missing'  the draft holds no admin entry with the session's id (a Reset draft after a change, a vault changed
+ *              elsewhere, no session)
+ * Publishing in either case would end in rotateVault's "cannot drop the admin entry in use" / "not an admin entry"
+ * (nothing committed); the guard says so before anything starts. It also fails closed when a change of the admin
+ * code never reached the shell's session: that session is then the replaced entry, which is stale.
+ */
+export function sessionMatchesDraft(draft, session) {
+  const id = session?.entryId;
+  if (!filled(id)) return { ok: false, reason: 'missing' };
+  if (isStaleSession(draft, session)) return { ok: false, reason: 'stale' };
+  if (!asList(draft?.access?.entries).some((e) => e.id === id && e.kind === 'admin')) return { ok: false, reason: 'missing' };
+  return { ok: true, reason: null };
+}
+
 /** The session values for the admin code the draft makes current: { kekB64, entryId, token }, or null. */
 export async function resumeAdminSession(draft, code) {
   const hit = await openAdmin(draft, code);
@@ -243,6 +263,7 @@ export async function validateNewToken(createClient, session, token) {
   }
   if (check?.ok) return null;
   if (!check?.status) return 'GitHub could not be reached to check the token. Try again when you are online.';
+  if (check.rateLimited) return `${RATE_LIMIT_TEXT}; the token could not be checked yet.`;
   return `GitHub did not accept this token for ${github.owner}/${github.repo} (HTTP ${check.status}). Check that it covers this repository, with Contents read and write and Actions read.`;
 }
 

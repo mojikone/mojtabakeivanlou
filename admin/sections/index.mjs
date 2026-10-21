@@ -7,10 +7,12 @@
 //     store      the draft store (admin/modules/state.mjs), already init()ed: read with store.get(), write with
 //                store.set / insert / remove / move / addPendingFile / removeFile. Every write updates the nav dots
 //                and the top bar by itself (the shell subscribes); a section that shows derived values subscribes too.
-//     ctx        { github, session, fileStore }: the GitHub client (admin/modules/github.mjs), the signed-in session
-//                { entryId, vk, kek, github } and the pending-file store (admin/modules/files.mjs). Never log or render
-//                session values. A section that changes the session (a new admin code or GitHub token) calls
-//                sessionChanged() of admin/modules/codes.mjs; the shell's onSessionChanged handler applies it.
+//     ctx        { github, session, fileStore, onTokenExpiry }: the GitHub client (admin/modules/github.mjs), the
+//                signed-in session { entryId, vk, kek, github } and the pending-file store (admin/modules/files.mjs).
+//                Never log or render session values. A section that changes the session (a new admin code or GitHub token) calls
+//                sessionChanged() of admin/modules/codes.mjs; the shell's onSessionChanged handler applies it and
+//                mounts the section again. ctx.onTokenExpiry() tells the top bar that Settings changed the token's
+//                expiry date (localStorage mk.tokenExpires).
 //   The shell calls the teardown (if returned) before it shows another section: unsubscribe and drop listeners on
 //   anything outside `container` there. Listeners on elements inside `container` die with it.
 //   Form sections are built with formSection() (./_common.mjs), which owns the re-render rule that keeps the focus and

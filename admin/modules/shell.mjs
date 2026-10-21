@@ -131,6 +131,78 @@ export function profileName(site) {
   return [p?.firstName, p?.lastName].filter((x) => typeof x === 'string' && x.trim() !== '').join(' ');
 }
 
+/* ─── TOKEN EXPIRY (spec 13.7) ─── */
+
+// The GitHub API does not tell when a fine-grained token expires, so the owner types the date GitHub showed him into
+// Settings. It is a reminder for this browser only: localStorage, never site.json or the vault.
+export const TOKEN_EXPIRES_KEY = 'mk.tokenExpires';
+export const EXPIRY_SOON_DAYS = 14;
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
+// The day number (days since 1970-01-01) of a real calendar date written YYYY-MM-DD, else null.
+function dayNumber(text) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(typeof text === 'string' ? text.trim() : '');
+  if (!m) return null;
+  const [y, mo, d] = m.slice(1).map(Number);
+  const t = Date.UTC(y, mo - 1, d);
+  const back = new Date(t);
+  if (back.getUTCFullYear() !== y || back.getUTCMonth() !== mo - 1 || back.getUTCDate() !== d) return null; // 2026-02-30
+  return t / DAY;
+}
+
+const localDay = (date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+
+/**
+ * How near the token's expiry date is: 'past' after it, 'soon' from EXPIRY_SOON_DAYS days before it to the day itself,
+ * 'ok' before that, null for no date or a malformed one. `today` is a Date (its local calendar day) or YYYY-MM-DD.
+ */
+export function expiryState(dateStr, today = new Date()) {
+  const end = dayNumber(dateStr);
+  const now = dayNumber(today instanceof Date ? localDay(today) : today);
+  if (end === null || now === null) return null;
+  const left = end - now;
+  if (left < 0) return 'past';
+  return left <= EXPIRY_SOON_DAYS ? 'soon' : 'ok';
+}
+
+/** The status area's note: { state: 'soon' | 'past', text }, or null when there is nothing to say. */
+export function tokenNote(dateStr, today = new Date()) {
+  const state = expiryState(dateStr, today);
+  if (state !== 'soon' && state !== 'past') return null;
+  const [y, m, d] = dateStr.trim().split('-').map(Number);
+  const day = `${d} ${MONTHS[m - 1]} ${y}`;
+  return { state, text: state === 'past' ? `Token expired ${day}` : `Token expires ${day}` };
+}
+
+/** The browser's localStorage, or null where it is missing or blocked (the access itself can throw). */
+export function localStorageOrNull() {
+  try { return globalThis.localStorage ?? null; } catch { return null; }
+}
+
+/** The stored expiry date, or '' (also when storage is missing or blocked). */
+export function readTokenExpiry(storage) {
+  try {
+    const value = storage?.getItem(TOKEN_EXPIRES_KEY);
+    return typeof value === 'string' ? value : '';
+  } catch {
+    return '';
+  }
+}
+
+/** Stores the expiry date (trimmed); an empty one removes it. False when storage is missing or refuses. */
+export function writeTokenExpiry(storage, value) {
+  if (!storage) return false;
+  try {
+    const text = String(value ?? '').trim();
+    if (text) storage.setItem(TOKEN_EXPIRES_KEY, text);
+    else storage.removeItem(TOKEN_EXPIRES_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /* ─── ROUTE ─── */
 
 /** The section id named by location.hash: 'setup', one of `ids`, or ids[0] for anything else. */

@@ -12,8 +12,8 @@ const API = 'https://api.github.com';
 const R = `${API}/repos/${OWNER}/${REPO}`;
 const b64 = (s) => Buffer.from(s).toString('base64');
 
-// routes: { 'METHOD url': response | (call) => response }, response = { status = 200, body } or an Error to throw.
-// Unknown routes answer 599, so a test notices an unexpected request.
+// routes: { 'METHOD url': response | (call) => response }, response = { status = 200, body, headers } or an Error to
+// throw. Unknown routes answer 599, so a test notices an unexpected request.
 function fakeFetch(routes) {
   const calls = [];
   async function fetch(url, init = {}) {
@@ -28,6 +28,7 @@ function fakeFetch(routes) {
     return {
       ok: status >= 200 && status < 300,
       status,
+      headers: new Headers(out.headers ?? {}),
       json: async () => out.body ?? {},
       text: async () => JSON.stringify(out.body ?? {}),
     };
@@ -317,6 +318,34 @@ test('a 401 or 403 anywhere rejects with AuthError', async () => {
   // the ref update too (a 401 there is about the token, not a conflict)
   const { gh } = client(commitRoutes({ patch: { status: 401, body: {} } }));
   assert.ok(await gh.commitFiles(COMMIT_INPUT).then(() => false, (e) => e instanceof AuthError));
+});
+
+test('a rate limit is a GitHubError flagged rateLimited, not an AuthError: no token to replace (spec 13.7)', async () => {
+  const ref = `GET ${R}/git/ref/heads/${BRANCH}`;
+  const limits = {
+    'x-ratelimit-remaining: 0': { status: 403, headers: { 'X-RateLimit-Remaining': '0' }, body: { message: 'Forbidden' } },
+    'retry-after': { status: 403, headers: { 'Retry-After': '60' }, body: { message: 'Forbidden' } },
+    'the message': { status: 403, body: { message: 'API rate limit exceeded for user ID 1.' } },
+    'a secondary limit': { status: 403, body: { message: 'You have exceeded a secondary rate limit. Please wait a few minutes.' } },
+    '429': { status: 429, body: { message: 'Too Many Requests' } },
+  };
+  for (const [name, answer] of Object.entries(limits)) {
+    const err = await client({ [ref]: answer }).gh.getHead().then(() => null, (e) => e);
+    assert.ok(err instanceof GitHubError, name);
+    assert.ok(!(err instanceof AuthError), `${name}: not a token problem`);
+    assert.equal(err.rateLimited, true, name);
+    assert.equal(err.status, answer.status, name);
+  }
+  // a plain 403 (no permission) and a 401 stay AuthError, not rate limited; other errors are not rate limited either
+  for (const answer of [{ status: 403, headers: { 'X-RateLimit-Remaining': '4999' }, body: { message: 'Resource not accessible by personal access token' } }, { status: 401, body: { message: 'Bad credentials' } }]) {
+    const err = await client({ [ref]: answer }).gh.getHead().then(() => null, (e) => e);
+    assert.ok(err instanceof AuthError);
+    assert.equal(err.rateLimited, false);
+  }
+  const server = await client({ [ref]: { status: 500, headers: { 'Retry-After': '5' }, body: {} } }).gh.getHead().then(() => null, (e) => e);
+  assert.equal(server.rateLimited, false, 'Retry-After on a 5xx is not a rate limit');
+  // validate() says so too, so a token check during a rate limit does not blame the token
+  assert.deepEqual(await client({ [`GET ${R}`]: limits['x-ratelimit-remaining: 0'] }).gh.validate(), { ok: false, status: 403, rateLimited: true });
 });
 
 test('other failures reject with GitHubError carrying the status (0 when GitHub cannot be reached)', async () => {

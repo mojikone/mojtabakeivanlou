@@ -6,7 +6,9 @@
 //   no session           the gate: the site name and the Access pill, nothing else (spec 13.1)
 //   session              the shell; #<section id> picks the section (#setup is for the first run: it goes to #profile)
 //
-// The session (mk.admin, mk.vault, mk.kek in sessionStorage) is never logged, rendered or put in a URL.
+// The session (mk.admin, mk.vault, mk.kek in sessionStorage) is never logged, rendered or put in a URL. It changes in
+// place of a sign-in when a section changes the admin code or the token (codes.mjs sessionChanged -> applySession
+// below) and when a publish rotates the vault key (wirePublish's onSessionVk).
 
 import { mountAccessPill } from '../assets/js/access-pill.mjs';
 import { unlock, exportKey } from '../assets/js/vault.mjs';
@@ -14,16 +16,19 @@ import { html } from '../assets/js/render/html.mjs';
 import { icon } from '../assets/js/render/icons.mjs';
 import { openPreview, pageForSection } from './modules/preview.mjs';
 import { wirePublish } from './modules/publish-ui.mjs';
-import { createGitHub, AuthError } from './modules/github.mjs';
+import { createGitHub, AuthError, RATE_LIMIT_TEXT } from './modules/github.mjs';
 import { createStore } from './modules/state.mjs';
 import { createFileStore, createMemoryFileStore } from './modules/files.mjs';
+import { onSessionChanged, applySessionChange, replaceToken } from './modules/codes.mjs';
+import { openTokenModal } from './modules/token-modal.mjs';
 import { toast } from './modules/ui.mjs';
 import {
-  toSession, readSession, writeSession, clearSession, loadBase, statusText, profileName, routeOf,
+  toSession, readSession, writeSession, clearSession, loadBase, statusText, profileName, routeOf, tokenNote,
+  readTokenExpiry, localStorageOrNull,
 } from './modules/shell.mjs';
 import { sections, setupSection } from './sections/index.mjs';
 
-const STATUS_TICK_MS = 30000;               // "published 2 min ago" stays current
+const STATUS_TICK_MS = 30000;               // "published 2 min ago" (and the token expiry note) stay current
 const SECTION_IDS = sections.map((s) => s.id);
 const $ = (id) => document.getElementById(id);
 
@@ -40,10 +45,12 @@ let publicName = '';                        // the name on the public home page,
 let github = null;
 let store = null;
 let fileStore = null;                       // the attachments waiting for Publish (files.mjs), created with the shell
-let load = { state: 'idle' };               // idle | loading | ready | error (+ auth, status, message)
+let load = { state: 'idle' };               // idle | loading | ready | error (+ auth, rateLimited, status, message)
 let published;                              // undefined while asking, null when unknown, else an ISO time
 let route = null;
 let teardown = null;                        // returned by the current section's render()
+let sessionHookOff = null;                  // the session-change handler, registered once per page (a module bus)
+let tokenToSeal = false;                    // a token replaced before the draft loaded: sealed into it once it has
 
 /* ─── VIEWS ─── */
 
@@ -135,6 +142,7 @@ function startShell() {
   shellStarted = true;
   github = createGitHub(session.github);
   store = createStore();
+  if (!sessionHookOff) sessionHookOff = onSessionChanged(applySession);   // the bus is module-level: once per page
   fileStore = openFileStore();
   store.subscribe(() => {
     renderNav();
@@ -145,9 +153,33 @@ function startShell() {
   buildNav();
   renderName();
   renderStatus();
-  setInterval(renderStatus, STATUS_TICK_MS);
+  renderTokenNote();
+  setInterval(() => {
+    renderStatus();
+    renderTokenNote();                      // the day may have changed
+  }, STATUS_TICK_MS);
   loadDraft();
   loadPublished();
+}
+
+// A section changed the admin code or the GitHub token (codes.mjs sessionChanged; Task 23's hook): the session takes
+// the new KEK, entry id and token, sessionStorage follows (mk.admin and mk.kek; mk.vault changes only when a publish
+// rotates the vault key), the GitHub client is recreated (it holds the token it was made with), and the section is
+// mounted again so its ctx holds the new session and client. Publish reads both through getters, at each click.
+function applySession(change) {
+  session = applySessionChange(session, change);
+  writeSession(sessionStorageOrNull, session);
+  github = createGitHub(session.github);
+  renderMain();
+}
+
+// A publish rotated the vault key (wirePublish's onSessionVk, Task 22b): the session takes it at once, in memory (the
+// sections' ctx.session is this object) and in mk.vault / mk.admin. The section is mounted again: it was repainted when
+// publish rebased the draft, still with the old key (Access codes then read "(cannot be read)").
+function takeVaultKey(vk) {
+  session.vk = vk;
+  writeSession(sessionStorageOrNull, session);
+  renderMain();
 }
 
 // IndexedDB keeps attachments until they are published. Without it they live in memory, so a reload loses them.
@@ -177,15 +209,48 @@ async function loadDraft() {
     $('previewButton').onclick = () => openPreview(store, pageForSection(route));
     $('previewButton').disabled = false;
     wirePublish({
-      root: $('app'), store, gh: github, fileStore, session, onPublished: loadPublished,
-      onSessionVk: (vk) => { session.vk = vk; writeSession(sessionStorageOrNull, session); }, // a rotation: the new vault key, at once
+      root: $('app'), store, fileStore, onPublished: loadPublished,
+      getSession: () => session, getGh: () => github,   // as they are at each click: applySession replaces both
+      onSessionVk: takeVaultKey,
     });
   } catch (err) {
-    load = { state: 'error', auth: err instanceof AuthError, status: err?.status, message: String(err?.message || 'Unknown error') };
+    load = {
+      state: 'error',
+      auth: err instanceof AuthError,
+      rateLimited: err?.rateLimited === true,
+      status: err?.status,
+      message: String(err?.message || 'Unknown error'),
+    };
   }
   renderMain();
   renderNav();
   renderStatus();
+  if (load.state === 'ready' && tokenToSeal) await sealReplacedToken();
+}
+
+// Spec 13.7, a 401 or 403 while loading: the owner pasted a new token in the shared modal (token-modal.mjs), which
+// GitHub accepted. The session uses it at once; the draft could not load with the old one, so the token is sealed
+// into the draft's admin entry (replaceToken) once the draft has loaded, and the next publish commits it.
+function replaceTokenAtLoad() {
+  openTokenModal({
+    session,
+    apply: async (token) => {
+      tokenToSeal = true;
+      applySession({ token });
+      if (!published) loadPublished();      // "published N min ago" failed with the old token too
+      await loadDraft();                    // seals the token when the draft is in; a failure shows its card (Retry)
+    },
+  });
+}
+
+async function sealReplacedToken() {
+  tokenToSeal = false;
+  try {
+    await replaceToken(store, session.kek, session.github.token);
+    toast('GitHub token replaced. The dashboard uses it from now on, and the next publish saves it, sealed, in the vault.');
+  } catch (err) {
+    toast(`The new token works for this visit, but it could not be saved in the draft: ${err?.message || 'unknown error'}`, { ms: 12000 });
+  }
 }
 
 async function loadPublished() {
@@ -211,6 +276,28 @@ function renderStatus() {
   if (!store) return;
   const changes = load.state === 'ready' ? store.dirty().total : null;
   $('status').textContent = statusText({ published, changes });
+}
+
+// Spec 13.7: "Token expires <date>" beside the status line, amber within two weeks of the date Settings holds, red
+// after it; a link to Settings, where the token is replaced. Nothing when no date is set or it is further away.
+function renderTokenNote() {
+  const note = tokenNote(readTokenExpiry(localStorageOrNull()));
+  let node = $('tokenNote');
+  if (!note) {
+    node?.remove();
+    return;
+  }
+  if (!node) {
+    node = document.createElement('a');
+    node.id = 'tokenNote';
+    node.href = '#settings';
+    $('status').after(node);
+  }
+  node.className = `adm-token-note is-${note.state}`;
+  node.textContent = note.text;
+  node.title = note.state === 'past'
+    ? 'GitHub no longer accepts an expired token: replace it in Settings'
+    : 'Replace the token in Settings before it expires';
 }
 
 /* nav */
@@ -254,7 +341,7 @@ function mountSection(section, host, sectionStore) {
   container.dataset.section = section.id;
   host.replaceChildren(container);
   try {
-    teardown = section.render(container, sectionStore, { github, session, fileStore });
+    teardown = section.render(container, sectionStore, { github, session, fileStore, onTokenExpiry: renderTokenNote });
   } catch (err) {
     console.error(err);
     container.innerHTML = html`<div class="adm-card adm-alert" role="alert"><p class="adm-alert-title">This section could not be shown</p><p class="adm-alert-text">${String(err?.message || err)}</p></div>`;
@@ -267,15 +354,21 @@ function renderMain() {
   if (load.state === 'ready') return mountSection(sections.find((s) => s.id === route), main, store);
 
   if (load.state === 'error' && load.auth) {
+    // spec 13.7: a 401 or 403 opens "Replace GitHub token" (the same modal as Settings), then the load runs again
     main.innerHTML = html`<div class="adm-section"><div class="adm-card adm-alert" role="alert">
       <p class="adm-alert-title">GitHub rejected the token</p>
-      <p class="adm-alert-text">GitHub answered HTTP ${load.status}. Sign out and sign in again; replacing the token comes with a later update.</p>
-      <button type="button" class="adm-linkbtn" data-shell="signout">Sign out</button>
+      <p class="adm-alert-text">GitHub answered HTTP ${load.status}: the token has expired or was revoked, or it lacks access to this repository. Replace it with a new one, or sign out.</p>
+      <div class="adm-actions-row">
+        <button type="button" class="adm-btn adm-btn-dark" data-shell="token">Replace token</button>
+        <button type="button" class="adm-linkbtn" data-shell="signout">Sign out</button>
+      </div>
     </div></div>`;
+    main.querySelector('[data-shell="token"]').addEventListener('click', replaceTokenAtLoad);
     main.querySelector('[data-shell="signout"]').addEventListener('click', signOut);
   } else if (load.state === 'error') {
+    // a rate limit is no reason to replace the token: wait, then Retry
     main.innerHTML = html`<div class="adm-section"><div class="adm-card adm-alert" role="alert">
-      <p class="adm-alert-title">The draft could not be loaded from GitHub</p>
+      <p class="adm-alert-title">${load.rateLimited ? RATE_LIMIT_TEXT : 'The draft could not be loaded from GitHub'}</p>
       <p class="adm-alert-text">${load.message}</p>
       <button type="button" class="adm-btn adm-btn-dark" data-shell="retry">Retry</button>
     </div></div>`;
