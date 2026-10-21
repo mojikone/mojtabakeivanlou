@@ -311,7 +311,48 @@
               },
               {
                 "text": "Techno-Economic and Flood-Hazard Assessment of the Wadi Majlas Scheme",
-                "files": []
+                "files": [
+                  {
+                    "id": "44fe761356b99efc285c897225590043",
+                    "name": "Techno-Economical Assessment Report.pdf",
+                    "size": 4180388,
+                    "type": "application/pdf",
+                    "enc": true
+                  }
+                ]
+              },
+              {
+                "text": "Wadi Majlas Dam Break Analysis",
+                "files": [
+                  {
+                    "id": "2c165ddee881ac0cfffdb2d6239946b3",
+                    "name": "Wadi Majlas Dam Break Analysis Report Rev01.pdf",
+                    "size": 8092747,
+                    "type": "application/pdf",
+                    "enc": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "consultancy-services-for-design-and-supervision-for-stp-sewer-te-networks-system-in-ibr",
+            "name": "Consultancy Services for Design and Supervision for STP, Sewer & TE Networks system in Ibr",
+            "period": "Aug 2026 - Present",
+            "role": "Hydraulic Design Engineer",
+            "scope": "",
+            "bullets": [
+              {
+                "text": "Concept Design of Sewage & TE network and STPs",
+                "files": [
+                  {
+                    "id": "8b95176c78e24496bfdcb8ac33d4739b",
+                    "name": "Ibri_Concept_Design_Report_R7.pdf",
+                    "size": 18005064,
+                    "type": "application/pdf",
+                    "enc": true
+                  }
+                ]
               }
             ]
           },
