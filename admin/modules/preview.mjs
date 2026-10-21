@@ -6,7 +6,10 @@
 //   - the context is `unlocked`, so the download icons of attached files are visible (they are hidden on the public page);
 //   - `<base href="<origin>/">` is the first child of <head>, so `assets/...` and the other relative URLs resolve from
 //     the served site root and not from /admin/;
-//   - a draft that fails validation is still rendered; the owner gets a one-line count above the frame.
+//   - a draft that fails validation is still rendered; the owner gets a one-line count above the frame;
+//   - the page is rendered with a blank Google Analytics id, so no GA tag runs inside the dashboard's origin (Firebase,
+//     for the palette's colours, stays: palette.js is the site's own);
+//   - the Contact form does not submit: a capture-phase handler cancels it and says so inside the frame.
 
 import { normalizeSite, renderContext, validateSite } from '../../assets/js/render/model.mjs';
 import { esc } from '../../assets/js/render/html.mjs';
@@ -57,6 +60,34 @@ export function withBase(html, origin) {
   return head.test(html) ? html.replace(head, (tag) => tag + base) : base + html;
 }
 
+/** What the frame says when its Contact form is submitted. */
+export const FORM_DISABLED_TEXT = 'Form submission is disabled in the preview';
+
+const FORM_NOTICE_STYLE = 'margin:12px 0 0;padding:8px 12px;border-radius:8px;border:1px solid #e3a72f;background:#fff5dc;color:#5c4400;font:500 13px/1.4 Poppins,Arial,sans-serif;';
+
+/**
+ * Cancels every form submission in the preview's document `doc` (capture phase, before the page's own handlers) and
+ * shows FORM_DISABLED_TEXT under the form once: the Contact form would otherwise post the draft's test message to the
+ * live form service.
+ */
+export function guardFormSubmit(doc) {
+  let notice = null;
+  doc.addEventListener('submit', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!notice) {
+      notice = doc.createElement('p');
+      notice.setAttribute('role', 'status');
+      notice.setAttribute('style', FORM_NOTICE_STYLE);
+      notice.className = 'adm-preview-form-notice';
+      notice.textContent = FORM_DISABLED_TEXT;
+    }
+    const form = event.target;
+    if (form && typeof form.append === 'function') form.append(notice);
+    else doc.body?.append(notice);
+  }, true);
+}
+
 /** The amber line above the frame: '' for no issues, else the count only (the list is in the sections). */
 export function validationNotice(issues) {
   const count = Array.isArray(issues) ? issues.length : Number(issues) || 0;
@@ -69,8 +100,9 @@ export function validationNotice(issues) {
  * @param {string} page       a PAGES id; anything else shows Home
  * @param {{ today?: Date, origin?: string }} [options]
  * @returns {{ html: string|null, issues: string[], error?: string }}
- *   html    the full document for iframe.srcdoc, or null when the templates cannot render the draft yet
- *   issues  the validator's messages (the same ones the build would fail with)
+ *   html    the full document for iframe.srcdoc, or null when the templates cannot render the draft yet; rendered
+ *           with a blank site.gaId (no GA tag), so analytics never runs inside the dashboard
+ *   issues  the validator's messages (the same ones the build would fail with), for the draft as it is
  *   error   why html is null
  */
 export function previewDocument(draftSite, page = 'index', { today = new Date(), origin = '' } = {}) {
@@ -79,8 +111,9 @@ export function previewDocument(draftSite, page = 'index', { today = new Date(),
   try {
     const site = normalizeSite(draftSite);
     issues = validateSite(site, { icons: Object.keys(icons), today });
-    const ctx = renderContext(site, { today, unlocked: true });
-    return { html: withBase(entry.render(site, ctx), origin), issues };
+    const shown = site?.site && typeof site.site === 'object' ? { ...site, site: { ...site.site, gaId: '' } } : site;
+    const ctx = renderContext(shown, { today, unlocked: true });
+    return { html: withBase(entry.render(shown, ctx), origin), issues };
   } catch (err) {
     return { html: null, issues, error: String(err?.message || err) };
   }
@@ -151,6 +184,7 @@ export function openPreview(store, page = 'index') {
     try { doc = frame.contentDocument; } catch { /* the frame left the origin */ }
     if (!doc?.documentElement) return;
     doc.addEventListener('keydown', (e) => { if (e.key === 'Escape') handle.close(); });
+    guardFormSubmit(doc);
     // Capture phase: the page's own handlers (the Download CV buttons fetch the PDF) must not run for a page link.
     doc.addEventListener('click', (e) => {
       const link = e.target?.closest?.('a[href]');

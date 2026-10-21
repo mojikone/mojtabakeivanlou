@@ -64,7 +64,9 @@ export function renderHead({
   const imageUrl = absolute(site, image);
   const hasOg = ogDescription != null;
   const segments = {
-    ga: [
+    // No GA id, no tag: the dashboard's preview renders with a blank id, so analytics never runs in its origin. A
+    // published page always has one (the validator requires it).
+    ga: typeof gaId === 'string' && gaId.trim() !== '' && [
       html`<script async src="https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}"></script>`,
       `<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config',${jsString(gaId)});</script>`,
     ],

@@ -4,14 +4,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  PAGES, pageForSection, pageForHref, withBase, validationNotice, previewDocument,
+  PAGES, pageForSection, pageForHref, withBase, validationNotice, previewDocument, guardFormSubmit, FORM_DISABLED_TEXT,
 } from '../admin/modules/preview.mjs';
+import { FakeNode } from './helpers/fake-dom.mjs';
+import { normalizeSite, renderContext } from '../assets/js/render/model.mjs';
+import { renderIndex } from '../assets/js/render/index.mjs';
 
 const read = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8'));
 const SITE = read('site.parity.json');                // the full content, valid
 const MIN = read('site.min.json');
 const TODAY = new Date('2026-06-01T00:00:00Z');
 const ORIGIN = 'http://127.0.0.1:3007';
+const clone = (x) => JSON.parse(JSON.stringify(x));
 
 /* ─── pageForSection ─── */
 
@@ -148,6 +152,62 @@ test('previewDocument counts validation issues but still renders', () => {
   assert.equal(issues.length, 2);
   assert.ok(issues.every((m) => typeof m === 'string'));
   assert.match(html, /<base href=/);
+});
+
+test('previewDocument renders no Google Analytics tag (a blank GA id) and keeps the palette script', () => {
+  for (const page of PAGES) {
+    const { html, issues } = previewDocument(SITE, page.id, { today: TODAY, origin: ORIGIN });
+    assert.ok(!html.includes('googletagmanager'), `${page.id}: no gtag.js`);
+    assert.ok(!html.includes('gtag('), `${page.id}: no gtag call`);
+    assert.ok(!html.includes(SITE.site.gaId), `${page.id}: the id is not in the page`);
+    assert.match(html, /<script src="assets\/js\/palette\.js\?v=dev"><\/script>/, `${page.id}: Firebase (the palette) stays`);
+    assert.deepEqual(issues, [], 'the draft itself still has its id: nothing to report');
+  }
+  assert.equal(SITE.site.gaId, 'G-FMKJ61FF7F', 'the draft is not modified');
+  const blank = clone(SITE);
+  blank.site.gaId = '';
+  assert.ok(previewDocument(blank, 'index', { today: TODAY }).issues.includes('site.gaId is empty'), 'a blank id in the draft is still reported');
+});
+
+test('a build render still carries the GA tag; only a blank id leaves it out', () => {
+  const site = normalizeSite(SITE);
+  const ctx = renderContext(site, { today: TODAY });
+  assert.match(renderIndex(site, ctx), /googletagmanager\.com\/gtag\/js\?id=G-FMKJ61FF7F/);
+  for (const gaId of ['', '  ']) {
+    const none = { ...site, site: { ...site.site, gaId } };
+    assert.ok(!renderIndex(none, renderContext(none, { today: TODAY })).includes('googletagmanager'), JSON.stringify(gaId));
+  }
+});
+
+test('guardFormSubmit cancels a submission in the capture phase and says so once, inside the form', () => {
+  const doc = new FakeNode('#document');
+  doc.createElement = (tag) => new FakeNode(tag);
+  doc.body = new FakeNode('body');
+  const form = new FakeNode('form');
+  doc.body.append(form);
+  let pageHandler = 0;
+  form.addEventListener('submit', () => { pageHandler += 1; });  // the page's own handler (fills in the local time)
+
+  guardFormSubmit(doc);
+  assert.equal(doc.listeners.submit.length, 1);
+  const calls = [];
+  const event = () => ({ target: form, preventDefault: () => calls.push('preventDefault'), stopPropagation: () => calls.push('stopPropagation') });
+  doc.listeners.submit[0](event());
+  doc.listeners.submit[0](event());
+
+  assert.deepEqual(calls, ['preventDefault', 'stopPropagation', 'preventDefault', 'stopPropagation']);
+  const notices = form.findAll((n) => n.getAttribute?.('role') === 'status');
+  assert.equal(notices.length, 1, 'one notice, however often it is submitted');
+  assert.equal(notices[0].textContent, FORM_DISABLED_TEXT);
+  assert.equal(FORM_DISABLED_TEXT, 'Form submission is disabled in the preview');
+  assert.equal(pageHandler, 0, 'the page handler is not reached (stopPropagation in the capture phase)');
+});
+
+test('openPreview installs the form guard on every frame document it loads', () => {
+  const src = readFileSync(new URL('../admin/modules/preview.mjs', import.meta.url), 'utf8');
+  const onLoad = src.slice(src.indexOf("frame.addEventListener('load'"));
+  assert.match(onLoad, /guardFormSubmit\(doc\)/);
+  assert.match(src, /doc\.addEventListener\('submit', [\s\S]*?\}, true\);/, 'capture phase');
 });
 
 test('previewDocument falls back to Home for an unknown page', () => {
