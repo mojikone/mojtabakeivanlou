@@ -173,7 +173,7 @@ test('the nav lists the ten sections of spec 13.3 in order, content first, then 
 test('no "coming soon" placeholder is left: every nav entry renders through its own module', async () => {
   // Task 23 built the last placeholders (access, files): each entry's render is the one of admin/sections/<id>.mjs.
   for (const s of sections) {
-    const mod = await import();
+    const mod = await import(`../admin/sections/${s.id}.mjs`);
     assert.equal(s.render, mod.render, s.id);
   }
   // The setup route renders the real wizard (Task 24), which needs a DOM; only its shape is checked here.
