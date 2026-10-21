@@ -125,6 +125,17 @@ test('ctx.unlocked renders the proj-files span without hidden', () => {
   assert.doesNotMatch(out, /proj-files" hidden/);
 });
 
+// The dashboard preview (Task 21) renders with unlocked: true; the public page and the build stay hidden.
+test('unlocked: true shows the download icons, unlocked: false hides them', () => {
+  const shown = renderIndex(withFile(), { ...ctx, unlocked: true });
+  const hidden = renderIndex(withFile(), { ...ctx, unlocked: false });
+  assert.match(shown, /<span class="proj-files"><a class="proj-dl" href="#" data-file="0123456789abcdef0123456789abcdef"/);
+  assert.doesNotMatch(shown, /<span class="proj-files" hidden>/);
+  assert.match(hidden, /<span class="proj-files" hidden><a class="proj-dl"/);
+  assert.doesNotMatch(hidden, /<span class="proj-files">/);
+  assert.equal(renderIndex(withFile(), ctx), hidden, 'the default context is locked');
+});
+
 test('file names are escaped and data-enc follows the record', () => {
   const out = renderIndex(withFile({ ...FILE, name: 'a"<b>.pdf', size: 900, enc: false }), ctx);
   assert.match(out, /data-name="a&quot;&lt;b&gt;.pdf" data-size="900" data-enc="false" title="a&quot;&lt;b&gt;.pdf · 900 B"/);

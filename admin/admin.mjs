@@ -12,6 +12,7 @@ import { mountAccessPill } from '../assets/js/access-pill.mjs';
 import { unlock, exportKey } from '../assets/js/vault.mjs';
 import { html } from '../assets/js/render/html.mjs';
 import { icon } from '../assets/js/render/icons.mjs';
+import { openPreview, pageForSection } from './modules/preview.mjs';
 import { createGitHub, AuthError } from './modules/github.mjs';
 import { createStore } from './modules/state.mjs';
 import { createFileStore, createMemoryFileStore } from './modules/files.mjs';
@@ -166,6 +167,8 @@ async function loadDraft() {
     const base = await loadBase(github);
     load = { state: 'ready' };
     store.init(base);                       // notifies: nav, status and name follow
+    $('previewButton').onclick = () => openPreview(store, pageForSection(route));
+    $('previewButton').disabled = false;
   } catch (err) {
     load = { state: 'error', auth: err instanceof AuthError, status: err?.status, message: String(err?.message || 'Unknown error') };
   }
