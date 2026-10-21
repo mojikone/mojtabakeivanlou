@@ -7,7 +7,7 @@ import { linesToArray, arrayToLines, previewContext } from '../modules/forms.mjs
 import { loadBase } from '../modules/shell.mjs';
 import { createFileStore } from '../modules/files.mjs';
 import { createGitHub } from '../modules/github.mjs';
-import { replaceToken, sessionChanged } from '../modules/codes.mjs';
+import { replaceToken, sessionChanged, validateNewToken } from '../modules/codes.mjs';
 import { formSection, bound, grid, readout } from './_common.mjs';
 
 const SITE = ['site', 'site'];
@@ -119,13 +119,9 @@ function tokenModal(store, ctx) {
     error.hidden = true;
     const token = input.value.trim();
     const session = ctx.session;
-    if (!token) return fail('Paste the new token.');
-    if (!session?.kek || !session.github) return fail('This session cannot seal a token. Sign out and sign in again.');
-    const check = await createGitHub({ ...session.github, token }).validate();
-    if (!check.ok) {
-      if (check.status === 0) return fail('GitHub could not be reached to check the token. Try again when you are online.');
-      return fail(`GitHub did not accept this token for ${session.github.owner}/${session.github.repo} (HTTP ${check.status}). Check that it covers this repository, with Contents read and write and Actions read.`);
-    }
+    if (token && !session?.kek) return fail('This session cannot seal a token. Sign out and sign in again.');
+    const refused = await validateNewToken(createGitHub, session, token);
+    if (refused) return fail(refused);
     try {
       await replaceToken(store, session.kek, token);
     } catch (err) {

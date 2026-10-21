@@ -9,9 +9,10 @@
 
 import { el, card, section, modal, toast } from '../modules/ui.mjs';
 import { codeStrength } from '../../assets/js/vault.mjs';
+import { createGitHub } from '../modules/github.mjs';
 import {
   listCodes, createDownloadCode, revoke, unrevoke, changeAdminCode, isStaleSession, resumeAdminSession,
-  cancelAdminChange, applySessionChange, sessionChanged,
+  cancelAdminChange, applySessionChange, sessionChanged, validateNewToken,
 } from '../modules/codes.mjs';
 import { grid } from './_common.mjs';
 
@@ -264,7 +265,13 @@ function changeAdminForm(store, getSession, update) {
     submit.disabled = true;
     submit.textContent = 'Changing…';
     try {
+      // A new token is checked with GitHub first, as Replace GitHub token does: the dashboard switches to it at once,
+      // so a mistyped or under-scoped token would lock the owner out. A refusal changes nothing.
       const newToken = token.control.value.trim();
+      if (newToken) {
+        const refused = await validateNewToken(createGitHub, getSession(), newToken);
+        if (refused) throw new Error(refused);
+      }
       const done = await changeAdminCode(store, { currentCode: current.control.value, newCode: next.control.value, newToken }, getSession().vk);
       for (const f of [current, next, again, token]) f.control.value = '';
       meter.update('');

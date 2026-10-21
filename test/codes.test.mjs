@@ -9,7 +9,7 @@ import { publish } from '../admin/modules/publish.mjs';
 import {
   listCodes, createDownloadCode, revoke, unrevoke, changeAdminCode, replaceToken, totalAttachmentBytes, orphanBlobs,
   listAttachments, isStaleSession, resumeAdminSession, cancelAdminChange, applySessionChange, onSessionChanged,
-  sessionChanged, today, budgetLevel,
+  sessionChanged, today, budgetLevel, validateNewToken,
 } from '../admin/modules/codes.mjs';
 import {
   createAccessFile, createKeysFile, addEntry, unlock, generateKey, exportKey, shortId,
@@ -282,6 +282,43 @@ test('replaceToken refuses an empty token and a KEK that opens no admin entry', 
   const other = await exportKey(await generateKey());
   await rejectsQuietly(replaceToken(store, other, NEW_TOKEN), /admin entry/, [NEW_TOKEN]);
   assert.equal(store.get(), before);
+});
+
+/* --- checking a new token before it is used --- */
+
+// A createGitHub stand-in: records the config it was given and answers validate() with `answer` (or throws it).
+function fakeClientFactory(answer) {
+  const configs = [];
+  const create = (config) => {
+    configs.push(config);
+    return { validate: async () => { if (answer instanceof Error) throw answer; return answer; } };
+  };
+  return { create, configs };
+}
+
+test('validateNewToken resolves null for a token GitHub accepts, checked against the session repository', async () => {
+  const { create, configs } = fakeClientFactory({ ok: true, status: 200 });
+  assert.equal(await validateNewToken(create, { github: GITHUB }, `  ${NEW_TOKEN} `), null);
+  assert.deepEqual(configs, [{ ...GITHUB, token: NEW_TOKEN }]);
+});
+
+test('validateNewToken explains a refused or unreachable check, and never names the token', async () => {
+  const refused = await validateNewToken(fakeClientFactory({ ok: false, status: 401 }).create, { github: GITHUB }, NEW_TOKEN);
+  assert.match(refused, /did not accept this token for mojikone\/mojtabakeivanlou \(HTTP 401\)/);
+  assert.match(await validateNewToken(fakeClientFactory({ ok: false, status: 404 }).create, { github: GITHUB }, NEW_TOKEN), /HTTP 404/);
+  const offline = await validateNewToken(fakeClientFactory({ ok: false, status: 0 }).create, { github: GITHUB }, NEW_TOKEN);
+  assert.match(offline, /could not be reached/);
+  const broken = await validateNewToken(fakeClientFactory(new TypeError(`bad ${NEW_TOKEN}`)).create, { github: GITHUB }, NEW_TOKEN);
+  assert.match(broken, /could not be reached/);
+  for (const message of [refused, offline, broken]) assert.ok(!message.includes(NEW_TOKEN));
+});
+
+test('validateNewToken refuses an empty token and a session without GitHub details, without asking GitHub', async () => {
+  const { create, configs } = fakeClientFactory({ ok: true, status: 200 });
+  assert.match(await validateNewToken(create, { github: GITHUB }, '   '), /Paste the new token/);
+  assert.match(await validateNewToken(create, {}, NEW_TOKEN), /Sign out and sign in again/);
+  assert.match(await validateNewToken(create, null, NEW_TOKEN), /Sign out and sign in again/);
+  assert.deepEqual(configs, []);
 });
 
 /* --- the session hook --- */

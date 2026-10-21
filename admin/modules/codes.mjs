@@ -225,6 +225,28 @@ export function cancelAdminChange(store, session) {
 /* ─── GITHUB TOKEN ─── */
 
 /**
+ * Checks a new token before the dashboard switches to it (Replace GitHub token, and the optional token of Change
+ * admin code): GET /repos/{owner}/{repo} through a client made by `createClient` (github.mjs createGitHub) with the
+ * session's repository and the new token. Resolves null when GitHub accepts it, else the message to show. A mistyped
+ * or under-scoped token would otherwise make every GitHub call fail and lock the owner out after a reload.
+ */
+export async function validateNewToken(createClient, session, token) {
+  const value = trimmed(token);
+  if (!value) return 'Paste the new token.';
+  const github = session?.github;
+  if (!github?.owner || !github.repo) return 'This session cannot check a token. Sign out and sign in again.';
+  let check;
+  try {
+    check = await createClient({ ...github, token: value }).validate();
+  } catch {
+    check = { ok: false, status: 0 };
+  }
+  if (check?.ok) return null;
+  if (!check?.status) return 'GitHub could not be reached to check the token. Try again when you are online.';
+  return `GitHub did not accept this token for ${github.owner}/${github.repo} (HTTP ${check.status}). Check that it covers this repository, with Contents read and write and Actions read.`;
+}
+
+/**
  * Spec 13.7 "Replace GitHub token": re-seals the payload of the admin entry that `kekB64` (the session's KEK) opens,
  * with github.token replaced, and sets `rotate` so the publish re-seals everything consistently. The entry keeps its
  * id and meta.
