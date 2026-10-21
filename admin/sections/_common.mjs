@@ -2,11 +2,14 @@
 //
 // formSection() owns the re-render rule every section follows, so typing never loses focus or the caret:
 //   - the form is built once from the draft (build(view));
-//   - the section writes through view.write (set / insert / remove / move). Those writes are "own": the store
-//     notifies, and the section only refreshes its derived displays (the validation hints and every view.derive
-//     callback). Fields keep their own DOM state, lists re-render their rows themselves;
+//   - the section writes through view.write (set / insert / remove / move / addPendingFile / removeFile). Those writes
+//     are "own": the store notifies, and the section only refreshes its derived displays (the validation hints and
+//     every view.derive callback). Fields keep their own DOM state, lists re-render their rows themselves;
 //   - any other change of the draft (Reset draft, a newer base after Publish, an undo toast from an earlier visit)
 //     rebuilds the whole form from the new draft, after cancelling the pending writes of the old fields.
+//   - every build gets its own view, and its writes count as own only while that build is on screen. A write that
+//     comes late through the view of an older build (an Undo toast, an upload finishing after a rebuild) is foreign:
+//     the form is rebuilt and shows it, where a mere refresh would leave the change in rows that are gone.
 
 import { el, section, field, pair, flushPending, cancelPending } from '../modules/ui.mjs';
 import { issuesFor, previewContext } from '../modules/forms.mjs';
@@ -21,27 +24,33 @@ export const getIn = (node, path) => path.reduce((n, k) => (n == null ? undefine
  *   title, hint     the header
  *   keys, exclude   which validator paths the hint list shows (see issuesFor in forms.mjs)
  *   build(view)     returns the section's content (a node or an array of nodes); view is
- *                   { get(), write: { set, insert, remove, move }, context(), derive(fn) }
+ *                   { get(), write: { set, insert, remove, move, addPendingFile, removeFile }, context(), derive(fn) }
  *                   derive(fn): fn(draft) runs after the build and after every own write (derived read-only values)
  *                   context(): the placeholder values for rich previews, from the current draft
  */
 export function formSection(container, store, { title, hint, keys, exclude = [], build }) {
   let own = 0;
-  const mine = (fn) => (...args) => {
-    own += 1;
-    try { fn(...args); } finally { own -= 1; }
-  };
+  let generation = 0;                       // the build on screen (see the rule above)
   const derived = [];
-  const view = {
-    get: () => store.get(),
-    write: {
-      set: mine((path, value) => store.set(path, value)),
-      insert: mine((path, index, item) => store.insert(path, index, item)),
-      remove: mine((path, index) => store.remove(path, index)),
-      move: mine((path, from, to) => store.move(path, from, to)),
-    },
-    context: () => previewContext(store.get()?.site),
-    derive: (fn) => { derived.push(fn); },
+  const viewOf = (gen) => {
+    const mine = (fn) => (...args) => {
+      if (gen !== generation) return fn(...args);   // an older build: foreign, so the form rebuilds
+      own += 1;
+      try { return fn(...args); } finally { own -= 1; }
+    };
+    return {
+      get: () => store.get(),
+      write: {
+        set: mine((path, value) => store.set(path, value)),
+        insert: mine((path, index, item) => store.insert(path, index, item)),
+        remove: mine((path, index) => store.remove(path, index)),
+        move: mine((path, from, to) => store.move(path, from, to)),
+        addPendingFile: mine((bulletPath, record) => store.addPendingFile(bulletPath, record)),
+        removeFile: mine((bulletPath, fileId) => store.removeFile(bulletPath, fileId)),
+      },
+      context: () => previewContext(store.get()?.site),
+      derive: (fn) => { derived.push(fn); },
+    };
   };
 
   const issues = el('div', { class: 'adm-issues', 'aria-live': 'polite', hidden: true });
@@ -67,7 +76,8 @@ export function formSection(container, store, { title, hint, keys, exclude = [],
   function rebuild() {
     cancelPending(body);
     derived.length = 0;
-    body.replaceChildren(...[build(view)].flat().filter(Boolean));
+    generation += 1;
+    body.replaceChildren(...[build(viewOf(generation))].flat().filter(Boolean));
     refresh();
   }
 

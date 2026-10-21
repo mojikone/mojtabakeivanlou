@@ -329,3 +329,78 @@
   .adm-row-tools { width: 100%; justify-content: flex-end; padding: 0 0 6px; }
   .adm-rich-help { display: none; }
 }
+
+/* ─── EXPERIENCE (Task 19b): folding rows, bullets with files ─── */
+.adm-row .adm-row { background: var(--white); }            /* nested lists alternate, so each level reads apart */
+.adm-row .adm-row .adm-row { background: var(--adm-row-bg); }
+.adm-row .adm-row .adm-row .adm-row { background: var(--white); }
+.adm-row:has(> .adm-row-body > .adm-fold) { padding-top: 4px; }
+.adm-row:has(> .adm-row-body > .adm-fold) > .adm-grip { padding-top: 13px; }
+.adm-row:has(> .adm-row-body > .adm-fold) > .adm-row-tools { padding-top: 8px; }
+.adm-fold-head {
+  display: flex; align-items: center; gap: 9px; width: 100%; min-height: 40px; padding: 4px 0;
+  font-size: 13.5px; font-weight: 600; text-align: left; color: var(--text);
+}
+.adm-fold-head:hover .adm-fold-title { color: var(--dk); text-decoration: underline; text-decoration-color: var(--lime-dk); }
+.adm-fold-chev {
+  flex: none; width: 0; height: 0; margin-left: 2px;
+  border-left: 6px solid var(--text-2); border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent;
+  transition: transform 0.12s;
+}
+.adm-fold-head[aria-expanded="true"] .adm-fold-chev { transform: rotate(90deg); }
+.adm-fold-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-fold-body { padding: 6px 0 4px; }
+.adm-fold-body > .adm-list { margin-bottom: 12px; }
+
+/* a bullet: its text, the paperclip, and the files beneath */
+.adm-bullet-line { display: flex; align-items: flex-start; gap: 6px; }
+.adm-bullet-line > .adm-field { flex: 1; }
+.adm-clip {
+  flex: none; display: inline-flex; align-items: center; gap: 4px; height: 35px; padding: 0 9px;
+  font-size: 12px; font-weight: 600; color: var(--text-2);
+  background: var(--white); border: 1px solid var(--adm-field-line); border-radius: 7px;
+}
+.adm-clip:hover { color: var(--text); border-color: var(--lime-dk); }
+.adm-clip[aria-expanded="true"] { color: var(--dk); border-color: var(--lime); background: rgba(var(--lime-rgb), 0.14); }
+.adm-clip-count:empty { display: none; }
+.adm-files { margin: 0 0 10px 4px; padding: 2px 0 0 12px; border-left: 2px solid var(--adm-field-line); }
+.adm-files .adm-rows { gap: 6px; }
+.adm-row:has(> .adm-row-body > .adm-file) { padding-top: 5px; }
+.adm-row:has(> .adm-row-body > .adm-file) > .adm-grip { padding-top: 8px; }
+.adm-row:has(> .adm-row-body > .adm-file) > .adm-row-tools { padding-top: 2px; }
+.adm-file-line, .adm-upload {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-height: 28px; padding-bottom: 5px;
+  font-size: 12.5px;
+}
+.adm-file-name { flex: 0 1 auto; min-width: 0; max-width: 100%; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-file-size { color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.adm-badge {
+  padding: 1px 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em; color: var(--dk); background: rgba(var(--lime-rgb), 0.24);
+}
+.adm-badge.is-plain { color: var(--text-2); background: rgba(var(--text-rgb), 0.08); }
+.adm-file-acts { display: inline-flex; gap: 12px; margin-left: auto; }
+.adm-file-acts .adm-linkbtn { font-size: 12px; font-weight: 500; }
+.adm-linkbtn-danger:hover { color: var(--adm-danger); }
+.adm-file-note {
+  margin: 0 0 8px; padding: 6px 10px; font-size: 11.5px; line-height: 1.45;
+  background: var(--adm-warn-bg); border-left: 2px solid var(--adm-warn-line); border-radius: 0 6px 6px 0;
+}
+.adm-upload { padding: 4px 0; color: var(--text-2); }
+.adm-upload .adm-spinner { width: 13px; height: 13px; }
+.adm-upload-state { font-style: italic; }
+.adm-drop {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 6px 0 4px; padding: 6px 8px;
+  font-size: 12px; color: var(--text-2); border: 1px dashed #cfccc4; border-radius: 8px;
+}
+.adm-drop .adm-add { margin-top: 0; }
+.adm-bullet { border-radius: 6px; transition: box-shadow 0.12s; }
+.adm-bullet.is-drop { box-shadow: 0 0 0 2px var(--lime-dk); }
+.adm-bullet.is-drop .adm-drop { border-color: var(--lime-dk); background: rgba(var(--lime-rgb), 0.12); }
+@media (prefers-reduced-motion: reduce) {
+  .adm-fold-chev, .adm-bullet { transition: none; }
+}
+@media (max-width: 700px) {
+  .adm-files { margin-left: 0; padding-left: 8px; }
+  .adm-file-acts { margin-left: 0; }
+}

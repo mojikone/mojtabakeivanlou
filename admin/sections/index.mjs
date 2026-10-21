@@ -7,8 +7,9 @@
 //     store      the draft store (admin/modules/state.mjs), already init()ed: read with store.get(), write with
 //                store.set / insert / remove / move / addPendingFile / removeFile. Every write updates the nav dots
 //                and the top bar by itself (the shell subscribes); a section that shows derived values subscribes too.
-//     ctx        { github, session }: the GitHub client (admin/modules/github.mjs) and the signed-in session
-//                { entryId, vk, kek, github }. Never log or render session values.
+//     ctx        { github, session, fileStore }: the GitHub client (admin/modules/github.mjs), the signed-in session
+//                { entryId, vk, kek, github } and the pending-file store (admin/modules/files.mjs). Never log or render
+//                session values.
 //   The shell calls the teardown (if returned) before it shows another section: unsubscribe and drop listeners on
 //   anything outside `container` there. Listeners on elements inside `container` die with it.
 //   Form sections are built with formSection() (./_common.mjs), which owns the re-render rule that keeps the focus and
@@ -20,6 +21,7 @@ import * as profile from './profile.mjs';
 import * as education from './education.mjs';
 import * as languages from './languages.mjs';
 import * as services from './services.mjs';
+import * as experience from './experience.mjs';
 import * as contact from './contact.mjs';
 import * as settings from './settings.mjs';
 
@@ -40,7 +42,7 @@ export const sections = [
   { id: 'education', label: 'Education', group: 'content', render: education.render },
   { id: 'languages', label: 'Languages', group: 'content', render: languages.render },
   { id: 'services', label: 'Engineering services', group: 'content', render: services.render },
-  comingSoon('experience', 'Experience', 'content'),
+  { id: 'experience', label: 'Experience', group: 'content', render: experience.render },
   comingSoon('skills', 'Skills & software', 'content'),
   { id: 'contact', label: 'Contact page', group: 'content', render: contact.render },
   comingSoon('access', 'Access codes', 'admin'),

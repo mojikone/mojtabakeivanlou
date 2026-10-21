@@ -14,6 +14,8 @@ import { html } from '../assets/js/render/html.mjs';
 import { icon } from '../assets/js/render/icons.mjs';
 import { createGitHub, AuthError } from './modules/github.mjs';
 import { createStore } from './modules/state.mjs';
+import { createFileStore, createMemoryFileStore } from './modules/files.mjs';
+import { toast } from './modules/ui.mjs';
 import {
   toSession, readSession, writeSession, clearSession, loadBase, statusText, profileName, routeOf,
 } from './modules/shell.mjs';
@@ -35,6 +37,7 @@ let publicName = '';                        // the name on the public home page,
 // The shell, created after the gate.
 let github = null;
 let store = null;
+let fileStore = null;                       // the attachments waiting for Publish (files.mjs), created with the shell
 let load = { state: 'idle' };               // idle | loading | ready | error (+ auth, status, message)
 let published;                              // undefined while asking, null when unknown, else an ISO time
 let route = null;
@@ -124,6 +127,7 @@ function startShell() {
   shellStarted = true;
   github = createGitHub(session.github);
   store = createStore();
+  fileStore = openFileStore();
   store.subscribe(() => {
     renderNav();
     renderStatus();
@@ -136,6 +140,15 @@ function startShell() {
   setInterval(renderStatus, STATUS_TICK_MS);
   loadDraft();
   loadPublished();
+}
+
+// IndexedDB keeps attachments until they are published. Without it they live in memory, so a reload loses them.
+function openFileStore() {
+  let idb;
+  try { idb = globalThis.indexedDB; } catch { idb = undefined; }   // the access itself can throw when site data is blocked
+  if (idb) return createFileStore({ idb });
+  toast('Attachments will not survive a reload in this browser');
+  return createMemoryFileStore();
 }
 
 // Spec 13.8 and the session ruling: the three keys go, the draft (localStorage) stays; the reload shows the gate.
@@ -227,7 +240,7 @@ function mountSection(section, host, sectionStore) {
   container.dataset.section = section.id;
   host.replaceChildren(container);
   try {
-    teardown = section.render(container, sectionStore, { github, session });
+    teardown = section.render(container, sectionStore, { github, session, fileStore });
   } catch (err) {
     console.error(err);
     container.innerHTML = html`<div class="adm-card adm-alert" role="alert"><p class="adm-alert-title">This section could not be shown</p><p class="adm-alert-text">${String(err?.message || err)}</p></div>`;

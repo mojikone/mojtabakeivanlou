@@ -55,8 +55,8 @@ export function el(tag, props = {}, ...children) {
   return node;
 }
 
-// One of the fixed SVGs of icons.mjs as a node.
-function svg(name, attrs) {
+/** One of the fixed SVGs of icons.mjs as a node (hidden from screen readers). */
+export function svg(name, attrs) {
   const t = document.createElement('template');
   t.innerHTML = icon(name, { 'aria-hidden': 'true', focusable: 'false', ...attrs }).html;
   return t.content.firstElementChild;
@@ -460,9 +460,10 @@ let toastHost = null;
 
 /**
  * A message at the bottom of the screen for `ms` (6 s by default; paused while hovered or focused), with an optional
- * action button. Returns { close }.
+ * action button. onClose(acted) runs once when the toast goes: acted is true when its action button closed it, false
+ * when it timed out or was dismissed. Returns { close }.
  */
-export function toast(message, { actionLabel, onAction, ms = UNDO_MS } = {}) {
+export function toast(message, { actionLabel, onAction, onClose, ms = UNDO_MS } = {}) {
   if (!toastHost?.isConnected) {
     toastHost = el('div', { class: 'adm-toasts', role: 'status', 'aria-live': 'polite' });
     document.body.append(toastHost);
@@ -471,9 +472,13 @@ export function toast(message, { actionLabel, onAction, ms = UNDO_MS } = {}) {
   let left = ms;
   let since = 0;
   const node = el('div', { class: 'adm-toast' });
-  const close = () => {
+  let closed = false;
+  const close = (acted = false) => {
+    if (closed) return;
+    closed = true;
     clearTimeout(timer);
     node.remove();
+    onClose?.(acted === true);
   };
   const start = () => {
     since = Date.now();
@@ -487,8 +492,8 @@ export function toast(message, { actionLabel, onAction, ms = UNDO_MS } = {}) {
   };
   node.append(
     el('span', { class: 'adm-toast-text', text: message }),
-    actionLabel ? el('button', { type: 'button', class: 'adm-toast-action', onclick: () => { close(); onAction?.(); } }, actionLabel) : null,
-    el('button', { type: 'button', class: 'adm-toast-close', 'aria-label': 'Dismiss', onclick: close }, '×'),
+    actionLabel ? el('button', { type: 'button', class: 'adm-toast-action', onclick: () => { close(true); onAction?.(); } }, actionLabel) : null,
+    el('button', { type: 'button', class: 'adm-toast-close', 'aria-label': 'Dismiss', onclick: () => close() }, '×'),
   );
   node.addEventListener('mouseenter', pause);
   node.addEventListener('focusin', pause);
@@ -496,7 +501,7 @@ export function toast(message, { actionLabel, onAction, ms = UNDO_MS } = {}) {
   node.addEventListener('focusout', (e) => { if (timer === null && !node.contains(e.relatedTarget)) start(); });
   toastHost.append(node);
   start();
-  return { close };
+  return { close: () => close() };
 }
 
 /* ─── MODAL ─── */
