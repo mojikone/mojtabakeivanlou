@@ -90,14 +90,25 @@ function pathOf(draft, ref) {
   return index < 0 ? null : [...up, key, index];
 }
 
-// listEditor over the list `key` (companies, projects, bullets) of the company or project `ref` (of the experience
-// itself when ref is null). Removing an item releases the files inside it, putting it back restores them.
+const hasIds = (ref) => Boolean(ref.id) && (!ref.company || hasIds(ref.company));
+
+// The path of the list `key` (companies, projects, bullets) of the company or project `ref` (of the experience itself
+// when ref is null), or null. `attached`: the list asking is on screen, so its row's indexes are current. A detached
+// list (an Undo after its parent list re-rendered) has stale indexes and is placed by ids only: below a company or
+// project without an id yet it is not placed at all, rather than in whichever item now holds the old index.
+export function listPath(draft, ref, key, attached) {
+  if (!ref) return [...EXPERIENCE, key];
+  if (!attached && !hasIds(ref)) return null;
+  const up = pathOf(draft, ref);
+  return up && [...up, key];
+}
+
+// listEditor over the list `key` of the company or project `ref` (see listPath). Removing an item releases the files
+// inside it, putting it back restores them.
 function nested(ctx, ref, key, onChange, opts) {
-  const at = () => {
-    const up = ref ? pathOf(ctx.view.get(), ref) : EXPERIENCE;
-    return up && [...up, key];
-  };
-  const list = listEditor({
+  let list = null;                          // the editor's root; at() already runs while it is being built
+  const at = () => listPath(ctx.view.get(), ref, key, !list || list.isConnected);
+  list = listEditor({
     ...opts,
     items: () => {
       const path = at();
@@ -105,7 +116,10 @@ function nested(ctx, ref, key, onChange, opts) {
     },
     onInsert: (index, item) => {
       const path = at();
-      if (!path) return;
+      if (!path) {                          // only a late Undo gets here: "+ Add" comes from a list on screen
+        toast(`Could not put the item back — its parent ${hasIds(ref) ? 'was removed' : 'moved'}`);
+        return;
+      }
       const w = writer(ctx, list);
       w.insert(path, index, item);
       restore(w, ctx.view.get(), item);
