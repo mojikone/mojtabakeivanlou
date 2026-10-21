@@ -276,6 +276,30 @@
 .adm-cell-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 14px; align-items: start; }
 .adm-cell-row .adm-icons { padding-top: 19px; margin-bottom: 14px; max-width: 342px; }
 
+/* ─── SKILLS (Task 20): categories that open and close, tag rows with an Expert / Familiar switch ─── */
+.adm-skill > .adm-field { margin-bottom: 4px; }
+.adm-skill-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 8px; padding: 6px 6px 6px 2px;
+  font-size: 12.5px; font-weight: 600; text-align: left; color: var(--text); border-radius: 6px;
+}
+.adm-skill-toggle:hover { background: rgba(var(--text-rgb), 0.05); }
+.adm-chev { flex: none; width: 12px; font-size: 11px; text-align: center; color: var(--text-2); transition: transform 0.15s; }
+.adm-skill-toggle[aria-expanded="true"] .adm-chev { transform: rotate(90deg); }
+.adm-skill-count { margin-left: auto; font-size: 11.5px; font-weight: 400; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.adm-skill-body { padding-bottom: 10px; }
+.adm-skill-body[hidden] { display: none; }
+.adm-tagrow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 10px; }
+.adm-tagrow > .adm-field { flex: 1 1 140px; }
+.adm-seg {
+  flex: none; display: inline-flex; padding: 2px;
+  background: var(--bg); border: 1px solid var(--adm-field-line); border-radius: 8px;
+}
+.adm-seg-btn { padding: 5.5px 11px; border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--text-2); }
+.adm-seg-btn:hover { color: var(--text); }
+.adm-seg-btn[aria-checked="true"] { color: var(--text); background: var(--white); box-shadow: 0 1px 2px rgba(var(--text-rgb), 0.18); }
+.adm-seg-btn.is-expert[aria-checked="true"] { background: var(--lime); font-weight: 600; box-shadow: none; }   /* as .tag.hi on the site */
+@media (max-width: 700px) { .adm-tagrow > .adm-field { flex-basis: 100%; } }
+
 /* ─── BUTTONS ─── */
 .adm-actions-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .adm-btn-plain { color: var(--text); background: var(--white); box-shadow: inset 0 0 0 1px #d9d6cf; }
