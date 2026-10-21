@@ -457,3 +457,65 @@
   .adm-files { margin-left: 0; padding-left: 8px; }
   .adm-file-acts { margin-left: 0; }
 }
+
+/* ─── PUBLISH (Task 22b): read-only while publishing, the progress card, the notice, the modals ───────────────
+   The card and the modals sit in <body>, outside .adm: only the :root tokens of main.css here. */
+.adm-busy { pointer-events: none; opacity: 0.6; transition: opacity 0.2s; }
+/* the status line keeps its own width; the notice takes what is left (ellipsis, the full text in its tooltip) */
+.adm-top:has(.adm-status-note) .adm-status { flex: 0 1 auto; }
+.adm-status-note {
+  flex: 1 1 0; max-width: max-content; min-width: 0; padding: 3px 10px; border-radius: 100px;
+  font-size: 12px; font-weight: 500; color: var(--text); background: #f6dc8c;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.adm-pub {
+  position: fixed; right: 20px; bottom: 20px; z-index: 1001;
+  width: min(380px, calc(100vw - 32px)); padding: 14px 16px 14px 18px;
+  color: var(--text); background: var(--white); border: 1px solid rgba(var(--text-rgb), 0.1); border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.2); font-size: 13px; line-height: 1.45;
+}
+.adm-pub-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.adm-pub-title { font-size: 14px; font-weight: 600; }
+.adm-pub-close { width: 24px; height: 24px; margin: -4px -6px -4px 0; border-radius: 6px; font-size: 16px; color: var(--text-2); }
+.adm-pub-close:hover { color: var(--text); background: rgba(var(--text-rgb), 0.06); }
+.adm-pub-lines { display: flex; flex-direction: column; gap: 6px; }
+.adm-pub-line { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--text-2); overflow-wrap: anywhere; }
+.adm-pub-line.is-active, .adm-pub-line.is-done { color: var(--text); }
+.adm-pub-line.is-active { font-weight: 500; }
+.adm-pub-line a { font-weight: 600; color: var(--dk); text-decoration: underline; text-decoration-color: var(--lime-dk); }
+.adm-pub-mark { flex: none; font-weight: 700; line-height: 1; }
+.adm-pub-mark.adm-spinner { width: 13px; height: 13px; }
+.adm-pub-mark.is-done { color: var(--lime-dk); }
+.adm-pub-mark.is-failed { color: #a3261e; }
+.adm-pub-mark.is-waiting { color: var(--text-2); }
+.adm-pub-msg { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(var(--text-rgb), 0.1); }
+.adm-pub-text { overflow-wrap: anywhere; }
+.adm-pub-text a { font-weight: 600; color: var(--dk); text-decoration: underline; }
+.adm-pub-extra { margin-top: 6px; color: var(--text-2); }
+.adm-pub-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+.adm-pub :focus-visible { outline: 2px solid var(--lime-dk); outline-offset: 2px; }
+
+.adm-modal-wide { width: min(600px, calc(100vw - 32px)); }
+.adm-pub-errors { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow-y: auto; margin: -8px 0 16px; }
+.adm-pub-error > a, .adm-pub-error > span {
+  display: block; padding: 6px 10px; border-radius: 7px; font-size: 13px; color: var(--text); overflow-wrap: anywhere;
+}
+.adm-pub-error > a:hover { background: rgba(var(--lime-rgb), 0.16); }
+.adm-pub-error-section {
+  display: inline-block; margin-right: 4px; padding: 0 7px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; color: var(--dk); background: rgba(var(--lime-rgb), 0.24);
+}
+.adm-pub-more { margin: -8px 0 16px; font-size: 12.5px; color: var(--text-2); }
+.adm-pub-lead { margin-bottom: 8px; color: var(--text); font-weight: 500; }
+.adm-pub-detail { margin-bottom: 12px; font-size: 13px; color: var(--text-2); overflow-wrap: anywhere; }
+.adm-pub-choices { display: flex; flex-direction: column; gap: 6px; margin: 0 0 20px; padding-left: 18px; list-style: disc; font-size: 13px; color: var(--text-2); }
+.adm-pub-choices b { color: var(--text); font-weight: 600; }
+
+@media (max-width: 900px) {
+  .adm-status-note { order: 4; flex-basis: 100%; max-width: none; padding: 4px 12px; border-radius: 10px; white-space: normal; text-align: center; }
+}
+@media (max-width: 700px) {
+  .adm-pub { right: 16px; bottom: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .adm-busy { transition: none; } }

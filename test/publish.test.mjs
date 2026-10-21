@@ -121,7 +121,7 @@ function setup({ access = createAccessFile(ITER), keys = createKeysFile('abcdef0
   const steps = [];
   const onProgress = (step, info) => { steps.push([step, info]); };
   const sess = session ?? { vk: 'A'.repeat(43) + '=', kek: 'B'.repeat(43) + '=', entryId: 'abcdef01' };
-  const run = (over = {}) => publish({ store, gh, fileStore, session: sess, icons, onProgress, pollMs: 1, storage, ...over });
+  const run = (over = {}) => publish({ store, gh, fileStore, session: sess, icons, onProgress, pollMs: 1, ...over });
   return { storage, store, base, gh, fileStore, steps, run, session: sess };
 }
 

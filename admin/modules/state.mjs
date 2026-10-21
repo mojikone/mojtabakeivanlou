@@ -18,6 +18,18 @@ const DRAFT_SECTIONS = { access: 'access', revoked: 'access', rotate: 'access', 
 const SITE_FIELD_SECTIONS = { formSubject: 'contact' };
 const SECTIONS = ['profile', 'education', 'languages', 'services', 'experience', 'skills', 'contact', 'access', 'files', 'settings'];
 
+/**
+ * The dashboard section that edits the content key `key` (a top-level key of draft.site), or null for a key no
+ * section edits. For the `site` key, `field` (one of its fields) can name a section of its own (formSubject: contact).
+ */
+export function contentSection(key, field) {
+  if (key === 'site' && typeof field === 'string' && Object.hasOwn(SITE_FIELD_SECTIONS, field)) return SITE_FIELD_SECTIONS[field];
+  return Object.hasOwn(CONTENT_SECTIONS, key) ? CONTENT_SECTIONS[key] : null;
+}
+
+/** The content fields of the `site` key that belong to another section than Settings (see contentSection). */
+export const SITE_FIELDS = Object.freeze(Object.keys(SITE_FIELD_SECTIONS));
+
 // ---- pure helpers -------------------------------------------------------------------------
 
 const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);

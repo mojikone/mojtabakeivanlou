@@ -13,6 +13,7 @@ import { unlock, exportKey } from '../assets/js/vault.mjs';
 import { html } from '../assets/js/render/html.mjs';
 import { icon } from '../assets/js/render/icons.mjs';
 import { openPreview, pageForSection } from './modules/preview.mjs';
+import { wirePublish } from './modules/publish-ui.mjs';
 import { createGitHub, AuthError } from './modules/github.mjs';
 import { createStore } from './modules/state.mjs';
 import { createFileStore, createMemoryFileStore } from './modules/files.mjs';
@@ -169,6 +170,10 @@ async function loadDraft() {
     store.init(base);                       // notifies: nav, status and name follow
     $('previewButton').onclick = () => openPreview(store, pageForSection(route));
     $('previewButton').disabled = false;
+    wirePublish({
+      root: $('app'), store, gh: github, fileStore, session, onPublished: loadPublished,
+      onSessionVk: (vk) => { session.vk = vk; writeSession(sessionStorageOrNull, session); }, // a rotation: the new vault key, at once
+    });
   } catch (err) {
     load = { state: 'error', auth: err instanceof AuthError, status: err?.status, message: String(err?.message || 'Unknown error') };
   }
