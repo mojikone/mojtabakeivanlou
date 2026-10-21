@@ -603,15 +603,23 @@ shown un-hidden in the preview. The PDF is not previewed; the CV tab is close en
 ### 13.6 Publish
 
 1. Validate the draft (same validator as the build; errors are listed with "go to field" links).
+   Then check the session's keys: the vault key and owner key must be the ones the session's own
+   admin entry in the draft holds (opened with the session's KEK); otherwise nothing is committed
+   ("session vault key does not match the vault"), because an attachment wrapped under a stale key
+   could never be decrypted. The dashboard also adopts those keys each time the draft loads, and
+   signs out ("Your sign-in is out of date") when the entry no longer opens.
 2. Conflict check: fetch the current `content/site.json` SHA; if it differs from `baseShas`,
    show a modal: "The site content changed on GitHub since you loaded it (probably a code
    update). Reload and reapply? / Overwrite with my draft". The same for `access.json`.
 3. One commit via the Git Data API: get the branch head → create blobs for `content/site.json`,
    `vault/access.json` (if changed) and every pending file (base64) → create a tree on top of the
-   head tree with those paths, and `sha: null` for deleted files → create the commit (message
+   head tree with those paths, and `sha: null` for deleted files that the head tree still holds
+   (GitHub refuses a tree that deletes a missing path) → create the commit (message
    "Content update from dashboard: <sections changed>") → update `refs/heads/<branch>` with the
    head SHA as the expected parent (the update fails if someone pushed meanwhile; then go back to
-   step 2).
+   step 2). When the commit rotated the vault, the session takes the new vault key and owner key
+   the moment the ref update succeeds, not after the build. A 401 or 403 before the commit opens
+   "Replace GitHub token" (§13.7), and the publish runs again with the new token.
 4. Show the progress toast: "Saved to GitHub ✓" → poll
    `GET /repos/{o}/{r}/actions/runs?branch=<branch>&event=push&per_page=1` every 10 s until the
    run for that commit SHA concludes → "Building pages & PDF" → "Live on mojtabakeivanlou.com"
