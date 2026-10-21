@@ -164,3 +164,26 @@ test('previewDocument reports a draft the templates cannot render as an error, n
   assert.ok(error.length > 0);
   assert.ok(issues.length > 0, 'the validator still lists what is missing');
 });
+
+/* ─── CSS class names ─── */
+
+// admin.css is one global sheet. The rich-text field preview (ui.mjs) owns .adm-preview, .adm-preview-label and
+// .adm-preview-body; a modal class with one of those names merged its layout rules into every rich field's preview
+// (a flex column stacked the inline runs of the text).
+const source = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+const classNames = (text) => new Set(text.match(/adm-preview[\w-]*/g) ?? []);
+
+test('the modal reuses no class name of the rich-text field preview in ui.mjs', () => {
+  const ui = classNames(source('../admin/modules/ui.mjs'));
+  assert.ok(ui.has('adm-preview-body'), 'ui.mjs still builds the field preview (this guard looks at the right file)');
+  const clash = [...classNames(source('../admin/modules/preview.mjs'))].filter((name) => ui.has(name));
+  assert.deepEqual(clash, []);
+});
+
+test('no layout rule of admin.css targets the rich-text preview box', () => {
+  const css = source('../admin/admin.css');
+  const rule = /\.adm-preview-body\b[^{]*\{([^}]*)\}/g;
+  for (const [, declarations] of css.matchAll(rule)) {
+    assert.doesNotMatch(declarations, /\b(display|flex|flex-direction|height|min-height)\s*:/, '.adm-preview-body must stay a plain block');
+  }
+});

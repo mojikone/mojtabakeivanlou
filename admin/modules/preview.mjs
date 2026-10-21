@@ -119,7 +119,8 @@ export function openPreview(store, page = 'index') {
   // No sandbox (the page needs its own scripts and the dashboard's origin), and no referrer for anything it loads.
   const frame = el('iframe', { class: 'adm-preview-frame', title: 'Page preview', referrerpolicy: 'no-referrer' });
   const panel = el('div', { class: 'adm-preview-panel', role: 'tabpanel', id: `${uid}-panel` }, failure, frame);
-  const body = el('div', { class: 'adm-preview-body' }, tablist, notice, panel);
+  // A name of its own: the box class of the rich-text field preview (ui.mjs) already carries other rules.
+  const body = el('div', { class: 'adm-preview-modal-body' }, tablist, notice, panel);
 
   const handle = modal({ title: 'Preview', body, actions: [{ label: 'Close', primary: true }] });
   handle.element.classList.add('adm-modal-preview');
