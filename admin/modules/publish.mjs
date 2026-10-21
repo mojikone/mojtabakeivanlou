@@ -27,7 +27,6 @@ export const SECTION_LABELS = Object.freeze({
 const MESSAGE = 'Content update from dashboard';
 const CHECKED = ['site', 'access', 'keys'];         // the files the conflict check compares (keys of PATHS)
 const FILE_ID = /^[0-9a-f]{32}$/;
-const DRAFT_KEY = 'mk.draft';                        // the store's localStorage key (state.mjs)
 const GH_TOKEN = /gh[pousr]_[A-Za-z0-9]+/g;
 const GH_FINE_GRAINED = /github_pat_[A-Za-z0-9_]+/g;
 const MIN_SECRET = 6;                                // shorter strings are not searched for (they would mangle text)
@@ -59,11 +58,14 @@ function blobPath(id) {
  *   dirtySections  the section ids with changes (from store.dirty().bySection), for the message
  *   base           { access, keys } as they are on the branch at the draft's base shas; access.json and keys.json are
  *                  written when the draft's copy differs from it (JSON compare). Without it they are always written.
- * Throws Error('missing blob <id>') when a pending file has no bytes in `blobs`.
+ * Throws Error('missing blob <id>') when a pending file has no bytes in `blobs`, and
+ * Error('file both pending and deleted: <id>') when the draft both uploads and deletes the same file.
  */
 export function buildCommit(draft, blobs = {}, dirtySections = [], base = null) {
   const rotate = draft.rotate === true;
   const pendingIds = (draft.pending ?? []).map(idOf);
+  const both = (draft.deleted ?? []).find((id) => pendingIds.includes(id));
+  if (both !== undefined) throw new Error(`file both pending and deleted: ${both}`);
   const files = [{ path: PATHS.site, bytes: toFile(draft.site) }];
   if (rotate || !sameJson(draft.access, base?.access)) files.push({ path: PATHS.access, bytes: toFile(draft.access) });
   if (rotate || pendingIds.length > 0 || !sameJson(draft.keys, base?.keys)) files.push({ path: PATHS.keys, bytes: toFile(draft.keys) });
@@ -78,15 +80,47 @@ export function buildCommit(draft, blobs = {}, dirtySections = [], base = null) 
   return { message: labels.length ? `${MESSAGE}: ${labels.join(', ')}` : MESSAGE, files, deletes };
 }
 
+/** The ids of every file record in the content: the `files` arrays of the bullets (any `files` array counts). */
+export function referencedFileIds(site) {
+  const ids = new Set();
+  const walk = (node) => {
+    if (Array.isArray(node)) { node.forEach(walk); return; }
+    if (node === null || typeof node !== 'object') return;
+    for (const [key, value] of Object.entries(node)) {
+      if (key === 'files' && Array.isArray(value)) {
+        for (const file of value) if (typeof file?.id === 'string') ids.add(file.id);
+      } else {
+        walk(value);
+      }
+    }
+  };
+  walk(site);
+  return ids;
+}
+
+// keys.json as it is committed: without the key of a deleted file or of a file no bullet references. Spec 12 promises
+// that a removed blob stays under a key only old vault keys can unwrap, so its key must be neither kept nor rewrapped
+// by a rotation. The draft keeps such keys until publish so that Undo works.
+function prunedKeys(draft) {
+  const files = draft.keys?.files;
+  if (files === null || typeof files !== 'object') return draft.keys;
+  const referenced = referencedFileIds(draft.site);
+  const deleted = new Set(draft.deleted ?? []);
+  const keep = Object.keys(files).filter((id) => referenced.has(id) && !deleted.has(id));
+  if (keep.length === Object.keys(files).length) return draft.keys;
+  return { ...draft.keys, files: Object.fromEntries(keep.map((id) => [id, files[id]])) };
+}
+
 /* ─── HELPERS ─── */
 
 const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
-function browserStorage() {
-  try { return globalThis.localStorage ?? null; } catch { return null; } // the access itself throws when site data is blocked
-}
-
-function clean(message, secrets) {
+/**
+ * `message` as text that is safe to show: every literal occurrence of the given secrets (strings of 6 or more
+ * characters: vault key, KEK, token, codes) becomes [secret], and anything shaped like a GitHub token [token].
+ * The publish UI passes every text it shows through it.
+ */
+export function clean(message, secrets = []) {
   let text = String(message ?? 'Unknown error');
   for (const secret of secrets) {
     if (typeof secret === 'string' && secret.length >= MIN_SECRET) text = text.split(secret).join('[secret]');
@@ -150,23 +184,25 @@ async function rotateDraft(draft, session, secrets) {
 }
 
 // Polls the run of `sha` until it completes; a run cancelled because a newer push superseded it is followed on the
-// newest head. Resolves the completed run, or null after `maxPolls` polls.
+// newest head. Resolves { run: the completed run, or null after `maxPolls` polls; seen: the URL of the last run seen }.
 async function follow(gh, sha, { pollMs, maxPolls }) {
   let target = sha;
+  let seen = null;
   for (let poll = 0; poll < maxPolls; poll += 1) {
     await sleep(pollMs);
     try {
       const run = await gh.latestRun(target);
+      if (typeof run?.html_url === 'string') seen = run.html_url;
       if (!run || run.status !== 'completed') continue;
-      if (run.conclusion !== 'cancelled') return run;
+      if (run.conclusion !== 'cancelled') return { run, seen };
       const { sha: newest } = await gh.getHead();
-      if (newest === target) return run;              // cancelled by hand: nothing newer to follow
+      if (newest === target) return { run, seen };   // cancelled by hand: nothing newer to follow
       target = newest;
     } catch (err) {
       if (!transient(err)) throw err;
     }
   }
-  return null;
+  return { run: null, seen };
 }
 
 // The base of the next draft: the three files as they are now on the branch, so their shas and contents agree.
@@ -183,6 +219,23 @@ async function newBase(gh, sha, working) {
   return base;
 }
 
+/**
+ * Once the commit `sha` is on the branch (live, or a failed or timed-out build: the content is saved either way), the
+ * next draft starts from what is on GitHub: the three files are fetched again, the store is reset onto them (the
+ * stored draft is dropped, so the badge reads 0), and only THEN are the pending ciphertexts of `draft` deleted. If the
+ * rebase fails, the draft that still references them is kept, and so are they.
+ *   draft   the draft that was committed (default store.get()); its contents stand in for a file that cannot be fetched
+ * Resolves the new base; rejects when the rebase fails. A failing blob delete is ignored (a harmless orphan).
+ */
+export async function finalizePublished({ store, gh, fileStore, draft = store.get(), sha }) {
+  const next = await newBase(gh, sha, draft);
+  store.reset(next);
+  for (const id of (draft.pending ?? []).map(idOf)) {
+    try { await fileStore.delete(id); } catch { /* an orphan in the browser's store is harmless */ }
+  }
+  return next;
+}
+
 /* ─── PUBLISH ─── */
 
 /**
@@ -192,17 +245,19 @@ async function newBase(gh, sha, working) {
  *   fileStore   the pending-file store (files.mjs) holding the ciphertext of every pending file
  *   session     { vk, kek, entryId } — base64 vault key, base64 KEK of the admin code, the admin entry id
  *   icons       the icon map (render/icons.mjs) the validator checks service icons against
- *   onProgress  (step, info) => void; steps: validating, checking, committing, building { sha }, live { sha, url },
- *               conflict { paths }, failed { sha?, runUrl? | reason: 'timeout' | error }
+ *   onProgress  (step, info) => void; steps: validating, checking, committing, building { sha },
+ *               live { sha, url, runId? }, conflict { paths },
+ *               failed { sha?, runUrl? | reason: 'timeout' (+ runUrl when a run was seen) | error }
  *   pollMs      delay before each poll of the run (default 10000); maxPolls (default 90)
- *   storage     the storage the store persists to (default localStorage), cleared of the draft before the rebase
  * Resolves { sha } (plus vk, base64, when the vault key was rotated), { conflict: true, paths } or
- * { failed: true, runUrl | reason | error } (plus vk when a rotation was committed before the failure).
+ * { failed: true, runUrl | reason (+ runUrl) | error }. A failure after the commit reached the branch also carries
+ * that commit's `sha` (the content is saved: the caller runs finalizePublished) and `vk` when a rotation was committed.
+ * After live the draft is already rebased (finalizePublished). After a failure the draft and the blobs are untouched.
  * Rejects only with PublishValidationError, or with an AuthError raised before the commit reached the branch.
  */
 export async function publish({
   store, gh, fileStore, session, icons = defaultIcons, onProgress = () => {},
-  pollMs = 10000, maxPolls = 90, storage = browserStorage(),
+  pollMs = 10000, maxPolls = 90,
 } = {}) {
   const emit = (step, info) => {
     try { onProgress(step, info); } catch { /* a broken progress display must not break the publish */ }
@@ -210,7 +265,7 @@ export async function publish({
   const secrets = [session?.vk, session?.kek, session?.github?.token];
   let sha = null;                                     // set once the commit is on the branch
   let vk = null;                                      // the new vault key (base64), once rotated
-  const result = (fields) => (sha && vk ? { ...fields, vk } : fields);
+  const result = (fields) => (sha ? { ...fields, sha, ...(vk ? { vk } : {}) } : fields);
 
   try {
     const draft = store.get();
@@ -232,10 +287,11 @@ export async function publish({
       return { conflict: true, paths };
     }
 
-    let working = draft;
+    // The keys of removed files go first, so a rotation never rewraps them.
+    let working = { ...draft, keys: prunedKeys(draft) };
     if (draft.rotate === true || (draft.revoked ?? []).length > 0) {
-      const rotated = await rotateDraft(draft, session, secrets);
-      working = { ...draft, access: rotated.access, keys: rotated.keys };
+      const rotated = await rotateDraft(working, session, secrets);
+      working = { ...working, access: rotated.access, keys: rotated.keys, rotate: true }; // revoked alone rotates too
       vk = await exportKey(rotated.vk);
       secrets.push(vk);
     }
@@ -260,28 +316,22 @@ export async function publish({
     }
 
     emit('building', { sha });
-    const run = await follow(gh, sha, { pollMs, maxPolls });
+    const { run, seen } = await follow(gh, sha, { pollMs, maxPolls });
     if (!run) {
-      emit('failed', { sha, reason: 'timeout' });
-      return result({ failed: true, reason: 'timeout' });
+      const timeout = seen ? { reason: 'timeout', runUrl: seen } : { reason: 'timeout' };
+      emit('failed', { sha, ...timeout });
+      return result({ failed: true, ...timeout });
     }
     if (run.conclusion !== 'success') {
       emit('failed', { sha, runUrl: run.html_url });
       return result({ failed: true, runUrl: run.html_url });
     }
-    emit('live', { sha, url: siteUrl(working.site) });
+    emit('live', run.id === undefined ? { sha, url: siteUrl(working.site) } : { sha, url: siteUrl(working.site), runId: run.id });
 
-    // Live: the pending ciphertexts are on GitHub now, and the next draft starts from what was published.
-    // Nothing below may turn a live publish into a failure.
+    // Live: the next draft starts from what was published, then the pending ciphertexts (on GitHub now) go.
+    // Nothing here may turn a live publish into a failure.
     try {
-      for (const id of pendingIds) {
-        try { await fileStore.delete(id); } catch { /* an orphan in the browser's store is harmless */ }
-      }
-      const next = await newBase(gh, sha, working);
-      store.reset();
-      try { storage?.removeItem(DRAFT_KEY); } catch { /* blocked storage: nothing was persisted either */ }
-      store.init(next);
-      if (store.get()?.baseCommit !== next.commit) store.reset(); // a clean draft persisted elsewhere was loaded
+      await finalizePublished({ store, gh, fileStore, draft: working, sha });
     } catch { /* the draft stays as it was; the next publish reports a conflict and offers to reload */ }
     return vk ? { sha, vk } : { sha };
   } catch (err) {

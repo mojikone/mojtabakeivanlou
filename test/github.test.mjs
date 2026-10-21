@@ -233,9 +233,28 @@ test('latestRun picks the run whose head_sha matches, among the latest push runs
     { head_sha: 'mine', status: 'in_progress', conclusion: null, html_url: 'https://github.com/run/2', id: 2 },
   ] };
   const { gh, calls } = client({ [`GET ${R}/actions/runs?branch=${BRANCH}&event=push&per_page=5`]: { body: runs } });
-  assert.deepEqual(await gh.latestRun('mine'), { status: 'in_progress', conclusion: null, html_url: 'https://github.com/run/2' });
+  assert.deepEqual(await gh.latestRun('mine'), { id: 2, status: 'in_progress', conclusion: null, html_url: 'https://github.com/run/2' });
   assert.equal(await gh.latestRun('absent'), null);
   assert.equal(calls.length, 2);
+});
+
+test('runJobs lists the jobs of a run: name, status and conclusion of each', async () => {
+  const url = `GET ${R}/actions/runs/42/jobs`;
+  const jobs = { total_count: 2, jobs: [
+    { id: 1, run_id: 42, name: 'build', status: 'completed', conclusion: 'success', steps: [{ name: 'npm test' }] },
+    { id: 2, run_id: 42, name: 'deploy', status: 'completed', conclusion: 'skipped', steps: [] },
+  ] };
+  const { gh, calls } = client({ [url]: { body: jobs } });
+  assert.deepEqual(await gh.runJobs(42), [
+    { name: 'build', status: 'completed', conclusion: 'success' },
+    { name: 'deploy', status: 'completed', conclusion: 'skipped' },
+  ]);
+  assert.deepEqual(calls.map((c) => `${c.method} ${c.url}`), [url]);
+  assert.deepEqual(await client({ [url]: { body: {} } }).gh.runJobs(42), []);
+  // the id is a path segment: encoded, never able to reach another endpoint
+  const odd = client({});
+  await odd.gh.runJobs('1/../x').catch(() => {});
+  assert.equal(odd.calls[0].url, `${R}/actions/runs/1%2F..%2Fx/jobs`);
 });
 
 test('latestSuccessfulRun returns the time of the newest successful run on the branch, or null', async () => {
@@ -269,6 +288,7 @@ test('a 401 or 403 anywhere rejects with AuthError', async () => {
       commitFiles: () => gh.commitFiles(COMMIT_INPUT),
       latestRun: () => gh.latestRun('x'),
       latestSuccessfulRun: () => gh.latestSuccessfulRun(),
+      runJobs: () => gh.runJobs(7),
     })) {
       const err = await run().then(() => null, (e) => e);
       assert.ok(err instanceof AuthError, `${name} on ${status}`);
@@ -306,6 +326,7 @@ async function exerciseAll() {
     [`GET ${R}/git/trees/head-tree?recursive=1`]: { body: { tree: [] } },
     [`GET ${R}/actions/runs?branch=${BRANCH}&event=push&per_page=5`]: { body: { workflow_runs: [] } },
     [`GET ${R}/actions/runs?branch=${BRANCH}&status=success&per_page=1`]: { body: { workflow_runs: [] } },
+    [`GET ${R}/actions/runs/7/jobs`]: { body: { jobs: [] } },
   });
   await gh.validate();
   await gh.getHead();
@@ -314,12 +335,13 @@ async function exerciseAll() {
   await gh.commitFiles(COMMIT_INPUT);
   await gh.latestRun('x');
   await gh.latestSuccessfulRun();
+  await gh.runJobs(7);
   return calls;
 }
 
 test('every request carries the bearer token, the GitHub media type and the API version', async () => {
   const calls = await exerciseAll();
-  assert.equal(calls.length, 15);
+  assert.equal(calls.length, 16);
   for (const c of calls) {
     assert.ok(c.url.startsWith(`${API}/`), c.url);
     assert.equal(c.headers.Authorization, `Bearer ${TOKEN}`, c.url);
