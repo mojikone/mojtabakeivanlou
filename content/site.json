@@ -288,7 +288,22 @@
             "bullets": [
               {
                 "text": "Review and update of hydrology report; revised rainfall and design flow values",
-                "files": []
+                "files": [
+                  {
+                    "id": "38e543e03d018a3b80a7c46496d04426",
+                    "name": "Wadi Majlas Hydrology Report.pdf",
+                    "size": 4887680,
+                    "type": "application/pdf",
+                    "enc": true
+                  },
+                  {
+                    "id": "7f317478da1c60eda827f9ea9d5748c3",
+                    "name": "Wadi Majlas Hydrology Report.docx",
+                    "size": 35151408,
+                    "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "enc": true
+                  }
+                ]
               },
               {
                 "text": "Flood protection channel design downstream of dam in Quriyat",
