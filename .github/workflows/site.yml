@@ -3,7 +3,7 @@ on:
   push: { branches: [redesign3_admin, redesign3_admin_test] }
   schedule: [{ cron: "30 3 24 9 *" }]
   workflow_dispatch:
-permissions: { contents: read, pages: write, id-token: write }
+permissions: { contents: read }
 concurrency: { group: "site-${{ github.ref }}", cancel-in-progress: true }
 jobs:
   build:
@@ -25,6 +25,7 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/redesign3_admin' && vars.DEPLOY_FROM_ACTIONS == 'true'
     runs-on: ubuntu-latest
+    permissions: { pages: write, id-token: write }
     environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
     steps:
       - id: deployment

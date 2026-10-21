@@ -15,8 +15,9 @@ const VAULT = 'mk.vault';
 const ADMIN = 'mk.admin';
 const KEK = 'mk.kek';
 const FILE_ID = /^[0-9a-f]{32}$/;
-const ERROR_MS = 4000;                      // how long a failed icon stays marked
+const ERROR_MS = 4000;                      // how long a failed icon (or a code no longer valid) stays marked
 const REVOKE_MS = 40000;                    // keep the object URL alive until the browser has taken the download
+const STALE_TITLE = 'Code no longer valid — enter it again';
 
 /* ─── SESSION ─── */
 
@@ -43,6 +44,15 @@ class HttpError extends Error {
   constructor(path, status) {
     super(`${path} returned HTTP ${status}`);
     this.name = 'HttpError';
+  }
+}
+
+// The vault key of this session opens no file key: it was replaced (a code was revoked, or the access codes changed)
+// since the code was entered.
+class StaleKeyError extends Error {
+  constructor() {
+    super('the vault key of this session no longer opens the files');
+    this.name = 'StaleKeyError';
   }
 }
 
@@ -124,8 +134,33 @@ async function fileBytes(id, encrypted) {
   ]);
   const files = keys && keys.files;
   if (!files || !Object.hasOwn(files, id)) throw new Error('no key for this file');
-  const fileKey = await unwrapFileKey(await importKey(vaultKey), files[id]);
+  let fileKey;
+  try {
+    fileKey = await unwrapFileKey(await importKey(vaultKey), files[id]);
+  } catch {
+    throw new StaleKeyError();
+  }
   return decryptFile(fileKey, new Uint8Array(blob));
+}
+
+// A code that no longer opens the files: the session forgets its vault key (as Lock does), the icons hide again and
+// the pill goes back to idle, marked for a few seconds with the reason, so the visitor enters a current code.
+let staleTimer = null;
+let titleBefore;
+function expireCode() {
+  onLock();
+  if (!root) return;
+  pill?.setState('idle');
+  if (staleTimer === null) titleBefore = root.getAttribute('title');
+  clearTimeout(staleTimer);
+  root.classList.add('is-error');
+  root.setAttribute('title', STALE_TITLE);
+  staleTimer = setTimeout(() => {
+    staleTimer = null;
+    root.classList.remove('is-error');
+    if (titleBefore === null || titleBefore === undefined) root.removeAttribute('title');
+    else root.setAttribute('title', titleBefore);
+  }, ERROR_MS);
 }
 
 function save(bytes, name, type) {
@@ -173,7 +208,8 @@ async function download(anchor) {
     save(bytes, anchor.dataset.name || `${id}.bin`, anchor.dataset.type || 'application/octet-stream');
   } catch (err) {
     warn('download', err);
-    markFailed(anchor);
+    if (err instanceof StaleKeyError) expireCode();
+    else markFailed(anchor);
   } finally {
     anchor.classList.remove('is-busy');
     anchor.removeAttribute('aria-busy');

@@ -758,6 +758,8 @@ html { scrollbar-width: thin; scrollbar-color: var(--lime) var(--dk); }
   40%, 80% { transform: translateX(4px); }
 }
 .access-pill.is-shaking { animation: mk-shake 300ms ease-in-out; }
+/* a code that no longer opens the files: back to idle, outlined for four seconds (the title says why) */
+.access-pill.is-error { color: var(--lime-dk); box-shadow: inset 0 0 0 1px var(--lime-dk); }
 @media (prefers-reduced-motion: reduce) {
   .access-pill.is-shaking { animation: none; }
 }

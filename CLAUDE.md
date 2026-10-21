@@ -107,6 +107,7 @@ The build also copies `assets/`, `vault/`, `admin/`, `CNAME`, `.nojekyll` and `r
 `.github/workflows/site.yml`, workflow `site`:
 
 - **Triggers:** push to `redesign3_admin` or `redesign3_admin_test`; manual `workflow_dispatch`; and a yearly schedule, `30 3 24 9 *` (24 September 03:30 UTC), so the years-of-experience number rolls over. GitHub only runs schedules from the **default branch**, which is why the cutover makes `redesign3_admin` the default.
+- **Permissions:** the workflow default is `contents: read`, which the `build` job uses; only the `deploy` job has its own `permissions:` block with `pages: write` and `id-token: write`.
 - **`build` job (always):** checkout, Node 22 with npm cache, a cache of `~/.cache/puppeteer` (the Chromium download, keyed on `package-lock.json`), `npm ci`, `npm test` (with `CI=true`, which switches the PDF render test on), `npm run build`, `npm run pdf`, then upload `dist/` as the Pages artifact. Invalid content fails the build, and a failed build never replaces the live site.
 - **`deploy` job:** runs only when the ref is `refs/heads/redesign3_admin` **and** the repository variable `DEPLOY_FROM_ACTIONS` is `true`. A scratch branch such as `redesign3_admin_test` can therefore never deploy, and until the owner sets the variable nothing goes live.
 - `concurrency` group `site-${{ github.ref }}` with `cancel-in-progress`: a newer run on the same branch cancels an older one still running. The group is per ref, so a push to `redesign3_admin_test` can never cancel a running `redesign3_admin` deploy.
@@ -128,7 +129,10 @@ The build also copies `assets/`, `vault/`, `admin/`, `CNAME`, `.nojekyll` and `r
    - Check Settings → Environments → `github-pages` → Deployment branches and tags: `redesign3_admin` must be allowed (add it if only another branch is listed), or the deploy job is rejected.
    - Re-run the latest workflow, or push. The first Actions deployment replaces the branch deployment; the custom domain and HTTPS settings are untouched.
    - GitHub disables scheduled workflows after 60 days without activity in the repository. Every dashboard publish is a commit and counts as activity; if the Actions tab ever shows the `site` workflow's schedule disabled, re-enable it there, or the yearly rebuild of the years of experience does not run.
-5. Rollback: Settings → Pages → Source back to "Deploy from a branch", branch `redesign3_colors_firebase`. Nothing else to undo.
+5. Rollback, in the GitHub web UI:
+   - Settings → Pages → Source back to "Deploy from a branch", branch `redesign3_colors_firebase`.
+   - Settings → Secrets and variables → Actions → Variables → set `DEPLOY_FROM_ACTIONS` to `false`, so no workflow run (a push, the yearly schedule) tries to deploy again.
+   - Check Settings → Environments → `github-pages` → Deployment branches and tags: `redesign3_colors_firebase` must still be allowed (the switch to GitHub Actions may have limited it to `redesign3_admin`); add it if it is not, or the branch deployment is rejected.
 6. After a week of normal use the owner may create the usual `V<n>_` backup branch of `redesign3_admin` and delete the obsolete `CV/cv.html` master in the parent folder.
 
 ---

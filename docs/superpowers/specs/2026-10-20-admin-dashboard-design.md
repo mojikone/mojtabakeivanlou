@@ -342,13 +342,13 @@ on:
   push: { branches: [redesign3_admin] }
   schedule: [{ cron: "30 3 24 9 *" }]      # 24 September, 03:30 UTC: years rollover
   workflow_dispatch:
-permissions: { contents: read, pages: write, id-token: write }
+permissions: { contents: read }              # the build job: read the repository, nothing more
 concurrency: { group: pages, cancel-in-progress: true }
 jobs:
   build:   ubuntu-latest · checkout · setup-node 22 (npm cache) · cache ~/.cache/puppeteer ·
            npm ci · npm test · npm run build · npm run pdf · upload-pages-artifact (dist)
   deploy:  needs build · if: github.ref == 'refs/heads/redesign3_admin' && vars.DEPLOY_FROM_ACTIONS == 'true' ·
-           environment github-pages · deploy-pages
+           permissions: { pages: write, id-token: write } (its own block) · environment github-pages · deploy-pages
 ```
 
 The `deploy` job is gated twice: by the branch name, so a scratch branch such as
@@ -681,15 +681,20 @@ wrapper around the same Person. The parity test (§15) catches anything dropped.
    wizard; the assistant never handles it.
 3. Owner checks the local preview and the dashboard end to end (edit, attach, publish to a
    scratch branch `redesign3_admin_test` if desired, which the wizard's branch field allows).
-4. Cutover, done by the owner in the GitHub web UI, about two minutes:
+4. Cutover, done by the owner in the GitHub web UI, about two minutes, in this order (as in
+   CLAUDE.md):
+   - Settings → General → Default branch → `redesign3_admin` (owner's decision; needed for the
+     yearly scheduled rebuild, §10). Before the Pages source: switching the source to GitHub
+     Actions limits the `github-pages` environment to the default branch of that moment.
    - Settings → Pages → Build and deployment → Source: **GitHub Actions**.
    - Settings → Secrets and variables → Actions → Variables → `DEPLOY_FROM_ACTIONS` = `true`.
-   - Settings → General → Default branch → `redesign3_admin` (owner's decision; needed for the
-     yearly scheduled rebuild, §10).
+   - Settings → Environments → `github-pages` → Deployment branches and tags: `redesign3_admin`
+     must be allowed.
    - Re-run the latest workflow (or push). The first Actions deployment replaces the branch
      deployment; the custom domain and HTTPS settings are untouched.
 5. Keep `redesign3_colors_firebase` as the rollback. Rollback = Source back to "Deploy from a
-   branch", branch `redesign3_colors_firebase`. Nothing else to undo.
+   branch", branch `redesign3_colors_firebase`; set `DEPLOY_FROM_ACTIONS` to `false`; and check
+   that the `github-pages` environment still allows `redesign3_colors_firebase` (add it if not).
 6. After a week of normal use, the owner may create the usual `V<n>_` backup branch of the
    admin branch and delete the obsolete `CV/cv.html` master in the parent folder.
 
