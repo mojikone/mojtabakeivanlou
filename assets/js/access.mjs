@@ -220,7 +220,8 @@ document.addEventListener('click', (event) => {
   const anchor = event.target instanceof Element ? event.target.closest('a.proj-dl') : null;
   if (!anchor) return;
   event.preventDefault();
-  download(anchor);
+  // Test-only hook: the download's promise, so test/access.test.mjs can await its completion (never rejects; read by nothing else).
+  anchor._mkDownload = download(anchor);
 });
 
 /* ─── START ─── */

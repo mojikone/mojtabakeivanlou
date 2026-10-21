@@ -85,7 +85,6 @@ test('a download with a vault key that no longer opens the files: session forgot
   const saved = Object.fromEntries(['document', 'Element', 'sessionStorage', 'fetch', 'setTimeout', 'clearTimeout'].map((k) => [k, Object.getOwnPropertyDescriptor(globalThis, k)]));
   const realWarn = console.warn;
   const define = (name, value) => Object.defineProperty(globalThis, name, { value, configurable: true, writable: true });
-  const turn = () => new Promise((resolve) => { setImmediate(resolve); });
   try {
     define('document', document);
     define('Element', El);
@@ -103,10 +102,12 @@ test('a download with a vault key that no longer opens the files: session forgot
     assert.equal(root.dataset.state, 'unlocked', 'a stored vault key unlocks the page on load');
     assert.ok(spans.every((s) => !s.hidden));
 
+    // The click handler leaves the promise of the download it started on the anchor (_mkDownload); awaiting it is
+    // deterministic, where polling the event loop races the WebCrypto work, which runs on the thread pool.
     const click = async (anchor) => {
       for (const fn of docListeners.click) fn({ target: anchor, preventDefault() {} });
-      for (let i = 0; i < 50 && anchor.classList.contains('is-busy'); i++) await turn();
-      await turn();
+      assert.ok(anchor._mkDownload instanceof Promise, 'the click handler started a download');
+      await anchor._mkDownload;
     };
 
     // a file the keys file does not list is an ordinary failure: the icon is marked, the session stays
